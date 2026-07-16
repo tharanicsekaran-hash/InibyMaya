@@ -27,7 +27,16 @@ export const products = [
       sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL']
     },
     customizable: true,
-    bestSeller: true
+    bestSeller: true,
+    occasion: 'Daily Elegance',
+    highlights: {
+      fit: 'Straight Regular Fit',
+      fabric: '100% Breathable Cotton',
+      neck: 'Mandarin Neck',
+      sleeve: '3/4 Sleeves',
+      length: '44 Inches',
+      technique: 'Intricate Handcrafted Chikankari'
+    }
   },
   {
     id: 'im-002',
@@ -56,7 +65,16 @@ export const products = [
       sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL']
     },
     customizable: true,
-    bestSeller: false
+    bestSeller: false,
+    occasion: 'Formal Grace',
+    highlights: {
+      fit: 'Straight Relaxed Fit',
+      fabric: 'Luxurious Muslin Silk Blend',
+      neck: 'Frill Round Neck',
+      sleeve: '3/4 Sleeve with Frills',
+      length: '42 Inches',
+      technique: 'Hand-sewn sequin embroidery'
+    }
   },
   {
     id: 'im-003',
@@ -85,7 +103,16 @@ export const products = [
       sizes: ['S', 'M', 'L', 'XL', 'XXL']
     },
     customizable: true,
-    bestSeller: true
+    bestSeller: true,
+    occasion: 'Festive Couture',
+    highlights: {
+      fit: 'Flared Royal Anarkali (28-kali)',
+      fabric: 'Premium Georgette Silk',
+      neck: 'Elegant Round Neck',
+      sleeve: 'Full Length Sleeves',
+      length: '52 Inches',
+      technique: 'Extensive Chikankari & Zardozi'
+    }
   },
   {
     id: 'im-004',
@@ -114,7 +141,16 @@ export const products = [
       sizes: ['S', 'M', 'L', 'XL']
     },
     customizable: false,
-    bestSeller: false
+    bestSeller: false,
+    occasion: 'Celebrations',
+    highlights: {
+      fit: 'Regular Kurta & Straight Pant Set',
+      fabric: 'Raw Silk Blend with rich sheen',
+      neck: 'Mandarin Collar Neck',
+      sleeve: 'Full Sleeves',
+      length: '43 Inches',
+      technique: 'Minimalist zari work detailing'
+    }
   },
   {
     id: 'im-005',
@@ -142,7 +178,16 @@ export const products = [
       sizes: ['XS', 'S', 'M', 'L', 'XL']
     },
     customizable: true,
-    bestSeller: false
+    bestSeller: false,
+    occasion: 'Daily Elegance',
+    highlights: {
+      fit: 'Straight Daily Fit',
+      fabric: 'Organic Linen-Cotton Blend',
+      neck: 'Mandarin Collar Placket',
+      sleeve: '3/4 Sleeves',
+      length: '40 Inches',
+      technique: 'Block-print floral patterns'
+    }
   },
   {
     id: 'im-006',
@@ -171,6 +216,15 @@ export const products = [
       sizes: ['S', 'M', 'L', 'XL', 'XXL']
     },
     customizable: true,
-    bestSeller: true
+    bestSeller: true,
+    occasion: 'Festive Couture',
+    highlights: {
+      fit: 'A-Line Flared Fit',
+      fabric: 'Ultra-soft Premium Silk Velvet',
+      neck: 'V-Neckline',
+      sleeve: '3/4 Sleeves',
+      length: '46 Inches',
+      technique: 'Genuine hand-stitched Zardozi'
+    }
   }
 ];

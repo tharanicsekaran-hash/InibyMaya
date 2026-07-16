@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Trash2, ShoppingBag, ArrowRight, Tag } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Trash2, ShoppingBag, ArrowRight, Tag, Pencil } from 'lucide-react';
 
 export default function CartDrawer({ 
   cartItems, 
@@ -7,15 +7,39 @@ export default function CartDrawer({
   onUpdateQty, 
   onRemoveItem, 
   onCheckoutClick,
-  promosList = []
+  promosList = [],
+  autoAppliedCode = ''
 }) {
   const [promoCode, setPromoCode] = useState('');
   const [appliedDiscount, setAppliedDiscount] = useState(0); // in Rupees
   const [promoSuccessMsg, setPromoSuccessMsg] = useState('');
   const [promoErrorMsg, setPromoErrorMsg] = useState('');
+  const [orderNote, setOrderNote] = useState('');
+  const [showNoteInput, setShowNoteInput] = useState(false);
 
   // Subtotal before discounts
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+  // Auto-apply landing promo code
+  useEffect(() => {
+    if (autoAppliedCode && subtotal > 0) {
+      setPromoCode(autoAppliedCode);
+      const matchedPromo = promosList.find(p => p.code === autoAppliedCode.trim().toUpperCase());
+      if (matchedPromo) {
+        if (subtotal >= matchedPromo.minPurchase) {
+          let discount = 0;
+          if (matchedPromo.type === 'percent') {
+            discount = Math.round(subtotal * (matchedPromo.value / 100));
+          } else {
+            discount = matchedPromo.value;
+          }
+          setAppliedDiscount(discount);
+          setPromoSuccessMsg(`Promo applied: ${matchedPromo.description || `₹${discount} off!`}`);
+          setPromoErrorMsg('');
+        }
+      }
+    }
+  }, [autoAppliedCode, subtotal, promosList]);
 
   const applyPromo = () => {
     setPromoErrorMsg('');
@@ -191,6 +215,28 @@ export default function CartDrawer({
               )}
             </div>
 
+            {/* Order Note Collapsible Row */}
+            <div className="cart-order-note-container">
+              <button 
+                type="button"
+                className="cart-note-toggle-btn"
+                onClick={() => setShowNoteInput(!showNoteInput)}
+              >
+                <Pencil size={14} />
+                <span>{orderNote ? 'EDIT SPECIAL INSTRUCTION' : 'SPECIAL INSTRUCTION'}</span>
+              </button>
+              {showNoteInput && (
+                <div className="cart-note-input-wrapper animate-slideDown">
+                  <textarea
+                    rows="2"
+                    placeholder="e.g., Please deliver after 5 PM or shorten sleeves by 1 inch..."
+                    value={orderNote}
+                    onChange={(e) => setOrderNote(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+
             {/* Calculations */}
             <div className="calc-table">
               <div className="calc-row">
@@ -208,16 +254,16 @@ export default function CartDrawer({
                 <span>{shipping === 0 ? 'FREE' : `₹${shipping}`}</span>
               </div>
               <hr />
-              <div className="calc-row total-row">
-                <span>Total</span>
-                <span>₹{finalTotal.toLocaleString('en-IN')}</span>
+              <div className="calc-row total-row red-totals">
+                <span className="total-label-red">Total</span>
+                <span className="total-amount-red">₹{finalTotal.toLocaleString('en-IN')}</span>
               </div>
             </div>
 
             {/* Checkout Call-to-action */}
             <button 
               className="checkout-btn-large" 
-              onClick={() => onCheckoutClick({ subtotal, appliedDiscount, shipping, finalTotal })}
+              onClick={() => onCheckoutClick({ subtotal, appliedDiscount, shipping, finalTotal, orderNote })}
             >
               <span>Proceed to Checkout</span>
               <ArrowRight size={18} />

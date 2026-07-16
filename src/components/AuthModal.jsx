@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, User, Sparkles, LogOut, CheckCircle, Package, Truck } from 'lucide-react';
+import { supabase } from '../supabaseClient';
 
 export default function AuthModal({ user, login, signup, logout, onClose, orderHistory = [] }) {
   const [isLoginView, setIsLoginView] = useState(true);
@@ -18,35 +19,83 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
     }
     setErrorMsg('');
     setIsLoading(true);
-    setStatusMsg(isLoginView ? 'Supabase: Querying user session...' : 'Supabase: Registering new profile entry...');
-    
+
+    if (supabase) {
+      setStatusMsg(isLoginView ? 'Connecting to Supabase Auth...' : 'Creating profile on Supabase DB...');
+      try {
+        if (isLoginView) {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password: password
+          });
+          setIsLoading(false);
+          if (error) {
+            setErrorMsg(error.message || 'Failed to authenticate.');
+            setStatusMsg('');
+          } else if (data.user) {
+            setStatusMsg('Supabase: Authentication successful!');
+            setTimeout(() => {
+              onClose();
+            }, 600);
+          }
+        } else {
+          // Signup
+          const { data, error } = await supabase.auth.signUp({
+            email: email.trim(),
+            password: password,
+            options: {
+              data: {
+                name: name || email.split('@')[0]
+              }
+            }
+          });
+          setIsLoading(false);
+          if (error) {
+            setErrorMsg(error.message || 'Registration failed.');
+            setStatusMsg('');
+          } else {
+            setStatusMsg('Couture profile created! Please log in.');
+            setIsLoginView(true);
+          }
+        }
+      } catch (err) {
+        setIsLoading(false);
+        setErrorMsg('Auth connection failed.');
+        setStatusMsg('');
+      }
+      return;
+    }
+
     // Simulate Supabase response delay
+    setStatusMsg(isLoginView ? 'Supabase: Querying user session...' : 'Supabase: Registering new profile entry...');
     setTimeout(() => {
       setIsLoading(false);
+      
+      const emailLower = email.trim().toLowerCase();
+      
+      // Strict Admin Credentials Check
+      if (emailLower === 'tharanichandrasekaran2000@gmail.com') {
+        if (password !== 'Remedy@1234567890') {
+          setErrorMsg('Invalid credentials. Please enter the correct password for your Administrator account.');
+          setStatusMsg('');
+          return;
+        }
+        login({ email: 'tharanichandrasekaran2000@gmail.com', name: 'Tharani Admin' });
+        setStatusMsg('Supabase Auth: Success! Admin session initiated.');
+        onClose();
+        return;
+      }
+
       if (isLoginView) {
         login({ email, name: name || email.split('@')[0] });
         setStatusMsg('Supabase Auth: Success! Session initiated.');
+        onClose();
       } else {
         signup({ email, name: name || email.split('@')[0] });
         setStatusMsg('Supabase Auth: Account created in public.users!');
         setIsLoginView(true);
       }
     }, 1200);
-  };
-
-  // Quick Login Assist
-  const handleQuickLogin = (role) => {
-    setIsLoading(true);
-    setStatusMsg(`Supabase Auth: Authenticating as ${role}...`);
-    setTimeout(() => {
-      setIsLoading(false);
-      if (role === 'admin') {
-        login({ email: 'admin@inibymaya.com', name: 'Maya Admin' });
-      } else {
-        login({ email: 'customer@gmail.com', name: 'Rita Patel' });
-      }
-      onClose();
-    }, 800);
   };
 
   return (
@@ -64,7 +113,7 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
                 <User size={32} />
               </div>
               <h3 className="profile-email">{user.email}</h3>
-              <span className="profile-badge">{user.email === 'admin@inibymaya.com' ? 'Store Administrator' : 'Loyalty Member'}</span>
+              <span className="profile-badge">{user.email === 'tharanichandrasekaran2000@gmail.com' ? 'Store Administrator' : 'Loyalty Member'}</span>
             </div>
 
             <hr className="detail-divider" />
@@ -136,10 +185,15 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
 
                          <div className="order-summary-row">
                            <span>{order.items.length} item(s) • {isCustomOrder ? 'Bespoke Tailored' : 'Standard sizes'}</span>
-                           <span>Total: <strong>₹{order.total.toLocaleString('en-IN')}</strong></span>
+                           <span className="red-totals">Total: <strong className="total-amount-red">₹{order.total.toLocaleString('en-IN')}</strong></span>
                          </div>
+                         {order.notes && (
+                           <div className="order-customer-note-callout">
+                             <strong>Special Instruction:</strong> "{order.notes}"
+                           </div>
+                         )}
                          <div className="order-date-row">
-                           <span>Payment: Razorpay ({order.paymentId})</span>
+                           <span>Payment: COD ({order.paymentId})</span>
                            <span>{new Date(order.timestamp).toLocaleDateString()}</span>
                          </div>
                        </div>
@@ -231,21 +285,6 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
               )}
             </div>
 
-            {/* Quick Login Assist Panel */}
-            <div className="quick-login-assist">
-              <div className="assist-header">
-                <Sparkles size={14} />
-                <span>Sandbox Test Account Autocomplete</span>
-              </div>
-              <div className="assist-buttons">
-                <button onClick={() => handleQuickLogin('customer')}>
-                  Standard Customer Account
-                </button>
-                <button onClick={() => handleQuickLogin('admin')}>
-                  Store Admin Account
-                </button>
-              </div>
-            </div>
           </div>
         )}
       </div>

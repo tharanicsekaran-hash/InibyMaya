@@ -29,38 +29,41 @@ export default function Header({
   return (
     <header className={`header ${isScrolled ? 'scrolled' : ''}`}>
       <div className="header-container">
-        {/* Mobile Menu Toggle */}
-        <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(true)}>
-          <Menu size={22} />
-        </button>
+        {/* Left Side Navigation / Menu */}
+        <div className="header-left">
+          {/* Mobile Menu Toggle */}
+          <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(true)}>
+            <Menu size={22} />
+          </button>
 
-        {/* Navigation Links (Desktop) */}
-        <nav className="desktop-nav">
-          <button 
-            className={`nav-link ${activePage === 'home' ? 'active' : ''}`} 
-            onClick={() => setActivePage('home')}
-          >
-            Home
-          </button>
-          <button 
-            className={`nav-link ${activePage === 'shop' ? 'active' : ''}`} 
-            onClick={() => setActivePage('shop')}
-          >
-            Shop All
-          </button>
-          <button 
-            className={`nav-link ${activePage === 'long-kurtas' ? 'active' : ''}`} 
-            onClick={() => setActivePage('shop')}
-          >
-            Long Kurtas
-          </button>
-          <button 
-            className={`nav-link ${activePage === 'anarkali' ? 'active' : ''}`} 
-            onClick={() => setActivePage('shop')}
-          >
-            Anarkali
-          </button>
-        </nav>
+          {/* Navigation Links (Desktop) */}
+          <nav className="desktop-nav">
+            <button 
+              className={`nav-link ${activePage === 'home' ? 'active' : ''}`} 
+              onClick={() => setActivePage('home')}
+            >
+              Home
+            </button>
+            <button 
+              className={`nav-link ${activePage === 'shop' ? 'active' : ''}`} 
+              onClick={() => setActivePage('shop')}
+            >
+              Shop All
+            </button>
+            <button 
+              className={`nav-link ${activePage === 'long-kurtas' ? 'active' : ''}`} 
+              onClick={() => setActivePage('shop')}
+            >
+              Long Kurtas
+            </button>
+            <button 
+              className={`nav-link ${activePage === 'anarkali' ? 'active' : ''}`} 
+              onClick={() => setActivePage('shop')}
+            >
+              Anarkali
+            </button>
+          </nav>
+        </div>
 
         {/* Brand Logo */}
         <div className="brand-logo" onClick={() => setActivePage('home')}>
@@ -80,7 +83,7 @@ export default function Header({
                 <User size={20} />
                 <span className="user-name-label">{user.email.split('@')[0]}</span>
               </button>
-              {user.email === 'admin@inibymaya.com' && (
+              {user.email === 'tharanichandrasekaran2000@gmail.com' && (
                 <button 
                   className={`action-btn admin-btn ${activePage === 'admin' ? 'active' : ''}`} 
                   onClick={() => setActivePage('admin')} 
@@ -142,7 +145,7 @@ export default function Header({
               >
                 Anarkali Suits
               </button>
-              {user && user.email === 'admin@inibymaya.com' && (
+              {user && user.email === 'tharanichandrasekaran2000@gmail.com' && (
                 <button 
                   onClick={() => { setActivePage('admin'); setMobileMenuOpen(false); }}
                   className={activePage === 'admin' ? 'active' : ''}

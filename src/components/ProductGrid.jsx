@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import ProductCard from './ProductCard';
 import { SlidersHorizontal, Grid, List, Search } from 'lucide-react';
 
-export default function ProductGrid({ products, onProductClick, searchQuery, setSearchQuery }) {
+export default function ProductGrid({ products, onProductClick, searchQuery, setSearchQuery, selectedSize, setSelectedSize }) {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('featured');
 
@@ -11,6 +11,16 @@ export default function ProductGrid({ products, onProductClick, searchQuery, set
     const list = new Set(products.map(p => p.category));
     return ['All', ...list];
   }, [products]);
+
+  // Thumbnail picker for categories
+  const getCategoryThumbnail = (cat) => {
+    if (cat === 'All') {
+      const bestseller = products.find(p => p.bestSeller) || products[0];
+      return bestseller?.images[0] || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=100&h=100';
+    }
+    const matched = products.find(p => p.category === cat);
+    return matched?.images[0] || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=100&h=100';
+  };
 
   // Filtered and sorted products
   const filteredProducts = useMemo(() => {
@@ -21,13 +31,19 @@ export default function ProductGrid({ products, onProductClick, searchQuery, set
       result = result.filter(p => p.category === selectedCategory);
     }
 
-    // Search query filter
+    // Size filter
+    if (selectedSize) {
+      result = result.filter(p => p.variants && p.variants.sizes && p.variants.sizes.includes(selectedSize));
+    }
+
+    // Search query filter (supporting titles, categories, descriptions, and occasion tags)
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase();
       result = result.filter(p => 
         p.title.toLowerCase().includes(q) || 
         p.category.toLowerCase().includes(q) || 
-        p.description.toLowerCase().includes(q)
+        p.description.toLowerCase().includes(q) ||
+        (p.occasion && p.occasion.toLowerCase().includes(q))
       );
     }
 
@@ -39,12 +55,11 @@ export default function ProductGrid({ products, onProductClick, searchQuery, set
     } else if (sortBy === 'rating') {
       result.sort((a, b) => b.rating - a.rating);
     } else if (sortBy === 'featured') {
-      // Bestsellers first
       result.sort((a, b) => (b.bestSeller ? 1 : 0) - (a.bestSeller ? 1 : 0));
     }
 
     return result;
-  }, [products, selectedCategory, searchQuery, sortBy]);
+  }, [products, selectedCategory, selectedSize, searchQuery, sortBy]);
 
   return (
     <div className="shop-section container">
@@ -55,17 +70,23 @@ export default function ProductGrid({ products, onProductClick, searchQuery, set
 
       {/* Filter and Sort Toolbar */}
       <div className="toolbar">
-        {/* Category Pills */}
-        <div className="category-pills">
-          {categories.map(cat => (
-            <button
-              key={cat}
-              className={`pill-btn ${selectedCategory === cat ? 'active' : ''}`}
-              onClick={() => setSelectedCategory(cat)}
-            >
-              {cat}
-            </button>
-          ))}
+        {/* Dress Style pills carousel with circular avatars */}
+        <div className="dress-styles-row-outer">
+          <div className="dress-style-pills">
+            {categories.map(cat => {
+              const thumb = getCategoryThumbnail(cat);
+              return (
+                <button
+                  key={cat}
+                  className={`dress-style-pill ${selectedCategory === cat ? 'active' : ''}`}
+                  onClick={() => setSelectedCategory(cat)}
+                >
+                  <img src={thumb} alt={cat} className="dress-style-pill-thumb" />
+                  <span className="dress-style-pill-text">{cat}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Search Bar & Sort Dropdown */}
@@ -95,6 +116,37 @@ export default function ProductGrid({ products, onProductClick, searchQuery, set
             </select>
           </div>
         </div>
+      </div>
+
+      {/* Quick Sizing filter bar */}
+      <div className="quick-size-bar">
+        <div className="quick-size-title">Select your size for quicker browsing:</div>
+        <div className="quick-size-buttons">
+          {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map(size => (
+            <button
+              key={size}
+              className={`quick-size-btn ${selectedSize === size ? 'active' : ''}`}
+              onClick={() => setSelectedSize(selectedSize === size ? null : size)}
+            >
+              {size}
+            </button>
+          ))}
+        </div>
+        
+        {(selectedCategory !== 'All' || selectedSize || searchQuery.trim() !== '') && (
+          <div className="clear-all-row-wrapper">
+            <button 
+              className="clear-all-filters-btn"
+              onClick={() => {
+                setSelectedCategory('All');
+                setSelectedSize(null);
+                setSearchQuery('');
+              }}
+            >
+              ✕ Clear All Filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Product Results */}

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings } from 'lucide-react';
 
 export default function AdminDashboard({ 
   products, 
@@ -9,14 +9,106 @@ export default function AdminDashboard({
   onUpdateProduct,
   onUpdateOrderStatus,
   promosList = [],
-  setPromosList
+  setPromosList,
+  reelsList = [],
+  setReelsList,
+  onAddPromo,
+  onDeletePromo,
+  onAddReel,
+  onDeleteReel,
+  testimonialsList = [],
+  onAddTestimonial,
+  onDeleteTestimonial,
+  boutiqueSettings = {},
+  onSaveSettings
 }) {
   const [activeTab, setActiveTab] = useState('orders');
 
+  // Boutique Settings Form States
+  const [settingsDesc, setSettingsDesc] = useState('');
+  const [settingsEmail, setSettingsEmail] = useState('');
+  const [settingsPhone, setSettingsPhone] = useState('');
+  const [settingsAddress, setSettingsAddress] = useState('');
+  const [settingsHours, setSettingsHours] = useState('');
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [settingsSuccessMsg, setSettingsSuccessMsg] = useState('');
+
+  useEffect(() => {
+    if (boutiqueSettings && Object.keys(boutiqueSettings).length > 0 && !settingsLoaded) {
+      setSettingsDesc(boutiqueSettings.description || '');
+      setSettingsEmail(boutiqueSettings.email || '');
+      setSettingsPhone(boutiqueSettings.phone || '');
+      setSettingsAddress(boutiqueSettings.address || '');
+      setSettingsHours(boutiqueSettings.hours || '');
+      setSettingsLoaded(true);
+    }
+  }, [boutiqueSettings, settingsLoaded]);
+
+  const handleSettingsSubmit = (e) => {
+    e.preventDefault();
+    setSettingsSuccessMsg('');
+    if (onSaveSettings) {
+      onSaveSettings({
+        description: settingsDesc,
+        email: settingsEmail,
+        phone: settingsPhone,
+        address: settingsAddress,
+        hours: settingsHours
+      });
+      setSettingsSuccessMsg('Boutique configurations updated successfully!');
+      setTimeout(() => setSettingsSuccessMsg(''), 4000);
+    }
+  };
+
+  // Testimonials state managers
+  const [tName, setTName] = useState('');
+  const [tQuote, setTQuote] = useState('');
+  const [tImageUrl, setTImageUrl] = useState('');
+  const [tRating, setTRating] = useState(5);
+  const [tTag, setTTag] = useState('HAY!');
+  const [tSuccessMsg, setTSuccessMsg] = useState('');
+
+  const handleTestimonialImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setTImageUrl(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleTestimonialSubmit = (e) => {
+    e.preventDefault();
+    if (!tName || !tQuote) {
+      alert('Please enter a customer name and review comment.');
+      return;
+    }
+    const newT = {
+      id: `t-${Date.now()}`,
+      name: tName,
+      imageUrl: tImageUrl || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800',
+      quote: tQuote,
+      rating: parseInt(tRating),
+      tag: tTag || 'HAY!'
+    };
+    if (onAddTestimonial) {
+      onAddTestimonial(newT);
+    }
+    setTName('');
+    setTQuote('');
+    setTImageUrl('');
+    setTRating(5);
+    setTTag('HAY!');
+    setTSuccessMsg('Customer review published successfully!');
+    setTimeout(() => setTSuccessMsg(''), 3000);
+  };
+
   // Add/Edit product states
-  const [editingProduct, setEditingProduct] = useState(null); // null if adding new
+  const [editingProduct, setEditingProduct] = useState(null); 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Long Kurtas');
+  const [occasion, setOccasion] = useState('Daily Elegance');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [image1, setImage1] = useState('');
@@ -24,22 +116,30 @@ export default function AdminDashboard({
   const [customizable, setCustomizable] = useState(true);
   const [successMsg, setSuccessMsg] = useState('');
 
+  // Key Highlights fields
+  const [hFit, setHFit] = useState('Straight Regular Fit');
+  const [hFabric, setHFabric] = useState('100% Breathable Cotton');
+  const [hNeck, setHNeck] = useState('Mandarin Neck');
+  const [hSleeve, setHSleeve] = useState('3/4 Sleeves');
+  const [hLength, setHLength] = useState('44 Inches');
+  const [hTechnique, setHTechnique] = useState('Handcrafted Chikankari');
+
   // Promo Code manager states
   const [promoCode, setPromoCode] = useState('');
-  const [promoType, setPromoType] = useState('percent'); // percent or flat
+  const [promoType, setPromoType] = useState('percent'); 
   const [promoValue, setPromoValue] = useState('');
   const [promoMinPurchase, setPromoMinPurchase] = useState('0');
   const [promoDesc, setPromoDesc] = useState('');
   const [promoSuccessMsg, setPromoSuccessMsg] = useState('');
 
-  // Tracking number temporary inputs dictionary
-  const [trackingNums, setTrackingNums] = useState({});
+  // Reels manager states
+  const [reelTitle, setReelTitle] = useState('');
+  const [reelVideoFile, setReelVideoFile] = useState('');
+  const [reelProductId, setReelProductId] = useState('');
+  const [reelSuccessMsg, setReelSuccessMsg] = useState('');
 
-  // Calculations for stats
-  const totalRevenue = orders.reduce((acc, o) => acc + o.total, 0);
-  const totalOrders = orders.length;
-  const customOrdersCount = orders.filter(o => o.items.some(item => item.wantsCustomStitching)).length;
-  const avgOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
+  // Tracking number temporary inputs
+  const [trackingNums, setTrackingNums] = useState({});
 
   // Sizing demands counting helper
   const sizeDemands = {
@@ -55,11 +155,43 @@ export default function AdminDashboard({
     });
   });
 
-  // Product Add / Update Trigger
+  // Calculations for stats
+  const totalRevenue = orders.reduce((acc, o) => acc + o.total, 0);
+  const totalOrders = orders.length;
+  const customOrdersCount = orders.filter(o => o.items.some(item => item.wantsCustomStitching)).length;
+  const avgOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
+
+  // File Upload base64 read helper
+  const handleImageUpload = (e, index) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (index === 1) {
+        setImage1(reader.result);
+      } else {
+        setImage2(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Video File read helper for Reels
+  const handleVideoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setReelVideoFile(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Product Add / Update Submit
   const handleProductSubmit = (e) => {
     e.preventDefault();
     if (!title || !price || !description || !image1) {
-      alert('Please fill out all required fields.');
+      alert('Please fill out all required fields (including primary image file).');
       return;
     }
 
@@ -71,7 +203,16 @@ export default function AdminDashboard({
         price: parseFloat(price),
         description,
         images: [image1, image2 || image1],
-        customizable
+        customizable,
+        occasion,
+        highlights: {
+          fit: hFit,
+          fabric: hFabric,
+          neck: hNeck,
+          sleeve: hSleeve,
+          length: hLength,
+          technique: hTechnique
+        }
       };
       onUpdateProduct(updatedProduct);
       setSuccessMsg('Product updated successfully!');
@@ -92,7 +233,16 @@ export default function AdminDashboard({
           sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL']
         },
         customizable,
-        bestSeller: false
+        bestSeller: false,
+        occasion,
+        highlights: {
+          fit: hFit,
+          fabric: hFabric,
+          neck: hNeck,
+          sleeve: hSleeve,
+          length: hLength,
+          technique: hTechnique
+        }
       };
       onAddProduct(newProduct);
       setSuccessMsg('Product published successfully!');
@@ -105,6 +255,13 @@ export default function AdminDashboard({
     setImage1('');
     setImage2('');
     setCustomizable(true);
+    setOccasion('Daily Elegance');
+    setHFit('Straight Regular Fit');
+    setHFabric('100% Breathable Cotton');
+    setHNeck('Mandarin Neck');
+    setHSleeve('3/4 Sleeves');
+    setHLength('44 Inches');
+    setHTechnique('Handcrafted Chikankari');
 
     setTimeout(() => setSuccessMsg(''), 3000);
   };
@@ -113,11 +270,18 @@ export default function AdminDashboard({
     setEditingProduct(prod);
     setTitle(prod.title);
     setCategory(prod.category);
+    setOccasion(prod.occasion || 'Daily Elegance');
     setPrice(prod.price);
     setDescription(prod.description);
     setImage1(prod.images[0]);
     setImage2(prod.images[1] || '');
     setCustomizable(prod.customizable);
+    setHFit(prod.highlights?.fit || 'Straight Regular Fit');
+    setHFabric(prod.highlights?.fabric || '100% Breathable Cotton');
+    setHNeck(prod.highlights?.neck || 'Mandarin Neck');
+    setHSleeve(prod.highlights?.sleeve || '3/4 Sleeves');
+    setHLength(prod.highlights?.length || '44 Inches');
+    setHTechnique(prod.highlights?.technique || 'Handcrafted Chikankari');
     setSuccessMsg('');
   };
 
@@ -129,6 +293,13 @@ export default function AdminDashboard({
     setImage1('');
     setImage2('');
     setCustomizable(true);
+    setOccasion('Daily Elegance');
+    setHFit('Straight Regular Fit');
+    setHFabric('100% Breathable Cotton');
+    setHNeck('Mandarin Neck');
+    setHSleeve('3/4 Sleeves');
+    setHLength('44 Inches');
+    setHTechnique('Handcrafted Chikankari');
   };
 
   // Promo operations
@@ -149,21 +320,66 @@ export default function AdminDashboard({
     setPromoMinPurchase('0');
     setPromoDesc('');
     
-    setPromosList(prev => [...prev, newPromo]);
+    if (onAddPromo) {
+      onAddPromo(newPromo);
+    } else {
+      setPromosList(prev => [...prev, newPromo]);
+    }
     setPromoSuccessMsg('Promo offer configured!');
     setTimeout(() => setPromoSuccessMsg(''), 3000);
   };
 
   const handleDeletePromo = (code) => {
-    setPromosList(prev => prev.filter(p => p.code !== code));
+    if (onDeletePromo) {
+      onDeletePromo(code);
+    } else {
+      setPromosList(prev => prev.filter(p => p.code !== code));
+    }
   };
 
-  // Tracking submit helper
+  // Reels operations
+  const handleAddReelSubmit = (e) => {
+    e.preventDefault();
+    if (!reelTitle || !reelVideoFile) {
+      alert('Please enter a title and select/input a vertical video source.');
+      return;
+    }
+
+    const matchedProd = products.find(p => p.id === reelProductId);
+
+    const newReel = {
+      id: `reel-${Date.now()}`,
+      title: reelTitle,
+      videoUrl: reelVideoFile,
+      productId: reelProductId || '',
+      productTitle: matchedProd ? matchedProd.title : '',
+      productPrice: matchedProd ? matchedProd.price : 0,
+      productImage: matchedProd ? matchedProd.images[0] : ''
+    };
+
+    if (onAddReel) {
+      onAddReel(newReel);
+    } else {
+      setReelsList(prev => [...prev, newReel]);
+    }
+    setReelTitle('');
+    setReelVideoFile('');
+    setReelProductId('');
+    setReelSuccessMsg('Couture reel added to landing page!');
+    setTimeout(() => setReelSuccessMsg(''), 3000);
+  };
+
+  const handleDeleteReel = (id) => {
+    if (onDeleteReel) {
+      onDeleteReel(id);
+    } else {
+      setReelsList(prev => prev.filter(r => r.id !== id));
+    }
+  };
+
   const handleSaveTracking = (orderId) => {
     const num = trackingNums[orderId] || '';
     if (!num) return;
-    
-    // Find current status of order
     const order = orders.find(o => o.id === orderId);
     onUpdateOrderStatus(orderId, order?.status || 'Shipped', num);
     alert(`Delhivery Tracking Number ${num} saved for Order ${orderId}!`);
@@ -198,11 +414,32 @@ export default function AdminDashboard({
             <span>Store Coupons ({promosList.length})</span>
           </button>
           <button 
+            className={`tab-btn ${activeTab === 'reels' ? 'active' : ''}`}
+            onClick={() => setActiveTab('reels')}
+          >
+            <Film size={15} />
+            <span>Couture Reels ({reelsList.length})</span>
+          </button>
+          <button 
             className={`tab-btn ${activeTab === 'stats' ? 'active' : ''}`}
             onClick={() => setActiveTab('stats')}
           >
             <BarChart3 size={15} />
             <span>Sizing Insights</span>
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'testimonials' ? 'active' : ''}`}
+            onClick={() => setActiveTab('testimonials')}
+          >
+            <User size={15} />
+            <span>Patron Reviews ({testimonialsList.length})</span>
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('settings')}
+          >
+            <Settings size={15} />
+            <span>Boutique Settings</span>
           </button>
         </div>
       </div>
@@ -239,7 +476,7 @@ export default function AdminDashboard({
                           <div className="order-meta-small">
                             <span>{new Date(order.timestamp).toLocaleDateString()}</span>
                             <br />
-                            <span className="pay-id-badge">Pay ID: {order.paymentId.substring(0, 12)}</span>
+                            <span className="pay-id-badge">{order.paymentId}</span>
                           </div>
                         </td>
                         <td>
@@ -252,6 +489,11 @@ export default function AdminDashboard({
                             <Phone size={11} style={{ marginRight: '4px', verticalAlign: 'middle', opacity: 0.7 }} />
                             <span>+91 {order.shippingDetails.phone}</span>
                           </p>
+                          {order.notes && (
+                            <div className="admin-order-customer-note-callout">
+                              <strong>Special Instruction:</strong> "{order.notes}"
+                            </div>
+                          )}
                         </td>
                         <td>
                           <div className="order-table-items-list">
@@ -273,7 +515,6 @@ export default function AdminDashboard({
                           </div>
                         </td>
                         <td>
-                          {/* Lifecycle dropdown selectors */}
                           <div className="status-selector-container">
                             <select 
                               value={order.status || (isCustom ? 'Pending Stitching' : 'Pending Shipment')}
@@ -299,7 +540,6 @@ export default function AdminDashboard({
                               )}
                             </select>
 
-                            {/* Tracking Number input if Shipped */}
                             {order.status === 'Shipped' && (
                               <div className="tracking-updater-row animate-slideDown">
                                 <input 
@@ -321,7 +561,7 @@ export default function AdminDashboard({
                           </div>
                         </td>
                         <td>
-                          <strong className="table-cost-total">₹{order.total.toLocaleString('en-IN')}</strong>
+                          <strong className="table-cost-total red-totals-text">₹{order.total.toLocaleString('en-IN')}</strong>
                         </td>
                       </tr>
                     );
@@ -367,15 +607,24 @@ export default function AdminDashboard({
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Price (INR) *</label>
-                  <input 
-                    type="number" 
-                    value={price} 
-                    onChange={(e) => setPrice(e.target.value)} 
-                    placeholder="e.g. 2999" 
-                    required 
-                  />
+                  <label>Occasion Category *</label>
+                  <select value={occasion} onChange={(e) => setOccasion(e.target.value)}>
+                    <option value="Daily Elegance">Daily Elegance</option>
+                    <option value="Formal Grace">Formal Grace</option>
+                    <option value="Festive Couture">Festive Couture</option>
+                    <option value="Celebrations">Celebrations</option>
+                  </select>
                 </div>
+              </div>
+              <div className="form-group">
+                <label>Price (INR) *</label>
+                <input 
+                  type="number" 
+                  value={price} 
+                  onChange={(e) => setPrice(e.target.value)} 
+                  placeholder="e.g. 2999" 
+                  required 
+                />
               </div>
               <div className="form-group">
                 <label>Description Details *</label>
@@ -387,25 +636,118 @@ export default function AdminDashboard({
                   required 
                 />
               </div>
-              <div className="form-group">
-                <label>Primary Image URL *</label>
-                <input 
-                  type="url" 
-                  value={image1} 
-                  onChange={(e) => setImage1(e.target.value)} 
-                  placeholder="https://images.unsplash.com/photo-..." 
-                  required 
-                />
+
+              {/* Product Highlights Inputs */}
+              <div className="highlights-form-section" style={{ border: '1px dashed var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
+                <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: 'var(--color-accent)' }}>Key Highlights Configuration</h5>
+                
+                <div className="form-row-double">
+                  <div className="form-group">
+                    <label>Garment Fit</label>
+                    <input 
+                      type="text" 
+                      value={hFit} 
+                      onChange={(e) => setHFit(e.target.value)} 
+                      placeholder="e.g. A-line fit"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Top Fabric</label>
+                    <input 
+                      type="text" 
+                      value={hFabric} 
+                      onChange={(e) => setHFabric(e.target.value)} 
+                      placeholder="e.g. Viscose / Silk Velvet"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row-double">
+                  <div className="form-group">
+                    <label>Neckline Style</label>
+                    <input 
+                      type="text" 
+                      value={hNeck} 
+                      onChange={(e) => setHNeck(e.target.value)} 
+                      placeholder="e.g. Frill Neck"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Sleeve Styling</label>
+                    <input 
+                      type="text" 
+                      value={hSleeve} 
+                      onChange={(e) => setHSleeve(e.target.value)} 
+                      placeholder="e.g. 3/4th sleeve with Frills"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row-double">
+                  <div className="form-group">
+                    <label>Sleeve Length</label>
+                    <input 
+                      type="text" 
+                      value={hLength} 
+                      onChange={(e) => setHLength(e.target.value)} 
+                      placeholder="e.g. 16 Inches"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Top Technique</label>
+                    <input 
+                      type="text" 
+                      value={hTechnique} 
+                      onChange={(e) => setHTechnique(e.target.value)} 
+                      placeholder="e.g. Printed / Hand-embroidered"
+                    />
+                  </div>
+                </div>
               </div>
+              
+              {/* Premium Image File Uploads */}
               <div className="form-group">
-                <label>Secondary Image URL (for Hover Swap)</label>
-                <input 
-                  type="url" 
-                  value={image2} 
-                  onChange={(e) => setImage2(e.target.value)} 
-                  placeholder="https://images.unsplash.com/photo-..." 
-                />
+                <label>Primary Image (File Upload) *</label>
+                <div className="file-upload-wrapper">
+                  <label className="custom-file-upload">
+                    <Upload size={14} />
+                    <span>Select Primary File</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => handleImageUpload(e, 1)} 
+                    />
+                  </label>
+                </div>
+                {image1 && (
+                  <div className="admin-image-preview">
+                    <img src={image1} alt="Primary Preview" />
+                    <span className="file-loaded-status">Image Loaded ✓</span>
+                  </div>
+                )}
               </div>
+
+              <div className="form-group">
+                <label>Secondary Image (for Hover Swap)</label>
+                <div className="file-upload-wrapper">
+                  <label className="custom-file-upload">
+                    <Upload size={14} />
+                    <span>Select Secondary File</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => handleImageUpload(e, 2)} 
+                    />
+                  </label>
+                </div>
+                {image2 && (
+                  <div className="admin-image-preview">
+                    <img src={image2} alt="Secondary Preview" />
+                    <span className="file-loaded-status">Secondary Image Loaded ✓</span>
+                  </div>
+                )}
+              </div>
+
               <div className="form-group-checkbox">
                 <input 
                   type="checkbox" 
@@ -469,7 +811,6 @@ export default function AdminDashboard({
       {/* Tab 3: Store Coupons Configurator */}
       {activeTab === 'promos' && (
         <div className="admin-content-section catalog-management-grid animate-fadeIn">
-          {/* Add Coupon Offer Form */}
           <div className="add-product-form-box">
             <h4>Configure Store Coupons</h4>
             {promoSuccessMsg && <p className="success-banner">{promoSuccessMsg}</p>}
@@ -530,7 +871,6 @@ export default function AdminDashboard({
             </form>
           </div>
 
-          {/* List of active promos */}
           <div className="admin-catalog-listing">
             <h4>Active Promotion Codes</h4>
             <div className="admin-inventory-list">
@@ -560,7 +900,111 @@ export default function AdminDashboard({
         </div>
       )}
 
-      {/* Tab 4: Sizing Insights & Demands */}
+      {/* Tab 4: Couture Reels Manager */}
+      {activeTab === 'reels' && (
+        <div className="admin-content-section catalog-management-grid animate-fadeIn">
+          {/* Add Reel Form */}
+          <div className="add-product-form-box">
+            <h4>Publish New Couture Reel</h4>
+            {reelSuccessMsg && <p className="success-banner">{reelSuccessMsg}</p>}
+            <p className="admin-form-intro">Configure vertical video banners with play loops to showcase outfit overlays directly on the homepage.</p>
+            
+            <form onSubmit={handleAddReelSubmit}>
+              <div className="form-group">
+                <label>Reel Title *</label>
+                <input 
+                  type="text" 
+                  value={reelTitle} 
+                  onChange={(e) => setReelTitle(e.target.value)} 
+                  placeholder="e.g. Silk Anarkali Motion Showcase" 
+                  required 
+                />
+              </div>
+
+              {/* Upload MP4 File */}
+              <div className="form-group">
+                <label>Upload Vertical Video (MP4)</label>
+                <div className="file-upload-wrapper">
+                  <label className="custom-file-upload">
+                    <Upload size={14} />
+                    <span>Select Video File</span>
+                    <input 
+                      type="file" 
+                      accept="video/*" 
+                      onChange={handleVideoUpload} 
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="form-group-divider"><span>OR</span></div>
+
+              {/* Input Video URL */}
+              <div className="form-group">
+                <label>Vertical Video MP4 URL</label>
+                <input 
+                  type="url" 
+                  value={reelVideoFile && !reelVideoFile.startsWith('data:video') ? reelVideoFile : ''} 
+                  onChange={(e) => setReelVideoFile(e.target.value)} 
+                  placeholder="https://assets.mixkit.co/videos/..." 
+                />
+              </div>
+
+              {reelVideoFile && (
+                <div className="admin-video-preview">
+                  <span className="file-loaded-status">Video Source Set ✓</span>
+                  <video src={reelVideoFile} muted style={{ width: '120px', height: '213px', objectFit: 'cover', display: 'block', margin: '10px 0', borderRadius: '6px' }} />
+                </div>
+              )}
+
+              {/* Associate with catalog product */}
+              <div className="form-group">
+                <label>Link Catalog Outfit (Optional)</label>
+                <select value={reelProductId} onChange={(e) => setReelProductId(e.target.value)}>
+                  <option value="">-- Select Product --</option>
+                  {products.map(p => (
+                    <option key={p.id} value={p.id}>{p.title} (₹{p.price})</option>
+                  ))}
+                </select>
+              </div>
+
+              <button type="submit" className="add-btn-submit">
+                <Film size={14} />
+                <span>Publish Reel banner</span>
+              </button>
+            </form>
+          </div>
+
+          {/* Active Reels List */}
+          <div className="admin-catalog-listing">
+            <h4>Live Couture Reels Banners</h4>
+            <div className="admin-inventory-list">
+              {reelsList.map((reel) => (
+                <div key={reel.id} className="inventory-card reel-admin-card">
+                  {reel.videoUrl && (
+                    <video src={reel.videoUrl} muted autoPlay loop style={{ width: '60px', height: '100px', objectFit: 'cover', borderRadius: '4px' }} />
+                  )}
+                  <div className="inventory-details text-left">
+                    <h5>{reel.title}</h5>
+                    <p className="associated-status-label">
+                      {reel.productId ? `🔗 Linked: ${reel.productTitle || 'Product'}` : 'No associated product'}
+                    </p>
+                  </div>
+                  <button 
+                    className="delete-item-btn" 
+                    onClick={() => handleDeleteReel(reel.id)}
+                    title="Remove Reel Banner"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 5: Sizing Insights & Demands */}
       {activeTab === 'stats' && (
         <div className="admin-content-section animate-fadeIn">
           <div className="admin-section-header">
@@ -589,7 +1033,6 @@ export default function AdminDashboard({
           </div>
 
           <div className="insights-flex-grid">
-            {/* Sizing Distribution Table */}
             <div className="custom-sizing-analysis sizing-chart-card">
               <h4>Standard vs. Custom Sizing Demand</h4>
               <p>Breakdown of standard sizes select versus bespoke measurement fitting inputs.</p>
@@ -611,7 +1054,6 @@ export default function AdminDashboard({
               </table>
             </div>
 
-            {/* Custom Notes Logs */}
             <div className="custom-sizing-analysis notes-log-card">
               <h4>Patron Stitching Notes</h4>
               <p>Special instructions submitted during tailor mapping configuration:</p>
@@ -632,6 +1074,218 @@ export default function AdminDashboard({
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 6: Testimonials Configurator */}
+      {activeTab === 'testimonials' && (
+        <div className="admin-content-section animate-fadeIn">
+          <div className="admin-section-header">
+            <h3>Configure Customer Testimonials</h3>
+            <p>Manage customer reviews, photos, star ratings, and brand labels shown on the homepage.</p>
+          </div>
+
+          <div className="admin-split-layout">
+            <div className="admin-form-box">
+              <h4>Publish New Review</h4>
+              {tSuccessMsg && <p className="success-banner">{tSuccessMsg}</p>}
+              
+              <form onSubmit={handleTestimonialSubmit}>
+                <div className="form-group">
+                  <label>Customer Name *</label>
+                  <input 
+                    type="text" 
+                    value={tName} 
+                    onChange={(e) => setTName(e.target.value)} 
+                    placeholder="e.g. Gayathri Arvind" 
+                    required 
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Review Comment *</label>
+                  <textarea 
+                    value={tQuote} 
+                    onChange={(e) => setTQuote(e.target.value)} 
+                    placeholder="e.g. I have many kurtas from you. Every piece is awesome..." 
+                    rows={3}
+                    required 
+                  />
+                </div>
+
+                <div className="form-row" style={{ display: 'flex', gap: '16px' }}>
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label>Star Rating</label>
+                    <select value={tRating} onChange={(e) => setTRating(parseInt(e.target.value))}>
+                      <option value={5}>5 Stars</option>
+                      <option value={4}>4 Stars</option>
+                      <option value={3}>3 Stars</option>
+                      <option value={2}>2 Stars</option>
+                      <option value={1}>1 Star</option>
+                    </select>
+                  </div>
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label>Brand Tag Code</label>
+                    <input 
+                      type="text" 
+                      value={tTag} 
+                      onChange={(e) => setTTag(e.target.value)} 
+                      placeholder="e.g. HAY!" 
+                    />
+                  </div>
+                </div>
+
+                {/* Customer Photo Upload */}
+                <div className="form-group">
+                  <label>Upload Customer Photo</label>
+                  <div className="file-upload-wrapper">
+                    <label className="custom-file-upload">
+                      <Upload size={14} />
+                      <span>Select Photo File</span>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleTestimonialImageUpload} 
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="form-group-divider"><span>OR</span></div>
+
+                <div className="form-group">
+                  <label>Customer Photo Image URL</label>
+                  <input 
+                    type="url" 
+                    value={tImageUrl && !tImageUrl.startsWith('data:image') ? tImageUrl : ''} 
+                    onChange={(e) => setTImageUrl(e.target.value)} 
+                    placeholder="https://images.unsplash.com/..." 
+                  />
+                </div>
+
+                {tImageUrl && (
+                  <div className="admin-image-preview" style={{ marginTop: '10px' }}>
+                    <span className="file-loaded-status">Photo Loaded ✓</span>
+                    <img src={tImageUrl} alt="Reviewer preview" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '50%', display: 'block', margin: '10px 0', border: '2px solid var(--color-border)' }} />
+                  </div>
+                )}
+
+                <button type="submit" className="add-btn-submit">
+                  <PlusCircle size={14} />
+                  <span>Publish Testimonial</span>
+                </button>
+              </form>
+            </div>
+
+            <div className="admin-catalog-listing">
+              <h4>Live Patron Reviews ({testimonialsList.length})</h4>
+              <div className="admin-inventory-list">
+                {testimonialsList.map((t) => (
+                  <div key={t.id} className="inventory-card testimonial-admin-card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', border: '1px solid var(--color-border)', borderRadius: '8px', marginBottom: '12px' }}>
+                    {t.imageUrl && (
+                      <img src={t.imageUrl} alt={t.name} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '50%' }} />
+                    )}
+                    <div className="inventory-details text-left" style={{ flexGrow: 1 }}>
+                      <h5 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>{t.name} <span className="review-tag-badge" style={{ fontSize: '10px', background: 'var(--color-bg-secondary)', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px', color: 'var(--color-text-secondary)' }}>{t.tag || 'HAY!'}</span></h5>
+                      <p style={{ margin: '4px 0', fontSize: '12.5px', color: 'var(--color-text-secondary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>"{t.quote}"</p>
+                      <div className="stars-row" style={{ color: '#03a685', fontSize: '11px', display: 'flex', gap: '2px' }}>
+                        {Array.from({ length: t.rating || 5 }).map((_, i) => '★')}
+                      </div>
+                    </div>
+                    <button 
+                      className="delete-item-btn" 
+                      onClick={() => {
+                        if (confirm(`Remove review from ${t.name}?`)) {
+                          onDeleteTestimonial(t.id);
+                        }
+                      }}
+                      title="Remove Testimonial"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 7: Boutique Settings Configurator */}
+      {activeTab === 'settings' && (
+        <div className="admin-content-section animate-fadeIn">
+          <div className="admin-section-header">
+            <h3>Configure Boutique Settings</h3>
+            <p>Update your e-commerce store brand description, support emails, contact hotline, atelier showroom address, and operating hours shown in the footer and help pages.</p>
+          </div>
+
+          <div className="admin-form-box" style={{ maxWidth: '680px', margin: '0 auto' }}>
+            {settingsSuccessMsg && <p className="success-banner">{settingsSuccessMsg}</p>}
+            
+            <form onSubmit={handleSettingsSubmit}>
+              <div className="form-group">
+                <label>Boutique Description *</label>
+                <textarea 
+                  value={settingsDesc} 
+                  onChange={(e) => setSettingsDesc(e.target.value)} 
+                  placeholder="High-end Indian traditional wear..." 
+                  rows={3}
+                  required 
+                />
+              </div>
+
+              <div className="form-row-double">
+                <div className="form-group">
+                  <label>Support Email Address *</label>
+                  <input 
+                    type="email" 
+                    value={settingsEmail} 
+                    onChange={(e) => setSettingsEmail(e.target.value)} 
+                    placeholder="care@inibymaya.com" 
+                    required 
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Hotline Phone Number *</label>
+                  <input 
+                    type="text" 
+                    value={settingsPhone} 
+                    onChange={(e) => setSettingsPhone(e.target.value)} 
+                    placeholder="+91 98765 43210" 
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Boutique Atelier Address *</label>
+                <textarea 
+                  value={settingsAddress} 
+                  onChange={(e) => setSettingsAddress(e.target.value)} 
+                  placeholder="Showroom address..." 
+                  rows={2}
+                  required 
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Operating Hours *</label>
+                <input 
+                  type="text" 
+                  value={settingsHours} 
+                  onChange={(e) => setSettingsHours(e.target.value)} 
+                  placeholder="Mon - Sat: 10:00 AM - 07:00 PM IST" 
+                  required 
+                />
+              </div>
+
+              <button type="submit" className="add-btn-submit" style={{ marginTop: '16px' }}>
+                <CheckCircle2 size={14} />
+                <span>Save Boutique Settings</span>
+              </button>
+            </form>
           </div>
         </div>
       )}

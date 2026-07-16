@@ -1,15 +1,43 @@
 import React, { useState } from 'react';
-import { X, Star, Ruler, Sparkles, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Star, Ruler, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 
-export default function ProductDetailModal({ product, onClose, onAddToCart }) {
-  const { title, price, images, category, rating, reviewsCount, description, details, variants, customizable } = product;
+export default function ProductDetailModal({ product, onClose, onAddToCart, preselectedSize }) {
+  const { title, price, images, category, rating, reviewsCount, description, details, variants, customizable, highlights } = product;
 
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [selectedColor, setSelectedColor] = useState(variants.colors[0]);
-  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedSize, setSelectedSize] = useState(
+    preselectedSize && variants.sizes.includes(preselectedSize) ? preselectedSize : ''
+  );
   const [quantity, setQuantity] = useState(1);
   const [wantsCustomStitching, setWantsCustomStitching] = useState(false);
   const [showSizeChart, setShowSizeChart] = useState(false);
+
+  // Key Highlights State and Defaults
+  const [showAllHighlights, setShowAllHighlights] = useState(false);
+  const productHighlights = {
+    fit: highlights?.fit || (category === 'Anarkali Suits' ? 'Flared Royal Anarkali fit' : 'Straight Regular Fit'),
+    fabric: highlights?.fabric || (category === 'Anarkali Suits' ? 'Premium Georgette' : '100% Breathable Cotton'),
+    neck: highlights?.neck || (category === 'Anarkali Suits' ? 'Round Neck' : 'Mandarin Neck'),
+    sleeve: highlights?.sleeve || '3/4 Sleeves',
+    length: highlights?.length || (category === 'Anarkali Suits' ? '52 Inches' : '44 Inches'),
+    technique: highlights?.technique || (category === 'Anarkali Suits' ? 'Silk Zardozi Embroidery' : 'Handcrafted Chikankari')
+  };
+
+  // Downbars Accordion State
+  const [activeAccordions, setActiveAccordions] = useState({
+    description: true,
+    washcare: false,
+    shipping: false,
+    customercare: false
+  });
+
+  const toggleAccordion = (tab) => {
+    setActiveAccordions(prev => ({
+      ...prev,
+      [tab]: !prev[tab]
+    }));
+  };
 
   // Custom measurement fields
   const [customBust, setCustomBust] = useState('');
@@ -283,14 +311,142 @@ export default function ProductDetailModal({ product, onClose, onAddToCart }) {
               Add to Cart — ₹{totalPrice.toLocaleString('en-IN')}
             </button>
 
-            {/* Highlights List */}
-            <div className="product-highlights-box">
-              <h4>Details & Specifications</h4>
-              <ul>
-                {details.map((detail, idx) => (
-                  <li key={idx}>{detail}</li>
-                ))}
-              </ul>
+            {/* Key Highlights Grid */}
+            <div className="key-highlights-container">
+              <h4 className="highlights-section-title">Key Highlights</h4>
+              <div className="highlights-grid">
+                <div className="highlight-item">
+                  <span className="highlight-label">Fit</span>
+                  <span className="highlight-value">{productHighlights.fit}</span>
+                </div>
+                <div className="highlight-item">
+                  <span className="highlight-label">Top Fabric</span>
+                  <span className="highlight-value">{productHighlights.fabric}</span>
+                </div>
+                <div className="highlight-item">
+                  <span className="highlight-label">Neck</span>
+                  <span className="highlight-value">{productHighlights.neck}</span>
+                </div>
+                <div className="highlight-item">
+                  <span className="highlight-label">Sleeve Styling</span>
+                  <span className="highlight-value">{productHighlights.sleeve}</span>
+                </div>
+
+                {showAllHighlights && (
+                  <>
+                    <div className="highlight-item animate-fadeIn">
+                      <span className="highlight-label">Sleeve Length</span>
+                      <span className="highlight-value">{productHighlights.length}</span>
+                    </div>
+                    <div className="highlight-item animate-fadeIn">
+                      <span className="highlight-label">Top Technique</span>
+                      <span className="highlight-value">{productHighlights.technique}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+              <button 
+                type="button" 
+                className="highlights-show-more-btn" 
+                onClick={() => setShowAllHighlights(!showAllHighlights)}
+              >
+                {showAllHighlights ? 'Show Less' : 'Show More'}
+              </button>
+            </div>
+
+            {/* Accordions / Downbars */}
+            <div className="details-accordions-group">
+              {/* Accordion 1: DESCRIPTION */}
+              <div className="accordion-downbar">
+                <button 
+                  type="button" 
+                  className="accordion-header-btn" 
+                  onClick={() => toggleAccordion('description')}
+                >
+                  <span>Description</span>
+                  {activeAccordions.description ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+                {activeAccordions.description && (
+                  <div className="accordion-body-content animate-slideDown">
+                    <p className="accordion-desc-text">{description}</p>
+                    <ul className="accordion-details-list">
+                      {details.map((detail, idx) => (
+                        <li key={idx}>{detail}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* Accordion 2: WASH CARE INSTRUCTIONS */}
+              <div className="accordion-downbar">
+                <button 
+                  type="button" 
+                  className="accordion-header-btn" 
+                  onClick={() => toggleAccordion('washcare')}
+                >
+                  <span>Wash Care Instructions</span>
+                  {activeAccordions.washcare ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+                {activeAccordions.washcare && (
+                  <div className="accordion-body-content animate-slideDown">
+                    <p className="accordion-desc-text">
+                      {productHighlights.fabric.toLowerCase().includes('velvet') || 
+                       productHighlights.fabric.toLowerCase().includes('silk') || 
+                       productHighlights.fabric.toLowerCase().includes('georgette') ||
+                       productHighlights.fabric.toLowerCase().includes('muslin') ? (
+                        "Dry clean only. Do not machine wash. Do not bleach. Cool iron on reverse with a protective cloth cover. Store folded in a muslin sleeve."
+                      ) : (
+                        "Gentle hand wash separately in cold water with mild detergent. Line dry inside-out in shade. Do not twist, wring, or soak. Cool or warm iron if needed."
+                      )}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Accordion 3: SHIPPING & EXCHANGES */}
+              <div className="accordion-downbar">
+                <button 
+                  type="button" 
+                  className="accordion-header-btn" 
+                  onClick={() => toggleAccordion('shipping')}
+                >
+                  <span>Shipping & Exchanges</span>
+                  {activeAccordions.shipping ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+                {activeAccordions.shipping && (
+                  <div className="accordion-body-content animate-slideDown">
+                    <p className="accordion-desc-text">
+                      <strong>Dispatch Timeline:</strong> Standard creations ship within 3–5 boutique business days. Orders with custom stitching configurations require an additional 2 working days for tailor drafting and pattern layout checks.
+                    </p>
+                    <p className="accordion-desc-text">
+                      <strong>Returns & Exchanges:</strong> We accept free exchanges or store credit returns within 7 days of package delivery. Outfits must be returned unworn, unwashed, and in their original packaging with tags attached.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Accordion 4: CUSTOMER CARE */}
+              <div className="accordion-downbar">
+                <button 
+                  type="button" 
+                  className="accordion-header-btn" 
+                  onClick={() => toggleAccordion('customercare')}
+                >
+                  <span>Customer Care</span>
+                  {activeAccordions.customercare ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+                {activeAccordions.customercare && (
+                  <div className="accordion-body-content animate-slideDown">
+                    <p className="accordion-desc-text">
+                      Need custom fit modifications, special design details, or priority shipping?
+                    </p>
+                    <p className="accordion-desc-text">
+                      Email our couture concierge at <strong>care@inibymaya.com</strong> or call us at <strong>+91 98765 43210</strong> (Monday – Saturday, 10 AM to 7 PM IST). We are happy to coordinate your measurements with our master tailors!
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

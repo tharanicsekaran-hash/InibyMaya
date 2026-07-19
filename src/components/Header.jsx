@@ -81,7 +81,7 @@ export default function Header({
             <div className="user-profile-menu">
               <button className="action-btn user-btn" onClick={onProfileClick} aria-label="Profile">
                 <User size={20} />
-                <span className="user-name-label">{user.email.split('@')[0]}</span>
+                <span className="user-name-label">{user.name || user.email.split('@')[0]}</span>
               </button>
               {user.email === 'tharanichandrasekaran2000@gmail.com' && (
                 <button 
@@ -135,13 +135,13 @@ export default function Header({
               </button>
               <button 
                 onClick={() => { setActivePage('shop'); setMobileMenuOpen(false); }}
-                className="category-btn"
+                className="mobile-submenu-item"
               >
                 Long Kurtas
               </button>
               <button 
                 onClick={() => { setActivePage('shop'); setMobileMenuOpen(false); }}
-                className="category-btn"
+                className="mobile-submenu-item"
               >
                 Anarkali Suits
               </button>
@@ -155,7 +155,7 @@ export default function Header({
               )}
               {user ? (
                 <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="mobile-logout">
-                  Logout ({user.email})
+                  Logout ({user.name || user.email})
                 </button>
               ) : (
                 <button onClick={() => { onProfileClick(); setMobileMenuOpen(false); }}>

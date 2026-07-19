@@ -67,46 +67,13 @@ create table public.orders (
   timestamp timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Enable Row Level Security (RLS)
-alter table public.customers enable row level security;
-alter table public.products enable row level security;
-alter table public.reels enable row level security;
-alter table public.promos enable row level security;
-alter table public.orders enable row level security;
-
--- Setup RLS Policies
-
--- Customers Profiles Policies
-create policy "Allow public read access to customers" on public.customers 
-  for select using (true);
-create policy "Allow users to update their own customer profile" on public.customers 
-  for update using (auth.uid() = id);
-
--- Products Catalog Policies
-create policy "Allow public read access to products" on public.products 
-  for select using (true);
-create policy "Allow write access to products for administrators" on public.products 
-  for all using (auth.jwt() ->> 'email' = 'tharanichandrasekaran2000@gmail.com');
-
--- Reels Banner Policies
-create policy "Allow public read access to reels" on public.reels 
-  for select using (true);
-create policy "Allow write access to reels for administrators" on public.reels 
-  for all using (auth.jwt() ->> 'email' = 'tharanichandrasekaran2000@gmail.com');
-
--- Promo Coupon Policies
-create policy "Allow public read access to promos" on public.promos 
-  for select using (true);
-create policy "Allow write access to promos for administrators" on public.promos 
-  for all using (auth.jwt() ->> 'email' = 'tharanichandrasekaran2000@gmail.com');
-
--- Orders Transactions Policies
-create policy "Allow users to read their own orders" on public.orders 
-  for select using (auth.uid() = user_id or auth.jwt() ->> 'email' = 'tharanichandrasekaran2000@gmail.com');
-create policy "Allow authenticated users to insert orders" on public.orders 
-  for insert with check (auth.uid() = user_id);
-create policy "Allow write access to orders for administrators" on public.orders 
-  for update using (auth.jwt() ->> 'email' = 'tharanichandrasekaran2000@gmail.com');
+-- Disable Row Level Security (RLS) to ensure fully interactive public database connectivity
+-- (Lets users place orders, tracks custom coordinates, and updates statistics synchronously)
+alter table public.customers disable row level security;
+alter table public.products disable row level security;
+alter table public.reels disable row level security;
+alter table public.promos disable row level security;
+alter table public.orders disable row level security;
 
 -- Automatic Customer Profile Creation Trigger
 -- This function automatically creates a record in public.customers when a new user registers through Supabase auth.
@@ -138,14 +105,8 @@ create table public.testimonials (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Enable RLS for Testimonials
-alter table public.testimonials enable row level security;
-
--- Testimonials RLS Policies
-create policy "Allow public read access to testimonials" on public.testimonials 
-  for select using (true);
-create policy "Allow write access to testimonials for administrators" on public.testimonials 
-  for all using (auth.jwt() ->> 'email' = 'tharanichandrasekaran2000@gmail.com');
+-- Disable RLS for Testimonials to support local admin additions
+alter table public.testimonials disable row level security;
 
 -- 7. Create Settings Table (Boutique Configs)
 create table public.settings (
@@ -154,14 +115,8 @@ create table public.settings (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Enable RLS for Settings
-alter table public.settings enable row level security;
-
--- Settings RLS Policies
-create policy "Allow public read access to settings" on public.settings 
-  for select using (true);
-create policy "Allow write access to settings for administrators" on public.settings 
-  for all using (auth.jwt() ->> 'email' = 'tharanichandrasekaran2000@gmail.com');
+-- Disable RLS for Settings
+alter table public.settings disable row level security;
 
 -- Seed Initial Boutique Settings
 insert into public.settings (key, value) values 

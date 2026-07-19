@@ -2,11 +2,11 @@ import React from 'react';
 import { Star, Eye } from 'lucide-react';
 
 export default function ProductCard({ product, onProductClick }) {
-  const { title, price, images, category, rating, reviewsCount, bestSeller, customizable } = product;
+  const { title, price, images, category, rating, reviewsCount, bestSeller, customizable, variants = { sizes: [], colors: [] } } = product;
 
   return (
-    <div className="product-card" onClick={() => onProductClick(product)}>
-      <div className="product-card-image-wrapper">
+    <div className="product-card" onClick={() => onProductClick(product, null)}>
+      <div className="product-card-image-wrapper" style={{ borderRadius: '12px' }}>
         {/* Badges */}
         <div className="product-badges">
           {bestSeller && <span className="badge badge-bestseller">Best Seller</span>}
@@ -35,7 +35,7 @@ export default function ProductCard({ product, onProductClick }) {
         <div className="quick-view-overlay">
           <button className="quick-view-btn" onClick={(e) => {
             e.stopPropagation();
-            onProductClick(product);
+            onProductClick(product, null);
           }}>
             <Eye size={16} />
             <span>Quick Shop</span>
@@ -63,9 +63,27 @@ export default function ProductCard({ product, onProductClick }) {
         </div>
 
         {/* Price */}
-        <div className="product-card-price">
+        <div className="product-card-price" style={{ marginBottom: '8px' }}>
           <span className="currency">₹</span>{price.toLocaleString('en-IN')}
         </div>
+
+        {/* Clickable Size Swatches directly under price */}
+        {variants?.sizes && variants.sizes.length > 0 && (
+          <div className="product-card-sizes" onClick={(e) => e.stopPropagation()}>
+            {variants.sizes.map(size => (
+              <span 
+                key={size} 
+                className="product-card-size-box"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onProductClick(product, size);
+                }}
+              >
+                {size}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

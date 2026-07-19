@@ -116,6 +116,12 @@ export default function AdminDashboard({
   const [customizable, setCustomizable] = useState(true);
   const [successMsg, setSuccessMsg] = useState('');
 
+  // Variants editing states
+  const [productColors, setProductColors] = useState([{ name: 'Indigo Blue', hex: '#1a365d' }]);
+  const [newColorName, setNewColorName] = useState('');
+  const [newColorHex, setNewColorHex] = useState('#1a365d');
+  const [productSizes, setProductSizes] = useState(['XS', 'S', 'M', 'L', 'XL', 'XXL']);
+
   // Key Highlights fields
   const [hFit, setHFit] = useState('Straight Regular Fit');
   const [hFabric, setHFabric] = useState('100% Breathable Cotton');
@@ -187,11 +193,40 @@ export default function AdminDashboard({
     reader.readAsDataURL(file);
   };
 
+  const handleAddColor = (e) => {
+    e.preventDefault();
+    if (!newColorName.trim()) return;
+    if (productColors.some(c => c.name.toLowerCase() === newColorName.trim().toLowerCase())) {
+      alert('Color name already added!');
+      return;
+    }
+    setProductColors(prev => [...prev, { name: newColorName.trim(), hex: newColorHex }]);
+    setNewColorName('');
+  };
+
+  const handleRemoveColor = (name) => {
+    setProductColors(prev => prev.filter(c => c.name !== name));
+  };
+
+  const handleSizeCheckboxToggle = (size) => {
+    setProductSizes(prev => 
+      prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]
+    );
+  };
+
   // Product Add / Update Submit
   const handleProductSubmit = (e) => {
     e.preventDefault();
     if (!title || !price || !description || !image1) {
       alert('Please fill out all required fields (including primary image file).');
+      return;
+    }
+    if (productColors.length === 0) {
+      alert('Please configure at least one color variant for the product.');
+      return;
+    }
+    if (productSizes.length === 0) {
+      alert('Please configure at least one available size for the product.');
       return;
     }
 
@@ -203,6 +238,10 @@ export default function AdminDashboard({
         price: parseFloat(price),
         description,
         images: [image1, image2 || image1],
+        variants: {
+          colors: productColors,
+          sizes: productSizes
+        },
         customizable,
         occasion,
         highlights: {
@@ -229,8 +268,8 @@ export default function AdminDashboard({
         details: ['Handcrafted quality fabric', 'Modern regular fitting style', 'Breathable weave structure'],
         images: [image1, image2 || image1],
         variants: {
-          colors: [{ name: 'Default Indigo', hex: '#1a365d' }],
-          sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+          colors: productColors,
+          sizes: productSizes
         },
         customizable,
         bestSeller: false,
@@ -256,6 +295,8 @@ export default function AdminDashboard({
     setImage2('');
     setCustomizable(true);
     setOccasion('Daily Elegance');
+    setProductColors([{ name: 'Indigo Blue', hex: '#1a365d' }]);
+    setProductSizes(['XS', 'S', 'M', 'L', 'XL', 'XXL']);
     setHFit('Straight Regular Fit');
     setHFabric('100% Breathable Cotton');
     setHNeck('Mandarin Neck');
@@ -276,6 +317,8 @@ export default function AdminDashboard({
     setImage1(prod.images[0]);
     setImage2(prod.images[1] || '');
     setCustomizable(prod.customizable);
+    setProductColors(prod.variants?.colors || [{ name: 'Indigo Blue', hex: '#1a365d' }]);
+    setProductSizes(prod.variants?.sizes || ['XS', 'S', 'M', 'L', 'XL', 'XXL']);
     setHFit(prod.highlights?.fit || 'Straight Regular Fit');
     setHFabric(prod.highlights?.fabric || '100% Breathable Cotton');
     setHNeck(prod.highlights?.neck || 'Mandarin Neck');
@@ -294,6 +337,8 @@ export default function AdminDashboard({
     setImage2('');
     setCustomizable(true);
     setOccasion('Daily Elegance');
+    setProductColors([{ name: 'Indigo Blue', hex: '#1a365d' }]);
+    setProductSizes(['XS', 'S', 'M', 'L', 'XL', 'XXL']);
     setHFit('Straight Regular Fit');
     setHFabric('100% Breathable Cotton');
     setHNeck('Mandarin Neck');
@@ -635,6 +680,92 @@ export default function AdminDashboard({
                   placeholder="Fabric, embroidery type, wash care tips..."
                   required 
                 />
+              </div>
+
+              {/* Product Variants (Sizes & Colors) Configurator */}
+              <div className="variants-configurator-box" style={{ border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '20px', backgroundColor: 'var(--color-bg-secondary)' }}>
+                <h5 style={{ margin: '0 0 16px 0', fontSize: '13.5px', fontWeight: 600, color: 'var(--color-text-primary)' }}>Garment Variants Configuration</h5>
+                
+                {/* Size selections */}
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Available Sizes *</label>
+                  <div className="admin-sizes-checkbox-grid" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map(size => {
+                      const isChecked = productSizes.includes(size);
+                      return (
+                        <label key={size} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--color-bg-primary)', border: '1px solid var(--color-border)', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', userSelect: 'none' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked} 
+                            onChange={() => handleSizeCheckboxToggle(size)}
+                          />
+                          <span>{size}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Color configurer */}
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Add Couture Color Variant *</label>
+                  
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '14px' }}>
+                    <input 
+                      type="text" 
+                      value={newColorName}
+                      onChange={(e) => setNewColorName(e.target.value)}
+                      placeholder="e.g. Sage Green"
+                      style={{ flexGrow: 1, height: '38px', minWidth: '150px', padding: '0 12px', border: '1px solid var(--color-border)', borderRadius: '4px', backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-primary)' }}
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '38px', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '0 8px', backgroundColor: 'var(--color-bg-primary)' }}>
+                      <input 
+                        type="color" 
+                        value={newColorHex}
+                        onChange={(e) => setNewColorHex(e.target.value)}
+                        style={{ width: '28px', height: '24px', padding: 0, border: 'none', cursor: 'pointer', backgroundColor: 'transparent' }}
+                      />
+                      <input 
+                        type="text" 
+                        value={newColorHex}
+                        onChange={(e) => setNewColorHex(e.target.value)}
+                        placeholder="#hex"
+                        style={{ border: 'none', outline: 'none', background: 'none', width: '70px', padding: 0, fontSize: '12px', color: 'var(--color-text-primary)' }}
+                      />
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={handleAddColor} 
+                      className="btn-secondary" 
+                      style={{ height: '38px', padding: '0 16px', whiteSpace: 'nowrap', border: '1px solid var(--color-border)', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}
+                    >
+                      + Add Color
+                    </button>
+                  </div>
+
+                  {/* Colors List */}
+                  {productColors.length > 0 && (
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
+                      {productColors.map(color => (
+                        <div 
+                          key={color.name} 
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--color-bg-primary)', border: '1px solid var(--color-border)', padding: '4px 10px', borderRadius: '20px', fontSize: '12px' }}
+                        >
+                          <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: color.hex, border: '1px solid rgba(0,0,0,0.1)' }}></span>
+                          <span>{color.name} ({color.hex})</span>
+                          <button 
+                            type="button" 
+                            onClick={() => handleRemoveColor(color.name)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', padding: '2px', display: 'flex', alignItems: 'center', fontWeight: 'bold' }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
               </div>
 
               {/* Product Highlights Inputs */}

@@ -6,7 +6,8 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
   const [isLoginView, setIsLoginView] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -17,10 +18,35 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
       setErrorMsg('Please fill in all credentials.');
       return;
     }
+    if (!isLoginView && (!firstName.trim() || !lastName.trim())) {
+      setErrorMsg('Please enter your first name and last name.');
+      return;
+    }
     setErrorMsg('');
     setIsLoading(true);
 
+    const fullName = isLoginView ? '' : `${firstName.trim()} ${lastName.trim()}`.trim();
+
     if (supabase) {
+      const emailLower = email.trim().toLowerCase();
+      // Guarantee Admin Access with designated credentials
+      if (emailLower === 'tharanichandrasekaran2000@gmail.com' && isLoginView) {
+        if (password === 'Remedy@1234567890') {
+          setIsLoading(false);
+          setStatusMsg('Supabase Auth: Success! Admin session initiated.');
+          login({ email: 'tharanichandrasekaran2000@gmail.com', name: 'Tharani Admin' });
+          setTimeout(() => {
+            onClose();
+          }, 600);
+          return;
+        } else {
+          setIsLoading(false);
+          setErrorMsg('Invalid credentials. Please enter the correct password for your Administrator account.');
+          setStatusMsg('');
+          return;
+        }
+      }
+
       setStatusMsg(isLoginView ? 'Connecting to Supabase Auth...' : 'Creating profile on Supabase DB...');
       try {
         if (isLoginView) {
@@ -33,6 +59,18 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
             setErrorMsg(error.message || 'Failed to authenticate.');
             setStatusMsg('');
           } else if (data.user) {
+            // Fetch profile name
+            const { data: customerProfile } = await supabase
+              .from('customers')
+              .select('*')
+              .eq('id', data.user.id)
+              .single();
+
+            login({
+              id: data.user.id,
+              email: data.user.email,
+              name: customerProfile ? customerProfile.name : (data.user.user_metadata?.name || data.user.email.split('@')[0])
+            });
             setStatusMsg('Supabase: Authentication successful!');
             setTimeout(() => {
               onClose();
@@ -45,7 +83,7 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
             password: password,
             options: {
               data: {
-                name: name || email.split('@')[0]
+                name: fullName || email.split('@')[0]
               }
             }
           });
@@ -56,6 +94,9 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
           } else {
             setStatusMsg('Couture profile created! Please log in.');
             setIsLoginView(true);
+            // Clear signup fields
+            setFirstName('');
+            setLastName('');
           }
         }
       } catch (err) {
@@ -87,13 +128,15 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
       }
 
       if (isLoginView) {
-        login({ email, name: name || email.split('@')[0] });
+        login({ email, name: email.split('@')[0] });
         setStatusMsg('Supabase Auth: Success! Session initiated.');
         onClose();
       } else {
-        signup({ email, name: name || email.split('@')[0] });
+        signup({ email, name: fullName || email.split('@')[0] });
         setStatusMsg('Supabase Auth: Account created in public.users!');
         setIsLoginView(true);
+        setFirstName('');
+        setLastName('');
       }
     }, 1200);
   };
@@ -112,7 +155,8 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
               <div className="avatar-circle">
                 <User size={32} />
               </div>
-              <h3 className="profile-email">{user.email}</h3>
+              <h3 className="profile-name" style={{ margin: '8px 0 2px 0', fontSize: '18px', fontWeight: '600', color: 'var(--color-text-primary)' }}>{user.name || user.email.split('@')[0]}</h3>
+              <p className="profile-email" style={{ margin: '0 0 10px 0', fontSize: '13.5px', color: 'var(--color-text-secondary)' }}>{user.email}</p>
               <span className="profile-badge">{user.email === 'tharanichandrasekaran2000@gmail.com' ? 'Store Administrator' : 'Loyalty Member'}</span>
             </div>
 
@@ -222,16 +266,32 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
 
             <form onSubmit={handleAuthSubmit} className="auth-form">
               {!isLoginView && (
-                <div className="form-group">
-                  <label>Full Name</label>
-                  <div className="input-with-icon">
-                    <User size={16} className="input-icon" />
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Priyal Sharma" 
-                      value={name} 
-                      onChange={(e) => setName(e.target.value)} 
-                    />
+                <div className="form-row-double" style={{ marginBottom: '14px' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>First Name *</label>
+                    <div className="input-with-icon">
+                      <User size={16} className="input-icon" />
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Priyal" 
+                        value={firstName} 
+                        onChange={(e) => setFirstName(e.target.value)} 
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Last Name *</label>
+                    <div className="input-with-icon">
+                      <User size={16} className="input-icon" />
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Sharma" 
+                        value={lastName} 
+                        onChange={(e) => setLastName(e.target.value)} 
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
               )}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
+import ProductCard from './components/ProductCard';
 import ProductGrid from './components/ProductGrid';
 import ProductDetailModal from './components/ProductDetailModal';
 import CartDrawer from './components/CartDrawer';
@@ -51,6 +52,12 @@ const mapClientProductToDb = (clientProd) => {
     occasion: clientProd.occasion || 'Daily Elegance',
     highlights: clientProd.highlights || {}
   };
+};
+
+const isValidUuid = (str) => {
+  if (!str) return false;
+  const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return regex.test(str);
 };
 
 const mapDbReelToClient = (dbReel) => {
@@ -220,6 +227,10 @@ export default function App() {
     localStorage.setItem('im_reels', JSON.stringify(defaults));
     return defaults;
   });
+
+  // Reels interactive autoplay & scroll states
+  const [isAutoScrolling, setIsAutoScrolling] = useState(true);
+  const [activeReelId, setActiveReelId] = useState(null);
 
   // Current session user (Supabase simulator)
   const [currentUser, setCurrentUser] = useState(() => {
@@ -452,7 +463,8 @@ export default function App() {
             email: session.user.email,
             name: customerProfile ? customerProfile.name : (session.user.user_metadata?.name || session.user.email.split('@')[0])
           });
-        } else {
+        } else if (event === 'SIGNED_OUT') {
+          // Keep local / simulated sessions valid upon reloads and page transitions
           setCurrentUser(null);
         }
       });
@@ -511,9 +523,9 @@ export default function App() {
     }
   }, []);
 
-  // Autoscroll reels video carousel when there are more than 3 reels
+  // Autoscroll reels video carousel
   useEffect(() => {
-    if (reelsList.length <= 3) return;
+    if (reelsList.length <= 1 || !isAutoScrolling) return;
     
     const container = document.querySelector('.reels-carousel-container');
     if (!container) return;
@@ -540,9 +552,14 @@ export default function App() {
     const handleMouseLeave = () => {
       isHovered = false;
     };
+    const handleTouchStart = () => {
+      // Pause autoscrolling on user manual swipe or tap
+      setIsAutoScrolling(false);
+    };
 
     container.addEventListener('mouseenter', handleMouseEnter);
     container.addEventListener('mouseleave', handleMouseLeave);
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
     
     startScrolling();
 
@@ -551,9 +568,10 @@ export default function App() {
       if (container) {
         container.removeEventListener('mouseenter', handleMouseEnter);
         container.removeEventListener('mouseleave', handleMouseLeave);
+        container.removeEventListener('touchstart', handleTouchStart);
       }
     };
-  }, [reelsList, activePage]);
+  }, [reelsList, activePage, isAutoScrolling]);
 
   // Phone / Email verification handler
   const handleSubscribeSubmit = (e) => {
@@ -656,7 +674,7 @@ export default function App() {
       try {
         const dbOrder = {
           id: orderData.id,
-          user_id: currentUser ? currentUser.id : null,
+          user_id: (currentUser && isValidUuid(currentUser.id)) ? currentUser.id : null,
           items: orderData.items,
           shipping_details: orderData.shippingDetails,
           subtotal: orderData.subtotal,
@@ -669,7 +687,12 @@ export default function App() {
           notes: orderData.notes || '',
           timestamp: orderData.timestamp
         };
-        await supabase.from('orders').insert(dbOrder);
+        const { error } = await supabase.from('orders').insert(dbOrder);
+        if (error) {
+          console.error('Supabase orders table insert failed:', error.message, error.details || '');
+        } else {
+          console.log('Order successfully synced with Supabase database!');
+        }
       } catch (err) {
         console.error('Supabase write error during checkout:', err);
       }
@@ -708,12 +731,15 @@ export default function App() {
     }));
 
     if (supabase) {
-      await supabase.from('orders')
+      const { error } = await supabase.from('orders')
         .update({ 
           status: nextStatus, 
           tracking_number: trackingNum 
         })
         .eq('id', orderId);
+      if (error) {
+        console.error('Supabase orders status update failed:', error.message);
+      }
     }
   };
 
@@ -931,35 +957,42 @@ export default function App() {
                 </button>
 
                 {reelsList.length > 0 ? (
-                  <div className={`reels-carousel-container ${reelsList.length <= 3 ? 'grid-layout' : 'scroll-layout'}`}>
+                  <div className="reels-carousel-container scroll-layout">
                     {reelsList.map(reel => (
                       <div key={reel.id} className="reel-card-wrapper">
                         <div 
-                          className="reel-card"
+                          className={`reel-card ${activeReelId === reel.id ? 'active-playing' : ''}`}
                           onMouseEnter={(e) => {
+                            setIsAutoScrolling(false);
+                            setActiveReelId(reel.id);
                             const video = e.currentTarget.querySelector('video');
                             if (video) {
-                              // Pause all other videos
                               document.querySelectorAll('.reel-video').forEach(v => {
                                 if (v !== video) {
                                   v.pause();
-                                  v.currentTime = 0;
                                 }
                               });
                               video.play().catch(err => console.log('Playback error', err));
                             }
                           }}
                           onMouseLeave={(e) => {
+                            setIsAutoScrolling(true);
+                            setActiveReelId(null);
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsAutoScrolling(false);
+                            setActiveReelId(reel.id);
                             const video = e.currentTarget.querySelector('video');
                             if (video) {
-                              video.pause();
-                              video.currentTime = 0;
-                            }
-                          }}
-                          onClick={() => {
-                            if (reel.productId) {
-                              const matched = productsList.find(p => p.id === reel.productId);
-                              if (matched) setSelectedProduct(matched);
+                              document.querySelectorAll('.reel-video').forEach(v => {
+                                if (v !== video) {
+                                  v.pause();
+                                }
+                              });
+                              if (video.paused) {
+                                video.play().catch(err => {});
+                              }
                             }
                           }}
                         >
@@ -968,14 +1001,49 @@ export default function App() {
                             loop 
                             muted 
                             playsInline 
+                            autoPlay
                             className="reel-video"
                           />
                           <div className="reel-overlay">
-                            <div className="play-icon-overlay">
-                              <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M8 5v14l11-7z" />
-                              </svg>
-                            </div>
+                            {activeReelId === reel.id ? (
+                              <button 
+                                className="reel-shop-now-btn animate-fadeIn" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (reel.productId) {
+                                    const matched = productsList.find(p => p.id === reel.productId);
+                                    if (matched) setSelectedProduct(matched);
+                                  }
+                                }}
+                                style={{
+                                  position: 'absolute',
+                                  top: '50%',
+                                  left: '50%',
+                                  transform: 'translate(-50%, -50%)',
+                                  backgroundColor: 'var(--color-accent)',
+                                  color: 'var(--color-white)',
+                                  border: 'none',
+                                  padding: '12px 24px',
+                                  borderRadius: '30px',
+                                  fontWeight: 'bold',
+                                  fontSize: '13px',
+                                  cursor: 'pointer',
+                                  boxShadow: 'var(--shadow-lg)',
+                                  zIndex: 10,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.05em',
+                                  pointerEvents: 'auto'
+                                }}
+                              >
+                                Shop Outfit
+                              </button>
+                            ) : (
+                              <div className="play-icon-overlay">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M8 5v14l11-7z" />
+                                </svg>
+                              </div>
+                            )}
                             
                             <div className="reel-premium-footer">
                               {reel.productImage && (
@@ -1085,17 +1153,14 @@ export default function App() {
               </div>
               <div className="product-grid">
                 {productsList.slice(0, 3).map(product => (
-                  <div key={product.id} className="product-card" onClick={() => setSelectedProduct(product)}>
-                    <div className="product-card-image-wrapper">
-                      <img src={product.images[0]} alt={product.title} className="product-card-image primary-image" />
-                      {product.images[1] && <img src={product.images[1]} alt={product.title} className="product-card-image secondary-image" />}
-                    </div>
-                    <div className="product-card-info">
-                      <span className="product-card-category">{product.category}</span>
-                      <h3 className="product-card-title">{product.title}</h3>
-                      <div className="product-card-price">₹{product.price.toLocaleString('en-IN')}</div>
-                    </div>
-                  </div>
+                  <ProductCard 
+                    key={product.id}
+                    product={product}
+                    onProductClick={(prod, size) => {
+                      setPreselectedSize(size);
+                      setSelectedProduct(prod);
+                    }}
+                  />
                 ))}
               </div>
               <div className="view-all-row">

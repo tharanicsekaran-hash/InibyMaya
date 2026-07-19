@@ -131,11 +131,11 @@ export default function CheckoutModal({
                 {isPlacing ? (
                   <div className="loading-spinner-row">
                     <RefreshCw size={16} className="spinner" />
-                    <span>Placing Cash on Delivery Order...</span>
+                    <span>Placing Order...</span>
                   </div>
                 ) : (
                   <>
-                    <span>Confirm COD Order (Cash on Delivery)</span>
+                    <span>Confirm Order</span>
                     <ShieldCheck size={18} />
                   </>
                 )}

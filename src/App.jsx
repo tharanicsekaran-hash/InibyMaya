@@ -379,7 +379,41 @@ export default function App() {
         // Fetch Orders
         const { data: oData, error: oErr } = await supabase.from('orders').select('*').order('timestamp', { ascending: false });
         if (!oErr && oData) {
-          setOrdersList(oData.map(mapDbOrderToClient));
+          const remoteOrders = oData.map(mapDbOrderToClient);
+          const localOrdersStr = localStorage.getItem('im_orders');
+          if (localOrdersStr) {
+            try {
+              const localOrders = JSON.parse(localOrdersStr);
+              if (Array.isArray(localOrders)) {
+                const missingOrders = localOrders.filter(lo => !remoteOrders.some(ro => ro.id === lo.id));
+                if (missingOrders.length > 0) {
+                  console.log(`Syncing ${missingOrders.length} offline orders to Supabase...`);
+                  for (const mOrder of missingOrders) {
+                    const dbOrder = {
+                      id: mOrder.id,
+                      user_id: mOrder.userId || null,
+                      items: mOrder.items,
+                      shipping_details: mOrder.shippingDetails,
+                      subtotal: mOrder.subtotal,
+                      discount: mOrder.discount || 0,
+                      shipping: mOrder.shipping || 0,
+                      total: mOrder.total,
+                      payment_id: mOrder.paymentId || 'cod',
+                      status: mOrder.status || 'Pending Stitching / Shipment',
+                      tracking_number: mOrder.trackingNumber || '',
+                      notes: mOrder.notes || '',
+                      timestamp: mOrder.timestamp
+                    };
+                    await supabase.from('orders').insert(dbOrder);
+                    remoteOrders.unshift(mOrder);
+                  }
+                }
+              }
+            } catch (e) {
+              console.error('Offline order synchronization failed:', e);
+            }
+          }
+          setOrdersList(remoteOrders);
         }
 
         // Fetch Testimonials
@@ -488,10 +522,10 @@ export default function App() {
     }
   }, [activePage]);
 
-  // Centralized Scroll-to-Top trigger upon view/tab transitions
+  // Centralized Scroll-to-Top trigger upon view/tab/order/product transitions
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [activePage, infoPageTab]);
+  }, [activePage, infoPageTab, selectedProduct, successOrder]);
 
   // LocalStorage backups (for hybrid fallback operation)
   useEffect(() => {
@@ -610,11 +644,15 @@ export default function App() {
     setOfferSuccess('');
 
     const normalized = contact.toLowerCase();
+    // Simple email regex validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalized)) {
+      setOfferError('Please enter a valid email address.');
+      return;
+    }
     
     // Check order histories or active user logins to detect existing customers
     const isExisting = ordersList.some(order => 
-      order.shippingDetails.phone === normalized || 
-      order.shippingDetails.phone.includes(normalized) ||
       (order.shippingDetails.email || '').toLowerCase() === normalized
     ) || (currentUser && currentUser.email.toLowerCase() === normalized);
 
@@ -1465,10 +1503,10 @@ export default function App() {
                 <form onSubmit={handleSubscribeSubmit} className="newsletter-form">
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <input 
-                      type="text" 
+                      type="email" 
                       value={subscriberContact}
                       onChange={(e) => setSubscriberContact(e.target.value)}
-                      placeholder="Enter email or 10-digit phone number"
+                      placeholder="Enter your email address"
                       required
                     />
                   </div>

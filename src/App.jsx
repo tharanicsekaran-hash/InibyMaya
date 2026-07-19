@@ -380,40 +380,8 @@ export default function App() {
         const { data: oData, error: oErr } = await supabase.from('orders').select('*').order('timestamp', { ascending: false });
         if (!oErr && oData) {
           const remoteOrders = oData.map(mapDbOrderToClient);
-          const localOrdersStr = localStorage.getItem('im_orders');
-          if (localOrdersStr) {
-            try {
-              const localOrders = JSON.parse(localOrdersStr);
-              if (Array.isArray(localOrders)) {
-                const missingOrders = localOrders.filter(lo => !remoteOrders.some(ro => ro.id === lo.id));
-                if (missingOrders.length > 0) {
-                  console.log(`Syncing ${missingOrders.length} offline orders to Supabase...`);
-                  for (const mOrder of missingOrders) {
-                    const dbOrder = {
-                      id: mOrder.id,
-                      user_id: mOrder.userId || null,
-                      items: mOrder.items,
-                      shipping_details: mOrder.shippingDetails,
-                      subtotal: mOrder.subtotal,
-                      discount: mOrder.discount || 0,
-                      shipping: mOrder.shipping || 0,
-                      total: mOrder.total,
-                      payment_id: mOrder.paymentId || 'cod',
-                      status: mOrder.status || 'Pending Stitching / Shipment',
-                      tracking_number: mOrder.trackingNumber || '',
-                      notes: mOrder.notes || '',
-                      timestamp: mOrder.timestamp
-                    };
-                    await supabase.from('orders').insert(dbOrder);
-                    remoteOrders.unshift(mOrder);
-                  }
-                }
-              }
-            } catch (e) {
-              console.error('Offline order synchronization failed:', e);
-            }
-          }
           setOrdersList(remoteOrders);
+          localStorage.setItem('im_orders', JSON.stringify(remoteOrders));
         }
 
         // Fetch Testimonials
@@ -906,9 +874,10 @@ export default function App() {
 
   // User-specific order history
   const userOrderHistory = ordersList.filter(o => 
-    o.shippingDetails.name === currentUser?.name || 
-    o.shippingDetails.phone === currentUser?.phone || 
-    (currentUser && o.shippingDetails.name.toLowerCase().includes(currentUser.email.split('@')[0].toLowerCase())) ||
+    (currentUser && o.shippingDetails?.email && o.shippingDetails.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+    o.shippingDetails?.name === currentUser?.name || 
+    o.shippingDetails?.phone === currentUser?.phone || 
+    (currentUser && o.shippingDetails?.name?.toLowerCase().includes(currentUser.email.split('@')[0].toLowerCase())) ||
     (currentUser && o.user_id === currentUser.id)
   );
 

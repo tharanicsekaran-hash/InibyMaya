@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Star, Ruler, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import OutfitCustomizer from './OutfitCustomizer';
 
 export default function ProductDetailModal({ product, onClose, onAddToCart, preselectedSize }) {
   const { title, price, images, category, rating, reviewsCount, description, details, variants, customizable, highlights } = product;
@@ -12,6 +13,15 @@ export default function ProductDetailModal({ product, onClose, onAddToCart, pres
   const [quantity, setQuantity] = useState(1);
   const [wantsCustomStitching, setWantsCustomStitching] = useState(false);
   const [showSizeChart, setShowSizeChart] = useState(false);
+
+  // Style customization state (from OutfitCustomizer)
+  const [styleCustomization, setStyleCustomization] = useState({
+    lining: 'Without Lining',
+    zip: 'No',
+    sleeve: null,
+    neck: null,
+    notes: ''
+  });
 
   // Key Highlights State and Defaults
   const [showAllHighlights, setShowAllHighlights] = useState(false);
@@ -39,14 +49,6 @@ export default function ProductDetailModal({ product, onClose, onAddToCart, pres
     }));
   };
 
-  // Custom measurement fields
-  const [customBust, setCustomBust] = useState('');
-  const [customWaist, setCustomWaist] = useState('');
-  const [customHips, setCustomHips] = useState('');
-  const [customHeight, setCustomHeight] = useState('');
-  const [customLength, setCustomLength] = useState('');
-  const [customNotes, setCustomNotes] = useState('');
-
   const [errorMsg, setErrorMsg] = useState('');
 
   const stitchingFee = 399;
@@ -59,13 +61,6 @@ export default function ProductDetailModal({ product, onClose, onAddToCart, pres
       return;
     }
 
-    if (wantsCustomStitching) {
-      if (!customBust || !customWaist || !customHips || !customHeight) {
-        setErrorMsg('Please fill in all custom measurement fields marked with *');
-        return;
-      }
-    }
-
     const cartItem = {
       product,
       color: selectedColor.name,
@@ -73,14 +68,7 @@ export default function ProductDetailModal({ product, onClose, onAddToCart, pres
       quantity,
       price: unitPrice,
       wantsCustomStitching,
-      measurements: wantsCustomStitching ? {
-        bust: customBust,
-        waist: customWaist,
-        hips: customHips,
-        height: customHeight,
-        length: customLength || 'Standard',
-        notes: customNotes
-      } : null
+      styleCustomization: customizable ? styleCustomization : null
     };
 
     onAddToCart(cartItem);
@@ -202,66 +190,13 @@ export default function ProductDetailModal({ product, onClose, onAddToCart, pres
                   </div>
                 </div>
 
-                {/* Measurements Form */}
+                {/* Style Studio — shown when toggle is enabled */}
                 {wantsCustomStitching && (
-                  <div className="measurements-form animate-slideDown">
-                    <p className="form-helper-text">Enter your body measurements in inches below. Our master tailors will craft the outfit to fit you perfectly.</p>
-                    <div className="form-grid">
-                      <div className="form-group">
-                        <label>Bust Size *</label>
-                        <input 
-                          type="number" 
-                          placeholder="e.g. 36" 
-                          value={customBust} 
-                          onChange={(e) => setCustomBust(e.target.value)}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Waist Size *</label>
-                        <input 
-                          type="number" 
-                          placeholder="e.g. 30" 
-                          value={customWaist} 
-                          onChange={(e) => setCustomWaist(e.target.value)}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Hips Size *</label>
-                        <input 
-                          type="number" 
-                          placeholder="e.g. 40" 
-                          value={customHips} 
-                          onChange={(e) => setCustomHips(e.target.value)}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Your Height *</label>
-                        <input 
-                          type="text" 
-                          placeholder="e.g. 5ft 4in" 
-                          value={customHeight} 
-                          onChange={(e) => setCustomHeight(e.target.value)}
-                        />
-                      </div>
-                      <div className="form-group full-width">
-                        <label>Preferred Length (optional)</label>
-                        <input 
-                          type="number" 
-                          placeholder="Standard is 44 inches" 
-                          value={customLength} 
-                          onChange={(e) => setCustomLength(e.target.value)}
-                        />
-                      </div>
-                      <div className="form-group full-width">
-                        <label>Additional Notes for Tailoring</label>
-                        <textarea 
-                          rows="2" 
-                          placeholder="e.g., loose-fitting sleeves, side pocket"
-                          value={customNotes} 
-                          onChange={(e) => setCustomNotes(e.target.value)}
-                        />
-                      </div>
-                    </div>
+                  <div className="animate-slideDown" style={{ marginTop: '16px' }}>
+                    <OutfitCustomizer
+                      selectedColor={selectedColor}
+                      onCustomizationChange={setStyleCustomization}
+                    />
                   </div>
                 )}
               </div>

@@ -488,6 +488,11 @@ export default function App() {
     }
   }, [activePage]);
 
+  // Centralized Scroll-to-Top trigger upon view/tab transitions
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [activePage, infoPageTab]);
+
   // LocalStorage backups (for hybrid fallback operation)
   useEffect(() => {
     localStorage.setItem('im_catalog', JSON.stringify(productsList));
@@ -1232,24 +1237,11 @@ export default function App() {
               </div>
             </section>
 
-            {/* 4. Patron Testimonials (matching uploaded layout) */}
+            {/* 4. Patron Testimonials */}
             <section className="testimonials-section container">
               <div className="section-header-centered">
-                <h2>Loved by 4 Lakh+ Women</h2>
-                <div className="testimonials-meta-row">
-                  <div className="stars-row">
-                    <Star size={16} fill="currentColor" />
-                    <Star size={16} fill="currentColor" />
-                    <Star size={16} fill="currentColor" />
-                    <Star size={16} fill="currentColor" />
-                    <Star size={16} fill="currentColor" />
-                  </div>
-                  <span className="rating-avg">4.89 ★ (1,867)</span>
-                  <span className="verified-badge">
-                    <CheckCircle2 size={16} style={{ color: '#03a685', verticalAlign: 'middle', marginRight: '4px' }} />
-                    <span>Verified</span>
-                  </span>
-                </div>
+                <h2>What Our Patrons Say</h2>
+                <p>Real stories from women who wear their confidence in every thread.</p>
               </div>
 
               <div className="testimonials-carousel-wrapper">
@@ -1276,6 +1268,23 @@ export default function App() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+              {/* Social Proof Footer inside Testimonials */}
+              <div className="social-proof-inner">
+                <h3 className="social-proof-headline">Trusted by 4 Lakh+ Women Across India</h3>
+                <p className="social-proof-subtext">From first-time buyers to loyal patrons — every woman who wears InibyMaya carries a piece of handcrafted tradition.</p>
+                <div className="social-proof-stats-row">
+                  <div className="social-proof-stat">
+                    <div className="stars-row social-proof-stars">
+                      <Star size={20} fill="currentColor" />
+                      <Star size={20} fill="currentColor" />
+                      <Star size={20} fill="currentColor" />
+                      <Star size={20} fill="currentColor" />
+                      <Star size={20} fill="currentColor" />
+                    </div>
+                    <span className="social-proof-rating">4.89 ★ (1,867 reviews)</span>
+                  </div>
                 </div>
               </div>
             </section>

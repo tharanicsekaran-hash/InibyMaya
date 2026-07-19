@@ -14,4 +14,9 @@
 - [x] Integrate newsletter toggle (enable/disable), text header customizers, discount percentage values, and promo code configurations directly inside the "Boutique Settings" tab in the Admin Console.
 - [x] Persist newsletter subscription status and promo codes inside `localStorage`, auto-applying the configured discount to the cart total at checkout and marking it as used once an order is placed.
 - [x] Restructure the mobile catalog toolbar inside ProductGrid.jsx to position the "Filter Options" toggle button on the left, side-by-side with the "Default Sorting" selector on the right as equal-width pill items, minimizing vertical space usage.
+- [x] Fix container side-padding overflow on desktop and mobile viewports by converting shorthand `padding: 80px 0` and `50px 0` section overrides to specific vertical paddings (`padding-top`/`padding-bottom`), ensuring product grids leave appropriate margins.
+- [x] Force section heading titles (e.g. "COUTURE IN MOTION") onto a single line on mobile viewports using `white-space: nowrap !important` and custom responsive font sizing.
+- [x] Reduce spacing between homepage segments by scaling down vertical section paddings (from `80px` to `50px` on desktop, and `50px` to `30px` on mobile) and resetting the top margins of centered headers.
+- [x] Add side margins to the bestselling product grid (`padding-left: 12px; padding-right: 12px;`) to inset the cards from the screen boundaries on mobile devices.
+- [x] Enforce immediate window scroll-to-top (`window.scrollTo({ top: 0, behavior: 'instant' })`) via a centralized useEffect listener when navigating between active pages (e.g., Homepage -> Collection page) or switching static information tab views.
 - [x] Run production build compile check to confirm code health.

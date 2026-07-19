@@ -1,0 +1,17 @@
+- [x] Configure Reels carousel to auto-loop videos and pause scrolling upon user touch/click.
+- [x] Unify mobile submenu items layout styling for "Long Kurtas" and "Anarkali Suits".
+- [x] Update profile and logout areas to render user name instead of email address.
+- [x] Refactor AuthModal signup flow to request First Name and Last Name.
+- [x] Implement responsive header overrides in App.css to hide username text, gear configuration, and logout buttons on smaller viewports to prevent logo collisions.
+- [x] Force scroll-layout rendering for Reels on all viewports, ensuring it remains an autoplaying horizontal carousel even with 3 default items.
+- [x] Standardize vertical paddings to `80px` on desktop and `50px` on mobile viewports for all homepage landing segments to prevent cramped containers.
+- [x] Reconfigure mobile/tablet product grid overrides to render as a premium 2-column layout (`repeat(2, 1fr)`) with optimized font sizes instead of single-column stacking, preventing oversized image cards.
+- [x] Implement a global `.container` style rule to restrict layout width to `1200px` and center all primary sections, avoiding full-bleed edge stretching.
+- [x] Refactor bestselling spotlight and catalog product cards to render sizing options (S, M, L, XL) as clickable swatches directly on the card, pre-selecting that size on details click.
+- [x] Rebuild mobile/tablet layouts for "Shop by Occasion" into an elegant, swipeable horizontal row (`flex-wrap: nowrap; overflow-x: auto`) with visual peeking hints, custom maroon borders, and pink labels.
+- [x] Enforce guest-only rules on the newsletter offer modal: trigger it after a 2.5s delay only for non-authenticated guests, close it instantly on login/signup, and store the dismissed state in `localStorage`. Style it to match the spec screenshot precisely.
+- [x] Prevent responsive grid column overflow by defining 2-column tracks using `repeat(2, minmax(0, 1fr)) !important` for bestselling and catalog sections, and scaling down mobile size swatches to `24px` to allow natural wrapping within the bounds.
+- [x] Integrate newsletter toggle (enable/disable), text header customizers, discount percentage values, and promo code configurations directly inside the "Boutique Settings" tab in the Admin Console.
+- [x] Persist newsletter subscription status and promo codes inside `localStorage`, auto-applying the configured discount to the cart total at checkout and marking it as used once an order is placed.
+- [x] Restructure the mobile catalog toolbar inside ProductGrid.jsx to position the "Filter Options" toggle button on the left, side-by-side with the "Default Sorting" selector on the right as equal-width pill items, minimizing vertical space usage.
+- [x] Run production build compile check to confirm code health.

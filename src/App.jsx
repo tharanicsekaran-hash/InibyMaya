@@ -131,13 +131,19 @@ export default function App() {
   const [infoPageTab, setInfoPageTab] = useState('about-us');
   const [boutiqueSettings, setBoutiqueSettings] = useState(() => {
     const cached = localStorage.getItem('im_settings');
-    return cached ? JSON.parse(cached) : {
+    const defaults = {
       description: 'High-end Indian traditional wear and bespoke custom-tailored apparel for special celebrations and elegant daily comfort.',
       email: 'care@inibymaya.com',
       phone: '+91 98765 43210',
       address: '14, Ground Floor, Linen Road, Jubilee Hills, Hyderabad - 500033',
-      hours: 'Mon - Sat: 10:00 AM - 07:00 PM IST'
+      hours: 'Mon - Sat: 10:00 AM - 07:00 PM IST',
+      newsletterTitle: 'Subscribe and Get 10% OFF',
+      newsletterSubtitle: 'No Spam, No Drama – Just Good Clothes',
+      newsletterDiscount: 10,
+      newsletterPromoCode: 'WELCOME10',
+      newsletterEnabled: true
     };
+    return cached ? { ...defaults, ...JSON.parse(cached) } : defaults;
   });
 
   const handleScrollReels = (direction) => {
@@ -290,7 +296,14 @@ export default function App() {
   const [subscriberContact, setSubscriberContact] = useState('');
   const [offerError, setOfferError] = useState('');
   const [offerSuccess, setOfferSuccess] = useState('');
-  const [autoAppliedPromo, setAutoAppliedPromo] = useState('');
+  const [autoAppliedPromo, setAutoAppliedPromo] = useState(() => {
+    const subscribed = localStorage.getItem('im_newsletter_subscribed') === 'true';
+    const used = localStorage.getItem('im_newsletter_promo_used') === 'true';
+    if (subscribed && !used) {
+      return localStorage.getItem('im_newsletter_promo_code') || 'WELCOME10';
+    }
+    return '';
+  });
 
   // 1. Initial Supabase Fetch & Session Bindings
   useEffect(() => {
@@ -512,16 +525,25 @@ export default function App() {
     localStorage.setItem('im_settings', JSON.stringify(boutiqueSettings));
   }, [boutiqueSettings]);
 
-  // Offer popup triggers on page load once per session
+  // Offer popup triggers on page load once per user session/lifetime if not logged in
   useEffect(() => {
-    const shown = sessionStorage.getItem('im_offer_modal_shown');
-    if (!shown) {
+    const shown = localStorage.getItem('im_offer_modal_shown');
+    const isEnabled = boutiqueSettings.newsletterEnabled !== false;
+    if (!shown && !currentUser && isEnabled) {
       const timer = setTimeout(() => {
-        setShowOfferModal(true);
-      }, 1500);
+        if (!currentUser && boutiqueSettings.newsletterEnabled !== false) {
+          setShowOfferModal(true);
+        }
+      }, 2500);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [currentUser, boutiqueSettings.newsletterEnabled]);
+
+  useEffect(() => {
+    if (currentUser) {
+      setShowOfferModal(false);
+    }
+  }, [currentUser]);
 
   // Autoscroll reels video carousel
   useEffect(() => {
@@ -597,14 +619,25 @@ export default function App() {
     }
 
     // Generate coupon & Auto-apply to cart drawer
-    const code = 'WELCOME10';
+    const discountVal = Number(boutiqueSettings.newsletterDiscount !== undefined ? boutiqueSettings.newsletterDiscount : 10);
+    const code = (boutiqueSettings.newsletterPromoCode || 'WELCOME10').trim().toUpperCase();
+    
     if (!promosList.some(p => p.code === code)) {
-      handleAddPromo({ code, type: 'percent', value: 10, minPurchase: 0, description: '10% off for subscribing' });
+      handleAddPromo({ 
+        code, 
+        type: 'percent', 
+        value: discountVal, 
+        minPurchase: 0, 
+        description: `${discountVal}% off for subscribing` 
+      });
     }
     
     setAutoAppliedPromo(code);
-    setOfferSuccess(`Thank you! Your 10% coupon WELCOME10 is now auto-applied to your cart!`);
-    sessionStorage.setItem('im_offer_modal_shown', 'true');
+    setOfferSuccess(`Thank you! Your ${discountVal}% coupon ${code} is now auto-applied to your cart!`);
+    localStorage.setItem('im_offer_modal_shown', 'true');
+    localStorage.setItem('im_newsletter_subscribed', 'true');
+    localStorage.setItem('im_newsletter_promo_code', code);
+    localStorage.setItem('im_newsletter_promo_used', 'false');
   };
 
   // Auth simulators
@@ -669,6 +702,10 @@ export default function App() {
     setCartItems([]); 
     setCheckoutSummary(null); 
     setSuccessOrder(orderData); 
+    
+    // Mark subscriber coupon as used so it doesn't auto-apply to future carts
+    localStorage.setItem('im_newsletter_promo_used', 'true');
+    setAutoAppliedPromo('');
 
     if (supabase) {
       try {
@@ -1370,47 +1407,75 @@ export default function App() {
 
       {/* 5. Subscribe Offer Newsletter Modal Popup */}
       {showOfferModal && (
-        <div className="newsletter-overlay" onClick={() => { setShowOfferModal(false); sessionStorage.setItem('im_offer_modal_shown', 'true'); }}>
+        <div className="newsletter-overlay" onClick={() => { setShowOfferModal(false); localStorage.setItem('im_offer_modal_shown', 'true'); }}>
           <div className="newsletter-modal animate-slideDown" onClick={(e) => e.stopPropagation()}>
             <button 
               className="modal-close-btn" 
-              onClick={() => { setShowOfferModal(false); sessionStorage.setItem('im_offer_modal_shown', 'true'); }}
+              onClick={() => { setShowOfferModal(false); localStorage.setItem('im_offer_modal_shown', 'true'); }}
             >
               <X size={18} />
             </button>
             
             <div className="newsletter-logo-header">INIBYMAYA</div>
-            <h3>Subscribe and Get 10% OFF</h3>
-            <p>No Spam, No Drama – Just Good Clothes</p>
-
-            <form onSubmit={handleSubscribeSubmit} className="newsletter-form">
-              <div className="form-group">
-                <input 
-                  type="text" 
-                  value={subscriberContact}
-                  onChange={(e) => setSubscriberContact(e.target.value)}
-                  placeholder="Enter email or 10-digit phone number"
-                  required
-                />
-              </div>
-
-              {offerError && <p className="newsletter-error-msg">{offerError}</p>}
-              {offerSuccess && (
-                <div className="newsletter-success-box">
-                  <p>{offerSuccess}</p>
+            
+            {offerSuccess ? (
+              <div className="newsletter-success-state animate-fadeIn">
+                <div className="success-sparkle" style={{ fontSize: '32px', marginBottom: '12px' }}>✨</div>
+                <h3 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '8px', color: '#111827' }}>Welcome to the Club!</h3>
+                <p style={{ fontSize: '13.5px', color: '#4b5563', marginBottom: '16px', lineHeight: '1.5' }}>Use the code below at checkout for 10% off your purchase:</p>
+                <div className="discount-code-badge" style={{
+                  background: '#f3f4f6',
+                  border: '1px dashed var(--color-accent)',
+                  color: 'var(--color-accent)',
+                  padding: '12px 30px',
+                  fontSize: '20px',
+                  fontWeight: '700',
+                  letterSpacing: '0.1em',
+                  borderRadius: '8px',
+                  margin: '16px 0 24px',
+                  display: 'inline-block'
+                }}>
+                  WELCOME10
                 </div>
-              )}
+                <div>
+                  <button 
+                    type="button"
+                    className="btn-primary" 
+                    onClick={() => { setShowOfferModal(false); localStorage.setItem('im_offer_modal_shown', 'true'); }}
+                    style={{ borderRadius: '30px', padding: '10px 24px', fontSize: '13px' }}
+                  >
+                    Start Shopping
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h3>Subscribe and Get 10% OFF</h3>
+                <p>No Spam, No Drama – Just Good Clothes</p>
 
-              {!offerSuccess && (
-                <button type="submit" className="newsletter-btn">
-                  Get discount code
-                </button>
-              )}
-            </form>
+                <form onSubmit={handleSubscribeSubmit} className="newsletter-form">
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <input 
+                      type="text" 
+                      value={subscriberContact}
+                      onChange={(e) => setSubscriberContact(e.target.value)}
+                      placeholder="Enter email or 10-digit phone number"
+                      required
+                    />
+                  </div>
 
-            <span className="newsletter-policy-notice">
-              I agree to receive automated marketing updates. View our Privacy Policy and Terms of Service.
-            </span>
+                  {offerError && <p className="newsletter-error-msg">{offerError}</p>}
+
+                  <button type="submit" className="newsletter-btn">
+                    Get discount code
+                  </button>
+                </form>
+
+                <span className="newsletter-policy-notice">
+                  I agree to receive automated marketing updates. View our Privacy Policy and Terms of Service.
+                </span>
+              </>
+            )}
           </div>
         </div>
       )}

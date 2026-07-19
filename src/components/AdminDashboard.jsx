@@ -30,6 +30,11 @@ export default function AdminDashboard({
   const [settingsPhone, setSettingsPhone] = useState('');
   const [settingsAddress, setSettingsAddress] = useState('');
   const [settingsHours, setSettingsHours] = useState('');
+  const [newsletterTitle, setNewsletterTitle] = useState('');
+  const [newsletterSubtitle, setNewsletterSubtitle] = useState('');
+  const [newsletterDiscount, setNewsletterDiscount] = useState(10);
+  const [newsletterPromoCode, setNewsletterPromoCode] = useState('WELCOME10');
+  const [newsletterEnabled, setNewsletterEnabled] = useState(true);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [settingsSuccessMsg, setSettingsSuccessMsg] = useState('');
 
@@ -40,6 +45,11 @@ export default function AdminDashboard({
       setSettingsPhone(boutiqueSettings.phone || '');
       setSettingsAddress(boutiqueSettings.address || '');
       setSettingsHours(boutiqueSettings.hours || '');
+      setNewsletterTitle(boutiqueSettings.newsletterTitle || 'Subscribe and Get 10% OFF');
+      setNewsletterSubtitle(boutiqueSettings.newsletterSubtitle || 'No Spam, No Drama – Just Good Clothes');
+      setNewsletterDiscount(Number(boutiqueSettings.newsletterDiscount !== undefined ? boutiqueSettings.newsletterDiscount : 10));
+      setNewsletterPromoCode(boutiqueSettings.newsletterPromoCode || 'WELCOME10');
+      setNewsletterEnabled(boutiqueSettings.newsletterEnabled !== false);
       setSettingsLoaded(true);
     }
   }, [boutiqueSettings, settingsLoaded]);
@@ -53,7 +63,12 @@ export default function AdminDashboard({
         email: settingsEmail,
         phone: settingsPhone,
         address: settingsAddress,
-        hours: settingsHours
+        hours: settingsHours,
+        newsletterTitle,
+        newsletterSubtitle,
+        newsletterDiscount: Number(newsletterDiscount),
+        newsletterPromoCode: newsletterPromoCode.trim().toUpperCase(),
+        newsletterEnabled
       });
       setSettingsSuccessMsg('Boutique configurations updated successfully!');
       setTimeout(() => setSettingsSuccessMsg(''), 4000);
@@ -1410,6 +1425,74 @@ export default function AdminDashboard({
                   placeholder="Mon - Sat: 10:00 AM - 07:00 PM IST" 
                   required 
                 />
+              </div>
+
+              {/* Newsletter Offer Configurator */}
+              <div className="newsletter-config-section" style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--color-border)' }}>
+                <h4 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '12px', color: 'var(--color-text-primary)' }}>Newsletter Subscription Popup Configuration</h4>
+                
+                <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                  <input 
+                    type="checkbox" 
+                    id="newsletterEnabled"
+                    checked={newsletterEnabled} 
+                    onChange={(e) => setNewsletterEnabled(e.target.checked)} 
+                    style={{ width: 'auto', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="newsletterEnabled" style={{ cursor: 'pointer', userSelect: 'none', marginBottom: 0 }}>Enable Newsletter Popup for Guests</label>
+                </div>
+
+                {newsletterEnabled && (
+                  <>
+                    <div className="form-group">
+                      <label>Newsletter Title *</label>
+                      <input 
+                        type="text" 
+                        value={newsletterTitle} 
+                        onChange={(e) => setNewsletterTitle(e.target.value)} 
+                        placeholder="Subscribe and Get 10% OFF" 
+                        required 
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Newsletter Subtitle *</label>
+                      <input 
+                        type="text" 
+                        value={newsletterSubtitle} 
+                        onChange={(e) => setNewsletterSubtitle(e.target.value)} 
+                        placeholder="No Spam, No Drama – Just Good Clothes" 
+                        required 
+                      />
+                    </div>
+
+                    <div className="form-row-double">
+                      <div className="form-group">
+                        <label>Discount Percentage (%) *</label>
+                        <input 
+                          type="number" 
+                          min={1}
+                          max={100}
+                          value={newsletterDiscount} 
+                          onChange={(e) => setNewsletterDiscount(e.target.value)} 
+                          placeholder="e.g. 10" 
+                          required 
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>Generated Promo Code *</label>
+                        <input 
+                          type="text" 
+                          value={newsletterPromoCode} 
+                          onChange={(e) => setNewsletterPromoCode(e.target.value)} 
+                          placeholder="WELCOME10" 
+                          required 
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               <button type="submit" className="add-btn-submit" style={{ marginTop: '16px' }}>

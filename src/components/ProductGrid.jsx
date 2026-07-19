@@ -159,16 +159,7 @@ export default function ProductGrid({
         <p className="section-description">Browse handcrafted traditional wear tailored to fit you perfectly.</p>
       </div>
 
-      {/* Mobile Toggle Button */}
-      <div className="mobile-filter-toolbar">
-        <button 
-          className={`mobile-filter-toggle-btn ${showMobileFilters ? 'active' : ''}`}
-          onClick={() => setShowMobileFilters(!showMobileFilters)}
-        >
-          <SlidersHorizontal size={15} />
-          <span>{showMobileFilters ? 'Hide Filter Options' : 'Filter Options'}</span>
-        </button>
-      </div>
+
 
       {/* Main Side-by-Side Shop Grid Layout */}
       <div className="shop-grid-layout">
@@ -274,22 +265,27 @@ export default function ProductGrid({
           
           {/* Top Row: Toolbar Summary & Sort selection */}
           <div className="catalog-toolbar-row">
-            <span className="showing-results-count">
-              Showing 1–{filteredProducts.length} of {products.length} results
-            </span>
+            {/* Search Bar inside Toolbar (positioned on top on mobile, inline on desktop) */}
+            <div className="toolbar-search-box-wrap">
+              <Search className="search-icon" size={14} />
+              <input
+                type="text"
+                placeholder="Search outfits..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="toolbar-search-input"
+              />
+            </div>
 
             <div className="catalog-toolbar-right">
-              {/* Search Bar inside Toolbar */}
-              <div className="toolbar-search-box-wrap">
-                <Search className="search-icon" size={14} />
-                <input
-                  type="text"
-                  placeholder="Search outfits..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="toolbar-search-input"
-                />
-              </div>
+              {/* Filter toggle button (only visible on mobile, positioned on left side) */}
+              <button 
+                className={`mobile-filter-toggle-btn ${showMobileFilters ? 'active' : ''}`}
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+              >
+                <SlidersHorizontal size={14} />
+                <span>{showMobileFilters ? 'Hide Filters' : 'Filter Options'}</span>
+              </button>
 
               {/* Sorting select */}
               <div className="sort-selector-wrap">
@@ -305,6 +301,12 @@ export default function ProductGrid({
                   <option value="rating">Sort by: Top Rated</option>
                 </select>
               </div>
+            </div>
+
+            <div className="toolbar-results-row">
+              <span className="showing-results-count">
+                Showing 1–{filteredProducts.length} of {products.length} results
+              </span>
             </div>
           </div>
 

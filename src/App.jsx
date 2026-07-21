@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
+import CategoryStrip from './components/CategoryStrip';
 import ProductCard from './components/ProductCard';
 import ProductGrid from './components/ProductGrid';
 import ProductDetailModal from './components/ProductDetailModal';
@@ -10,6 +11,7 @@ import CheckoutModal from './components/CheckoutModal';
 import AdminDashboard from './components/AdminDashboard';
 import ConfettiEffect from './components/ConfettiEffect';
 import InfoPage from './components/InfoPage';
+import ReelCard from './components/ReelCard';
 import { products as initialProducts } from './data/products';
 import { CheckCircle2, Calendar, Truck, ArrowLeft, Heart, ShoppingBag, Sparkles, Scissors, X, Film, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from './supabaseClient';
@@ -238,6 +240,12 @@ export default function App() {
   const [isAutoScrolling, setIsAutoScrolling] = useState(true);
   const [activeReelId, setActiveReelId] = useState(null);
 
+  // Favorites State (stored in localStorage)
+  const [favorites, setFavorites] = useState(() => {
+    const saved = localStorage.getItem('im_favorites');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   // Current session user (Supabase simulator)
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('im_user');
@@ -292,6 +300,7 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [checkoutSummary, setCheckoutSummary] = useState(null); 
   const [successOrder, setSuccessOrder] = useState(null); 
+  const [isDbRlsActive, setIsDbRlsActive] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [subscriberContact, setSubscriberContact] = useState('');
   const [offerError, setOfferError] = useState('');
@@ -311,10 +320,16 @@ export default function App() {
       if (!supabase) return;
       try {
         // Fetch Catalog
+        let rlsActive = false;
         const { data: pData, error: pErr } = await supabase.from('products').select('*').order('created_at', { ascending: false });
         if (!pErr && pData) {
           if (pData.length === 0) {
-            await supabase.from('products').insert(initialProducts.map(mapClientProductToDb));
+            const { error: insErr } = await supabase.from('products').insert(initialProducts.map(mapClientProductToDb));
+            if (insErr && insErr.code === '42501') {
+              rlsActive = true;
+              setIsDbRlsActive(true);
+              console.error('DATABASE RLS WARNING: Row Level Security is active on your Supabase tables. Fetching and writing data is restricted. Please run the disable RLS SQL script.');
+            }
             setProductsList(initialProducts);
           } else {
             setProductsList(pData.map(mapDbProductToClient));
@@ -377,11 +392,20 @@ export default function App() {
         }
 
         // Fetch Orders
-        const { data: oData, error: oErr } = await supabase.from('orders').select('*').order('timestamp', { ascending: false });
-        if (!oErr && oData) {
-          const remoteOrders = oData.map(mapDbOrderToClient);
-          setOrdersList(remoteOrders);
-          localStorage.setItem('im_orders', JSON.stringify(remoteOrders));
+        if (!rlsActive) {
+          const { data: oData, error: oErr } = await supabase.from('orders').select('*').order('timestamp', { ascending: false });
+          if (!oErr && oData) {
+            const remoteOrders = oData.map(mapDbOrderToClient);
+            setOrdersList(remoteOrders);
+            safeSetItem('im_orders', JSON.stringify(remoteOrders));
+          } else if (oErr) {
+            if (oErr.code === '42501') {
+              setIsDbRlsActive(true);
+            }
+            console.error('DATABASE FETCH WARNING: Failed to fetch orders from Supabase. Bypassing state overwrite.', oErr.message);
+          }
+        } else {
+          console.warn('Skipping orders state overwrite because Row Level Security (RLS) is active and blocking read operations.');
         }
 
         // Fetch Testimonials
@@ -484,8 +508,64 @@ export default function App() {
         }
       });
 
+      // Realtime Orders Subscription
+      const ordersChannel = supabase
+        .channel('realtime:orders')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+          console.log('Realtime order change detected:', payload);
+          if (payload.eventType === 'INSERT') {
+            const newOrder = mapDbOrderToClient(payload.new);
+            setOrdersList(prev => {
+              if (prev.some(o => o.id === newOrder.id)) return prev;
+              return [newOrder, ...prev];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedOrder = mapDbOrderToClient(payload.new);
+            setOrdersList(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+          } else if (payload.eventType === 'DELETE') {
+            setOrdersList(prev => prev.filter(o => o.id !== payload.old.id));
+          }
+        })
+        .subscribe();
+
+      // Realtime Testimonials Subscription — keeps customer page in sync when admin adds/removes reviews
+      const testimonialsChannel = supabase
+        .channel('realtime:testimonials')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'testimonials' }, (payload) => {
+          console.log('Realtime testimonial change detected:', payload);
+          if (payload.eventType === 'INSERT') {
+            const newT = {
+              id: payload.new.id,
+              name: payload.new.name,
+              imageUrl: payload.new.image_url,
+              quote: payload.new.quote,
+              rating: payload.new.rating,
+              tag: payload.new.tag
+            };
+            setTestimonialsList(prev => {
+              if (prev.some(t => t.id === newT.id)) return prev;
+              return [...prev, newT];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedT = {
+              id: payload.new.id,
+              name: payload.new.name,
+              imageUrl: payload.new.image_url,
+              quote: payload.new.quote,
+              rating: payload.new.rating,
+              tag: payload.new.tag
+            };
+            setTestimonialsList(prev => prev.map(t => t.id === updatedT.id ? updatedT : t));
+          } else if (payload.eventType === 'DELETE') {
+            setTestimonialsList(prev => prev.filter(t => t.id !== payload.old.id));
+          }
+        })
+        .subscribe();
+
       return () => {
         subscription?.unsubscribe();
+        supabase.removeChannel(ordersChannel);
+        supabase.removeChannel(testimonialsChannel);
       };
     }
   }, [activePage]);
@@ -496,41 +576,78 @@ export default function App() {
   }, [activePage, infoPageTab, selectedProduct, successOrder]);
 
   // LocalStorage backups (for hybrid fallback operation)
+  // Note: base64 images are stripped before storage to avoid Safari's 5MB quota limit.
+  const safeSetItem = (key, value) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      console.warn(`localStorage quota exceeded for key "${key}". Skipping storage to prevent crash.`, e);
+    }
+  };
+
   useEffect(() => {
-    localStorage.setItem('im_catalog', JSON.stringify(productsList));
+    // Strip large base64 image blobs from catalog before storing
+    const catalogForStorage = productsList.map(p => ({
+      ...p,
+      images: (p.images || []).map(img => (img && img.startsWith('data:')) ? '' : img)
+    }));
+    safeSetItem('im_catalog', JSON.stringify(catalogForStorage));
   }, [productsList]);
 
   useEffect(() => {
-    localStorage.setItem('im_cart', JSON.stringify(cartItems));
+    // Strip base64 product images from cart items before storing
+    const cartForStorage = cartItems.map(item => ({
+      ...item,
+      product: {
+        ...item.product,
+        images: (item.product?.images || []).map(img => (img && img.startsWith('data:')) ? '' : img)
+      }
+    }));
+    safeSetItem('im_cart', JSON.stringify(cartForStorage));
   }, [cartItems]);
 
   useEffect(() => {
-    localStorage.setItem('im_orders', JSON.stringify(ordersList));
+    safeSetItem('im_orders', JSON.stringify(ordersList));
   }, [ordersList]);
 
   useEffect(() => {
-    localStorage.setItem('im_promos', JSON.stringify(promosList));
+    safeSetItem('im_promos', JSON.stringify(promosList));
   }, [promosList]);
 
   useEffect(() => {
-    localStorage.setItem('im_reels', JSON.stringify(reelsList));
+    // Strip large base64 video blobs from reels before storing - videos can be 10MB+ encoded
+    const reelsForStorage = reelsList.map(r => ({
+      ...r,
+      videoFile: (r.videoFile && r.videoFile.startsWith('data:')) ? null : r.videoFile,
+      thumbnailFile: (r.thumbnailFile && r.thumbnailFile.startsWith('data:')) ? null : r.thumbnailFile,
+    }));
+    safeSetItem('im_reels', JSON.stringify(reelsForStorage));
   }, [reelsList]);
 
   useEffect(() => {
-    localStorage.setItem('im_testimonials', JSON.stringify(testimonialsList));
+    // Strip base64 testimonial avatar images before storing
+    const testimonialsForStorage = testimonialsList.map(t => ({
+      ...t,
+      imageUrl: (t.imageUrl && t.imageUrl.startsWith('data:')) ? '' : t.imageUrl
+    }));
+    safeSetItem('im_testimonials', JSON.stringify(testimonialsForStorage));
   }, [testimonialsList]);
 
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem('im_user', JSON.stringify(currentUser));
+      safeSetItem('im_user', JSON.stringify(currentUser));
     } else {
       localStorage.removeItem('im_user');
     }
   }, [currentUser]);
 
   useEffect(() => {
-    localStorage.setItem('im_settings', JSON.stringify(boutiqueSettings));
+    safeSetItem('im_settings', JSON.stringify(boutiqueSettings));
   }, [boutiqueSettings]);
+
+  useEffect(() => {
+    safeSetItem('im_favorites', JSON.stringify(favorites));
+  }, [favorites]);
 
   // Offer popup triggers on page load once per user session/lifetime if not logged in
   useEffect(() => {
@@ -668,6 +785,25 @@ export default function App() {
     setActivePage('home');
   };
 
+  const handleOpenProfile = async () => {
+    setIsAuthOpen(true);
+    if (supabase) {
+      try {
+        const { data: oData, error: oErr } = await supabase
+          .from('orders')
+          .select('*')
+          .order('timestamp', { ascending: false });
+        if (!oErr && oData) {
+          const remoteOrders = oData.map(mapDbOrderToClient);
+          setOrdersList(remoteOrders);
+          safeSetItem('im_orders', JSON.stringify(remoteOrders));
+        }
+      } catch (err) {
+        console.error('Failed to sync orders background fetch:', err);
+      }
+    }
+  };
+
   // Cart operations
   const handleAddToCart = (item) => {
     setCartItems(prev => {
@@ -683,7 +819,16 @@ export default function App() {
       }
       return [...prev, item];
     });
-    setIsCartOpen(true);
+  };
+
+  const handleToggleFavorite = (productId) => {
+    setFavorites(prev => {
+      if (prev.includes(productId)) {
+        return prev.filter(id => id !== productId);
+      } else {
+        return [...prev, productId];
+      }
+    });
   };
 
   const handleUpdateQty = (idx, newQty) => {
@@ -893,10 +1038,16 @@ export default function App() {
         }}
         cartCount={cartItems.reduce((acc, item) => acc + item.quantity, 0)}
         onCartClick={() => setIsCartOpen(true)}
-        onProfileClick={() => setIsAuthOpen(true)}
+        onProfileClick={handleOpenProfile}
         user={currentUser}
         logout={handleLogout}
         onSearchToggle={handleSearchToggle}
+        favoritesCount={favorites.length}
+        onFavoritesClick={() => {
+          setActivePage('favorites');
+          setSuccessOrder(null);
+          setSelectedProduct(null);
+        }}
       />
 
       {/* Main Content Layout routing */}
@@ -954,6 +1105,12 @@ export default function App() {
                 </div>
               </div>
 
+              {(successOrder.status === 'Cancelled' || successOrder.status === 'Cancelled by Customer') && (
+                <div className="order-cancelled-callout-bar animate-fadeIn" style={{ margin: '0 20px 20px' }}>
+                  This order has been cancelled
+                </div>
+              )}
+
               <div className="success-shipping-info">
                 <div className="info-block">
                   <Truck size={18} />
@@ -973,10 +1130,26 @@ export default function App() {
               </div>
             </div>
 
-            <button className="btn-primary back-to-shop-btn" onClick={() => { setSuccessOrder(null); setActivePage('shop'); }}>
-              <ArrowLeft size={16} />
-              <span>Continue Shopping</span>
-            </button>
+            <div className="success-actions" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '440px', margin: '24px auto 0' }}>
+              <button className="btn-primary back-to-shop-btn" style={{ width: '100%' }} onClick={() => { setSuccessOrder(null); setActivePage('shop'); }}>
+                <ArrowLeft size={16} />
+                <span>Continue Shopping</span>
+              </button>
+              
+              {successOrder.status !== 'Cancelled' && successOrder.status !== 'Cancelled by Customer' && (
+                <button 
+                  className="cancel-order-success-btn"
+                  onClick={() => {
+                    if (window.confirm(`Are you sure you want to cancel order ${successOrder.id}?`)) {
+                      handleUpdateOrderStatus(successOrder.id, 'Cancelled by Customer', successOrder.trackingNumber);
+                      setSuccessOrder(prev => ({ ...prev, status: 'Cancelled by Customer' }));
+                    }
+                  }}
+                >
+                  Cancel Order
+                </button>
+              )}
+            </div>
           </div>
         ) : selectedProduct ? (
           <ProductDetailModal 
@@ -989,7 +1162,19 @@ export default function App() {
           // Home Page
           <>
             <Hero onShopClick={() => setActivePage('shop')} />
-            
+
+            {/* Category Icon Strip — directly below hero */}
+            <CategoryStrip
+              onCategoryClick={(filter) => {
+                if (filter === 'custom') {
+                  setActivePage('shop');
+                  setSearchQuery('custom tailoring');
+                } else {
+                  setSearchQuery(filter);
+                  setActivePage('shop');
+                }
+              }}
+            />
             {/* 1. Couture Reels in Motion Showcase */}
             <section className="reels-section container">
               <div className="section-header-centered">
@@ -1008,108 +1193,16 @@ export default function App() {
                 {reelsList.length > 0 ? (
                   <div className="reels-carousel-container scroll-layout">
                     {reelsList.map(reel => (
-                      <div key={reel.id} className="reel-card-wrapper">
-                        <div 
-                          className={`reel-card ${activeReelId === reel.id ? 'active-playing' : ''}`}
-                          onMouseEnter={(e) => {
-                            setIsAutoScrolling(false);
-                            setActiveReelId(reel.id);
-                            const video = e.currentTarget.querySelector('video');
-                            if (video) {
-                              document.querySelectorAll('.reel-video').forEach(v => {
-                                if (v !== video) {
-                                  v.pause();
-                                }
-                              });
-                              video.play().catch(err => console.log('Playback error', err));
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            setIsAutoScrolling(true);
-                            setActiveReelId(null);
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIsAutoScrolling(false);
-                            setActiveReelId(reel.id);
-                            const video = e.currentTarget.querySelector('video');
-                            if (video) {
-                              document.querySelectorAll('.reel-video').forEach(v => {
-                                if (v !== video) {
-                                  v.pause();
-                                }
-                              });
-                              if (video.paused) {
-                                video.play().catch(err => {});
-                              }
-                            }
-                          }}
-                        >
-                          <video 
-                            src={reel.videoUrl} 
-                            loop 
-                            muted 
-                            playsInline 
-                            autoPlay
-                            className="reel-video"
-                          />
-                          <div className="reel-overlay">
-                            {activeReelId === reel.id ? (
-                              <button 
-                                className="reel-shop-now-btn animate-fadeIn" 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (reel.productId) {
-                                    const matched = productsList.find(p => p.id === reel.productId);
-                                    if (matched) setSelectedProduct(matched);
-                                  }
-                                }}
-                                style={{
-                                  position: 'absolute',
-                                  top: '50%',
-                                  left: '50%',
-                                  transform: 'translate(-50%, -50%)',
-                                  backgroundColor: 'var(--color-accent)',
-                                  color: 'var(--color-white)',
-                                  border: 'none',
-                                  padding: '12px 24px',
-                                  borderRadius: '30px',
-                                  fontWeight: 'bold',
-                                  fontSize: '13px',
-                                  cursor: 'pointer',
-                                  boxShadow: 'var(--shadow-lg)',
-                                  zIndex: 10,
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.05em',
-                                  pointerEvents: 'auto'
-                                }}
-                              >
-                                Shop Outfit
-                              </button>
-                            ) : (
-                              <div className="play-icon-overlay">
-                                <svg viewBox="0 0 24 24" fill="currentColor">
-                                  <path d="M8 5v14l11-7z" />
-                                </svg>
-                              </div>
-                            )}
-                            
-                            <div className="reel-premium-footer">
-                              {reel.productImage && (
-                                <img 
-                                  src={reel.productImage} 
-                                  alt="Outfit thumbnail" 
-                                  className="reel-thumbnail-thumb" 
-                                />
-                              )}
-                              <div className="reel-footer-text">
-                                <p className="reel-product-title">{reel.productTitle || reel.title}</p>
-                                {reel.productPrice > 0 && <span className="reel-product-price">₹{reel.productPrice.toLocaleString('en-IN')}</span>}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      <ReelCard
+                        key={reel.id}
+                        reel={reel}
+                        onShopOutfit={() => {
+                          if (reel.productId) {
+                            const matched = productsList.find(p => p.id === reel.productId);
+                            if (matched) setSelectedProduct(matched);
+                          }
+                        }}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -1205,6 +1298,8 @@ export default function App() {
                   <ProductCard 
                     key={product.id}
                     product={product}
+                    isFavorite={favorites.includes(product.id)}
+                    onToggleFavorite={handleToggleFavorite}
                     onProductClick={(prod, size) => {
                       setPreselectedSize(size);
                       setSelectedProduct(prod);
@@ -1305,7 +1400,47 @@ export default function App() {
             setSearchQuery={setSearchQuery}
             selectedSize={preselectedSize}
             setSelectedSize={setPreselectedSize}
+            favorites={favorites}
+            onToggleFavorite={handleToggleFavorite}
           />
+        ) : activePage === 'favorites' ? (
+          // Favorites Page
+          <div className="favorites-page-container container">
+            <div className="section-header-centered" style={{ marginBottom: '40px' }}>
+              <h2>My Favorites</h2>
+              <p>Keep track of the custom couture styles you love the most.</p>
+            </div>
+            {favorites.length > 0 ? (
+              <div className="catalog-products-grid animate-slideUp">
+                {productsList
+                  .filter(p => favorites.includes(p.id))
+                  .map(product => (
+                    <ProductCard 
+                      key={product.id}
+                      product={product}
+                      isFavorite={true}
+                      onToggleFavorite={handleToggleFavorite}
+                      onProductClick={(prod, size) => {
+                        setPreselectedSize(size);
+                        setSelectedProduct(prod);
+                      }}
+                    />
+                  ))
+                }
+              </div>
+            ) : (
+              <div className="favorites-empty-state card animate-slideUp" style={{ border: '1px dashed var(--color-border)', borderRadius: '12px' }}>
+                <div className="favorites-empty-icon" style={{ display: 'flex', justifyContent: 'center' }}>
+                  <Heart size={48} strokeWidth={1} style={{ color: 'var(--color-border)' }} />
+                </div>
+                <h3>Your wishlist is empty</h3>
+                <p>Browse our curated collections of premium long kurtas, anarkalis, and suit sets to save your favorites here.</p>
+                <button className="btn-primary" onClick={() => setActivePage('shop')}>
+                  Browse Collection
+                </button>
+              </div>
+            )}
+          </div>
         ) : activePage === 'admin' ? (
           // Admin Dashboard
           <AdminDashboard 
@@ -1328,6 +1463,7 @@ export default function App() {
             onDeleteTestimonial={handleDeleteTestimonial}
             boutiqueSettings={boutiqueSettings}
             onSaveSettings={handleSaveSettings}
+            isDbRlsActive={isDbRlsActive}
           />
         ) : activePage === 'info' ? (
           <InfoPage 
@@ -1407,6 +1543,7 @@ export default function App() {
           logout={handleLogout}
           onClose={() => setIsAuthOpen(false)}
           orderHistory={userOrderHistory}
+          onUpdateOrderStatus={handleUpdateOrderStatus}
         />
       )}
 

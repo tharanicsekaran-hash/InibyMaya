@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Mail, Lock, User, Sparkles, LogOut, CheckCircle, Package, Truck } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
-export default function AuthModal({ user, login, signup, logout, onClose, orderHistory = [] }) {
+export default function AuthModal({ user, login, signup, logout, onClose, orderHistory = [], onUpdateOrderStatus }) {
   const [isLoginView, setIsLoginView] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -203,24 +203,26 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
                          <div className="order-header-row">
                            <span className="order-id">Order: <strong>{order.id}</strong></span>
                            <span className={`order-status-pill status-${order.status ? order.status.toLowerCase().replace(/\s+/g, '-') : 'placed'}`}>
-                             {order.status || 'Placed'}
+                             {order.status === 'Cancelled by Customer' ? 'Cancelled' : (order.status || 'Placed')}
                            </span>
                          </div>
                          
-                         {/* Visual Progress Bar */}
-                         <div className="order-tracking-bar-container">
-                           <div className="tracking-bar-rail">
-                             <div className="tracking-bar-progress" style={{ width: `${pct}%` }}></div>
+                         {/* Visual Progress Bar (rendered only for active orders) */}
+                         {order.status !== 'Cancelled' && order.status !== 'Cancelled by Customer' && (
+                           <div className="order-tracking-bar-container">
+                             <div className="tracking-bar-rail">
+                               <div className="tracking-bar-progress" style={{ width: `${pct}%` }}></div>
+                             </div>
+                             <div className="tracking-labels-row">
+                               <span className={pct >= 15 ? 'active' : ''}>{isCustomOrder ? 'Drafting' : 'Placed'}</span>
+                               <span className={pct >= 55 ? 'active' : ''}>{isCustomOrder ? 'Stitching' : 'Approved'}</span>
+                               <span className={pct >= 90 ? 'active' : ''}>Shipped</span>
+                               <span className={pct >= 100 ? 'active' : ''}>Delivered</span>
+                             </div>
                            </div>
-                           <div className="tracking-labels-row">
-                             <span className={pct >= 15 ? 'active' : ''}>{isCustomOrder ? 'Drafting' : 'Placed'}</span>
-                             <span className={pct >= 55 ? 'active' : ''}>{isCustomOrder ? 'Stitching' : 'Approved'}</span>
-                             <span className={pct >= 90 ? 'active' : ''}>Shipped</span>
-                             <span className={pct >= 100 ? 'active' : ''}>Delivered</span>
-                           </div>
-                         </div>
+                         )}
 
-                         {order.trackingNumber && (
+                         {order.trackingNumber && order.status !== 'Cancelled' && (
                            <p className="order-tracking-number-label">
                              <Truck size={14} style={{ marginRight: '6px', verticalAlign: 'middle', opacity: 0.8 }} />
                              <span>Delhivery Tracking: <strong>{order.trackingNumber}</strong></span>
@@ -236,10 +238,25 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
                              <strong>Special Instruction:</strong> "{order.notes}"
                            </div>
                          )}
-                         <div className="order-date-row">
+                         <div className="order-date-row" style={{ marginBottom: (order.status !== 'Shipped' && order.status !== 'Delivered' && order.status !== 'Cancelled' && order.status !== 'Cancelled by Customer' && onUpdateOrderStatus) ? '12px' : '0' }}>
                            <span>Payment: COD ({order.paymentId})</span>
                            <span>{new Date(order.timestamp).toLocaleDateString()}</span>
                          </div>
+
+                          {order.status !== 'Shipped' && order.status !== 'Delivered' && order.status !== 'Cancelled' && order.status !== 'Cancelled by Customer' && onUpdateOrderStatus && (
+                            <div className="order-actions-row">
+                              <button 
+                                className="user-cancel-order-btn"
+                                onClick={() => {
+                                  if (window.confirm(`Are you sure you want to cancel order ${order.id}?`)) {
+                                    onUpdateOrderStatus(order.id, 'Cancelled by Customer', order.trackingNumber);
+                                  }
+                                }}
+                              >
+                                Cancel Order
+                              </button>
+                            </div>
+                          )}
                        </div>
                      );
                    })}

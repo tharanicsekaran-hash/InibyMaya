@@ -8,7 +8,9 @@ export default function ProductGrid({
   searchQuery, 
   setSearchQuery, 
   selectedSize, 
-  setSelectedSize 
+  setSelectedSize,
+  favorites = [],
+  onToggleFavorite
 }) {
   // Multiple Filter States
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -391,6 +393,8 @@ export default function ProductGrid({
                 <ProductCard 
                   key={product.id} 
                   product={product} 
+                  isFavorite={favorites.includes(product.id)}
+                  onToggleFavorite={onToggleFavorite}
                   onProductClick={(prod, size) => {
                     if (setSelectedSize) {
                       setSelectedSize(size);

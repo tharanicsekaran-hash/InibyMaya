@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ShoppingBag, User, Settings, LogOut, Menu, X } from 'lucide-react';
+import { Search, ShoppingBag, User, Settings, LogOut, Menu, X, Heart } from 'lucide-react';
 
 export default function Header({ 
   activePage, 
@@ -9,7 +9,9 @@ export default function Header({
   onProfileClick, 
   user, 
   logout, 
-  onSearchToggle 
+  onSearchToggle,
+  favoritesCount = 0,
+  onFavoritesClick
 }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -101,6 +103,11 @@ export default function Header({
               <User size={20} />
             </button>
           )}
+
+          <button className={`action-btn favorites-btn ${activePage === 'favorites' ? 'active' : ''}`} onClick={onFavoritesClick} aria-label="Favorites" title="My Wishlist">
+            <Heart size={20} />
+            {favoritesCount > 0 && <span className="favorites-badge">{favoritesCount}</span>}
+          </button>
 
           <button className="action-btn cart-btn" onClick={onCartClick} aria-label="Cart">
             <ShoppingBag size={20} />

@@ -108,6 +108,29 @@ create table public.testimonials (
 -- Disable RLS for Testimonials to support local admin additions
 alter table public.testimonials disable row level security;
 
+-- Enable Realtime for orders and testimonials tables
+-- REPLICA IDENTITY FULL is required so DELETE events include the full old row.
+-- The supabase_realtime publication tells Supabase to broadcast changes for these tables.
+alter table public.orders replica identity full;
+alter table public.testimonials replica identity full;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'orders'
+  ) then
+    alter publication supabase_realtime add table public.orders;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'testimonials'
+  ) then
+    alter publication supabase_realtime add table public.testimonials;
+  end if;
+end $$;
+
 -- 7. Create Settings Table (Boutique Configs)
 create table public.settings (
   key text primary key,

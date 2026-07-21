@@ -56,15 +56,15 @@ export default function ProductDetailModal({ product, onClose, onAddToCart, pres
   const totalPrice = unitPrice * quantity;
 
   const handleAddToCart = () => {
-    if (!selectedSize && !wantsCustomStitching) {
-      setErrorMsg('Please select a size or choose custom stitching.');
+    if (!selectedSize) {
+      setErrorMsg(wantsCustomStitching ? 'Please select a base size for your custom stitching.' : 'Please select a size.');
       return;
     }
 
     const cartItem = {
       product,
       color: selectedColor.name,
-      size: wantsCustomStitching ? 'Custom Tailored' : selectedSize,
+      size: wantsCustomStitching ? `Custom Tailored (${selectedSize})` : selectedSize,
       quantity,
       price: unitPrice,
       wantsCustomStitching,
@@ -175,7 +175,6 @@ export default function ProductDetailModal({ product, onClose, onAddToCart, pres
               <div className="custom-stitching-toggle-card">
                 <div className="toggle-header" onClick={() => {
                   setWantsCustomStitching(!wantsCustomStitching);
-                  setSelectedSize('');
                   setErrorMsg('');
                 }}>
                   <div className="toggle-info">
@@ -202,32 +201,30 @@ export default function ProductDetailModal({ product, onClose, onAddToCart, pres
               </div>
             )}
 
-            {/* Sizes (only show if not doing custom stitching) */}
-            {!wantsCustomStitching && (
-              <div className="option-section">
-                <div className="size-label-row">
-                  <span className="option-label">Size: <strong>{selectedSize || 'Select'}</strong></span>
-                  <button className="size-chart-link-btn" onClick={() => setShowSizeChart(true)}>
-                    <Ruler size={14} />
-                    <span>Size Guide</span>
-                  </button>
-                </div>
-                <div className="size-chips">
-                  {variants.sizes.map((size) => (
-                    <button
-                      key={size}
-                      className={`size-chip-btn ${selectedSize === size ? 'active' : ''}`}
-                      onClick={() => {
-                        setSelectedSize(size);
-                        setErrorMsg('');
-                      }}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
+            {/* Sizes (always visible so custom tailoring has a base size) */}
+            <div className="option-section">
+              <div className="size-label-row">
+                <span className="option-label">{wantsCustomStitching ? 'Base Size' : 'Size'}: <strong>{selectedSize || 'Select'}</strong></span>
+                <button className="size-chart-link-btn" onClick={() => setShowSizeChart(true)}>
+                  <Ruler size={14} />
+                  <span>Size Guide</span>
+                </button>
               </div>
-            )}
+              <div className="size-chips">
+                {variants.sizes.map((size) => (
+                  <button
+                    key={size}
+                    className={`size-chip-btn ${selectedSize === size ? 'active' : ''}`}
+                    onClick={() => {
+                      setSelectedSize(size);
+                      setErrorMsg('');
+                    }}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Quantity */}
             <div className="qty-section">
@@ -403,7 +400,7 @@ export default function ProductDetailModal({ product, onClose, onAddToCart, pres
                     <th>Size</th>
                     <th>Bust</th>
                     <th>Waist</th>
-                    <th>Hip</th>
+                    <th>Hips</th>
                     <th>Length</th>
                   </tr>
                 </thead>

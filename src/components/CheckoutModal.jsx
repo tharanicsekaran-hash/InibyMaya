@@ -52,7 +52,7 @@ export default function CheckoutModal({
   };
 
   return (
-    <div className="overlay modal-overlay">
+    <div className="overlay modal-overlay checkout-modal-overlay">
       <div className="checkout-modal-container">
         {/* Header */}
         <div className="checkout-header">

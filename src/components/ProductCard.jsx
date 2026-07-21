@@ -1,7 +1,7 @@
 import React from 'react';
-import { Star, Eye } from 'lucide-react';
+import { Star, Eye, Heart } from 'lucide-react';
 
-export default function ProductCard({ product, onProductClick }) {
+export default function ProductCard({ product, onProductClick, isFavorite = false, onToggleFavorite }) {
   const { title, price, images, category, rating, reviewsCount, bestSeller, customizable, variants = { sizes: [], colors: [] } } = product;
 
   return (
@@ -12,6 +12,24 @@ export default function ProductCard({ product, onProductClick }) {
           {bestSeller && <span className="badge badge-bestseller">Best Seller</span>}
           {customizable && <span className="badge badge-customizable">Custom Tailorable</span>}
         </div>
+
+        {/* Heart / Favorite Button */}
+        {onToggleFavorite && (
+          <button 
+            className={`favorite-btn-overlay ${isFavorite ? 'is-favorite' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite(product.id);
+            }}
+            aria-label={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+          >
+            <Heart 
+              size={12} 
+              fill={isFavorite ? "#ef4444" : "none"} 
+              stroke={isFavorite ? "#ef4444" : "var(--color-text-primary, #111827)"} 
+            />
+          </button>
+        )}
 
         {/* Primary Image */}
         <img 
@@ -37,7 +55,7 @@ export default function ProductCard({ product, onProductClick }) {
             e.stopPropagation();
             onProductClick(product, null);
           }}>
-            <Eye size={16} />
+            <Eye size={13} />
             <span>Quick Shop</span>
           </button>
         </div>

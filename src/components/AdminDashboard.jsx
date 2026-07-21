@@ -1,6 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings } from 'lucide-react';
 
+const getSleeveName = (id) => {
+  const sleevesMap = {
+    'thin-strap': 'Thin Strap',
+    '1inch-strap': '1 Inch Strap',
+    'tank': 'Tank',
+    'cap': 'Cap Sleeves',
+    'short': 'Short Sleeves',
+    'short-balloon': 'Short Balloon Puff',
+    'above-elbow': 'Above Elbow',
+    'above-elbow-puff': 'Above Elbow With Puff',
+    'three-quarter': 'Three Quarter Sleeves',
+    'full': 'Full Sleeves',
+    'chudidaar': 'Chudidaar',
+    'bell': 'Full Bell Sleeves'
+  };
+  return sleevesMap[id] || id;
+};
+
+const getNeckName = (id) => {
+  const necksMap = {
+    'round': 'Round Neck',
+    'v-neck': 'V Neck',
+    'scalloped-round': 'Scalloped Round Neck',
+    'scalloped-v': 'Scalloped V Neck',
+    'square': 'Square Neck',
+    'rectangular': 'Rectangular Neck',
+    'sweetheart': 'Sweetheart Neck',
+    'keyhole': 'Round Keyhole With Button',
+    'round-v-cut': 'Round V Cut',
+    'paan': 'Paan Neck',
+    'masaba': 'Masaba Neck',
+    'halter': 'Halter Neck',
+    'v-overlap': 'V-Overlap Collar',
+    'chinese': 'Chinese Collar',
+    'shirt': 'Shirt Collar',
+    'kaftan': 'Kaftan Neck',
+    'boat': 'Boat Neck',
+    'sabrina': 'Sabrina Neck',
+    'glass': 'Glass Neck',
+    'diamond': 'Diamond Neck'
+  };
+  return necksMap[id] || id;
+};
+
 export default function AdminDashboard({ 
   products, 
   orders, 
@@ -20,7 +64,8 @@ export default function AdminDashboard({
   onAddTestimonial,
   onDeleteTestimonial,
   boutiqueSettings = {},
-  onSaveSettings
+  onSaveSettings,
+  isDbRlsActive = false
 }) {
   const [activeTab, setActiveTab] = useState('orders');
 
@@ -126,10 +171,58 @@ export default function AdminDashboard({
   const [occasion, setOccasion] = useState('Daily Elegance');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
-  const [image1, setImage1] = useState('');
-  const [image2, setImage2] = useState('');
+  const [primaryImages, setPrimaryImages] = useState(['']);
+  const [hoverImage, setHoverImage] = useState('');
   const [customizable, setCustomizable] = useState(true);
+  const [bestSeller, setBestSeller] = useState(false);
+  const [rating, setRating] = useState(5.0);
+  const [reviewsCount, setReviewsCount] = useState(1);
   const [successMsg, setSuccessMsg] = useState('');
+
+  const handleMultiplePrimaryUpload = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPrimaryImages(prev => {
+          const filtered = prev.filter(x => x && x.trim() !== '');
+          return [...filtered, reader.result];
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleHoverUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setHoverImage(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAddPrimaryRow = () => {
+    setPrimaryImages(prev => [...prev, '']);
+  };
+
+  const handleRemovePrimaryRow = (index) => {
+    setPrimaryImages(prev => {
+      const updated = prev.filter((_, i) => i !== index);
+      return updated.length === 0 ? [''] : updated;
+    });
+  };
+
+  const handlePrimaryTextChange = (index, value) => {
+    setPrimaryImages(prev => {
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
+  };
 
   // Variants editing states
   const [productColors, setProductColors] = useState([{ name: 'Indigo Blue', hex: '#1a365d' }]);
@@ -182,20 +275,7 @@ export default function AdminDashboard({
   const customOrdersCount = orders.filter(o => o.items.some(item => item.wantsCustomStitching)).length;
   const avgOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
 
-  // File Upload base64 read helper
-  const handleImageUpload = (e, index) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (index === 1) {
-        setImage1(reader.result);
-      } else {
-        setImage2(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
+
 
   // Video File read helper for Reels
   const handleVideoUpload = (e) => {
@@ -229,11 +309,26 @@ export default function AdminDashboard({
     );
   };
 
+
+
   // Product Add / Update Submit
   const handleProductSubmit = (e) => {
     e.preventDefault();
-    if (!title || !price || !description || !image1) {
-      alert('Please fill out all required fields (including primary image file).');
+    const finalPrimary = primaryImages.filter(img => img && img.trim() !== '');
+    if (finalPrimary.length === 0) {
+      alert('Please upload or paste at least one primary product photo.');
+      return;
+    }
+
+    // Merge primary photos and the hover swap image into the standard images array format
+    let finalImages = [...finalPrimary];
+    if (hoverImage && hoverImage.trim() !== '') {
+      // Hover image goes at index 1
+      finalImages.splice(1, 0, hoverImage.trim());
+    }
+
+    if (!title || !price || !description) {
+      alert('Please fill out all required fields.');
       return;
     }
     if (productColors.length === 0) {
@@ -252,12 +347,15 @@ export default function AdminDashboard({
         category,
         price: parseFloat(price),
         description,
-        images: [image1, image2 || image1],
+        images: finalImages,
         variants: {
           colors: productColors,
           sizes: productSizes
         },
         customizable,
+        bestSeller,
+        rating: parseFloat(rating || 5.0),
+        reviewsCount: parseInt(reviewsCount || 1),
         occasion,
         highlights: {
           fit: hFit,
@@ -277,17 +375,17 @@ export default function AdminDashboard({
         title,
         category,
         price: parseFloat(price),
-        rating: 5.0,
-        reviewsCount: 1,
+        rating: parseFloat(rating || 5.0),
+        reviewsCount: parseInt(reviewsCount || 1),
         description,
         details: ['Handcrafted quality fabric', 'Modern regular fitting style', 'Breathable weave structure'],
-        images: [image1, image2 || image1],
+        images: finalImages,
         variants: {
           colors: productColors,
           sizes: productSizes
         },
         customizable,
-        bestSeller: false,
+        bestSeller,
         occasion,
         highlights: {
           fit: hFit,
@@ -306,9 +404,12 @@ export default function AdminDashboard({
     setTitle('');
     setPrice('');
     setDescription('');
-    setImage1('');
-    setImage2('');
+    setPrimaryImages(['']);
+    setHoverImage('');
     setCustomizable(true);
+    setBestSeller(false);
+    setRating(5.0);
+    setReviewsCount(1);
     setOccasion('Daily Elegance');
     setProductColors([{ name: 'Indigo Blue', hex: '#1a365d' }]);
     setProductSizes(['XS', 'S', 'M', 'L', 'XL', 'XXL']);
@@ -329,9 +430,18 @@ export default function AdminDashboard({
     setOccasion(prod.occasion || 'Daily Elegance');
     setPrice(prod.price);
     setDescription(prod.description);
-    setImage1(prod.images[0]);
-    setImage2(prod.images[1] || '');
+    
+    // Separate hover swap image from primary images array
+    const hoverImg = prod.images[1] || '';
+    const primaryImgs = prod.images.filter((_, idx) => idx !== 1);
+    setPrimaryImages(primaryImgs.length > 0 ? primaryImgs : ['']);
+    setHoverImage(hoverImg);
+    
     setCustomizable(prod.customizable);
+    setBestSeller(prod.bestSeller || false);
+    setRating(prod.rating || 5.0);
+    setReviewsCount(prod.reviewsCount || 1);
+    
     setProductColors(prod.variants?.colors || [{ name: 'Indigo Blue', hex: '#1a365d' }]);
     setProductSizes(prod.variants?.sizes || ['XS', 'S', 'M', 'L', 'XL', 'XXL']);
     setHFit(prod.highlights?.fit || 'Straight Regular Fit');
@@ -348,9 +458,12 @@ export default function AdminDashboard({
     setTitle('');
     setPrice('');
     setDescription('');
-    setImage1('');
-    setImage2('');
+    setPrimaryImages(['']);
+    setHoverImage('');
     setCustomizable(true);
+    setBestSeller(false);
+    setRating(5.0);
+    setReviewsCount(1);
     setOccasion('Daily Elegance');
     setProductColors([{ name: 'Indigo Blue', hex: '#1a365d' }]);
     setProductSizes(['XS', 'S', 'M', 'L', 'XL', 'XXL']);
@@ -447,6 +560,51 @@ export default function AdminDashboard({
 
   return (
     <div className="admin-dashboard-container container">
+      {isDbRlsActive && (
+        <div className="rls-warning-banner animate-fadeIn" style={{
+          backgroundColor: '#fee2e2',
+          border: '1px solid #fca5a5',
+          borderRadius: '8px',
+          padding: '18px 20px',
+          marginBottom: '30px',
+          color: '#991b1b',
+          fontSize: '13px',
+          lineHeight: '1.6',
+          boxShadow: '0 2px 10px rgba(239, 68, 68, 0.05)'
+        }}>
+          <strong style={{ display: 'block', fontSize: '15px', marginBottom: '8px', fontFamily: 'var(--font-display)', letterSpacing: '0.03em' }}>
+            ⚠️ SUPABASE ROW-LEVEL SECURITY (RLS) ACTIVE WARNING
+          </strong>
+          Row-Level Security is currently active on your Supabase tables. This blocks public read and write access for visitors, causing order list checks to return 0 orders on page refresh.
+          <br /><br />
+          <strong>To resolve this immediately:</strong>
+          <ol style={{ marginLeft: '20px', marginTop: '8px', listStyleType: 'decimal' }}>
+            <li>Log in to your <strong>Supabase Dashboard</strong>.</li>
+            <li>Select the <strong>SQL Editor</strong> tool from the left navigation panel.</li>
+            <li>Create a new query tab, copy and paste the SQL block below, and click <strong>Run</strong>:</li>
+          </ol>
+          <pre style={{
+            backgroundColor: '#ffffff',
+            border: '1px solid #fca5a5',
+            borderRadius: '4px',
+            padding: '12px',
+            marginTop: '12px',
+            fontSize: '11px',
+            fontFamily: 'monospace',
+            overflowX: 'auto',
+            color: '#1f2937',
+            lineHeight: '1.4'
+          }}>{`-- Copy and execute in your Supabase SQL Editor:
+alter table public.customers disable row level security;
+alter table public.products disable row level security;
+alter table public.reels disable row level security;
+alter table public.promos disable row level security;
+alter table public.orders disable row level security;
+alter table public.testimonials disable row level security;
+alter table public.settings disable row level security;`}</pre>
+        </div>
+      )}
+
       {/* Sidebar / Sidebar Header */}
       <div className="admin-header-row">
         <h2>InibyMaya Store Manager Console</h2>
@@ -562,11 +720,45 @@ export default function AdminDashboard({
                                 <span>• <strong>{item.product.title}</strong> ({item.color}) - Qty: {item.quantity}</span>
                                 <div className="sizing-readout-row">
                                   <span>Standard Size: <span className="size-badge-table">{item.size}</span></span>
-                                  {item.wantsCustomStitching && item.measurements && (
-                                    <div className="table-item-measurements animate-fadeIn">
-                                      <Ruler size={10} />
-                                      <span><strong>Bust: {item.measurements.bust}"</strong> | <strong>Waist: {item.measurements.waist}"</strong> | <strong>Hips: {item.measurements.hips}"</strong> | <strong>Height: {item.measurements.height}</strong></span>
-                                      {item.measurements.notes && <p className="admin-tailoring-notes">Notes: "{item.measurements.notes}"</p>}
+                                  {item.wantsCustomStitching && (item.measurements || item.styleCustomization) && (
+                                    <div className="table-item-measurements animate-fadeIn" style={{
+                                      marginTop: '6px',
+                                      padding: '8px 12px',
+                                      borderRadius: '6px',
+                                      border: '1px dashed var(--color-border)',
+                                      backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                                      fontSize: '11.5px',
+                                      lineHeight: '1.5'
+                                    }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px', color: 'var(--color-text-primary)', fontWeight: '600' }}>
+                                        <Ruler size={12} />
+                                        <span>Style Studio Customizations:</span>
+                                      </div>
+                                      {item.measurements && (
+                                        <div style={{ marginBottom: '6px' }}>
+                                          <span><strong>Bust: {item.measurements.bust}"</strong> | <strong>Waist: {item.measurements.waist}"</strong> | <strong>Hips: {item.measurements.hips}"</strong> | <strong>Height: {item.measurements.height}</strong></span>
+                                          {item.measurements.notes && <p className="admin-tailoring-notes">Notes: "{item.measurements.notes}"</p>}
+                                        </div>
+                                      )}
+                                      {item.styleCustomization && (
+                                        <>
+                                          <ul style={{ paddingLeft: '14px', margin: '4px 0', listStyleType: 'disc' }}>
+                                            <li><strong>Lining:</strong> {item.styleCustomization.lining || 'Without Lining'}</li>
+                                            <li><strong>Maternity Zip:</strong> {item.styleCustomization.zip || 'No'}</li>
+                                            {item.styleCustomization.sleeve && (
+                                              <li><strong>Sleeve Style:</strong> {getSleeveName(item.styleCustomization.sleeve)}</li>
+                                            )}
+                                            {item.styleCustomization.neck && (
+                                              <li><strong>Neck Style:</strong> {getNeckName(item.styleCustomization.neck)}</li>
+                                            )}
+                                          </ul>
+                                          {item.styleCustomization.notes && (
+                                            <div style={{ marginTop: '6px', color: 'var(--color-text-secondary)' }}>
+                                              <strong>Custom Notes:</strong> "{item.styleCustomization.notes}"
+                                            </div>
+                                          )}
+                                        </>
+                                      )}
                                     </div>
                                   )}
                                 </div>
@@ -589,6 +781,8 @@ export default function AdminDashboard({
                                   <option value="Quality Check">Quality Check</option>
                                   <option value="Shipped">Shipped</option>
                                   <option value="Delivered">Delivered</option>
+                                  <option value="Cancelled">Cancelled</option>
+                                  <option value="Cancelled by Customer">Cancelled by Customer</option>
                                 </>
                               ) : (
                                 <>
@@ -596,6 +790,8 @@ export default function AdminDashboard({
                                   <option value="Quality Check">Quality Check</option>
                                   <option value="Shipped">Shipped</option>
                                   <option value="Delivered">Delivered</option>
+                                  <option value="Cancelled">Cancelled</option>
+                                  <option value="Cancelled by Customer">Cancelled by Customer</option>
                                 </>
                               )}
                             </select>
@@ -851,57 +1047,194 @@ export default function AdminDashboard({
                 </div>
               </div>
               
-              {/* Premium Image File Uploads */}
-              <div className="form-group">
-                <label>Primary Image (File Upload) *</label>
-                <div className="file-upload-wrapper">
-                  <label className="custom-file-upload">
+              {/* Primary Slideshow Images Upload & URLs */}
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '8px' }}>
+                  <span style={{ fontWeight: '700' }}>Product Slideshow Photos * (Upload files or paste URLs)</span>
+                  <span style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '400' }}>These display in the detail slideshow carousel (exclude hover swap image here).</span>
+                </label>
+                
+                {/* File Upload Selector */}
+                <div className="file-upload-wrapper" style={{ marginBottom: '16px' }}>
+                  <label className="custom-file-upload" style={{ display: 'inline-flex', cursor: 'pointer', gap: '8px', padding: '10px 16px', border: '1px dashed var(--color-text-secondary)', borderRadius: '6px' }}>
                     <Upload size={14} />
-                    <span>Select Primary File</span>
+                    <span>Upload Multiple Primary Photos</span>
                     <input 
                       type="file" 
                       accept="image/*" 
-                      onChange={(e) => handleImageUpload(e, 1)} 
+                      multiple
+                      onChange={handleMultiplePrimaryUpload} 
                     />
                   </label>
                 </div>
-                {image1 && (
-                  <div className="admin-image-preview">
-                    <img src={image1} alt="Primary Preview" />
-                    <span className="file-loaded-status">Image Loaded ✓</span>
+
+                {/* List of Image URLs / Uploaded Previews */}
+                <div className="admin-images-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {primaryImages.map((imgUrl, index) => (
+                    <div key={index} className="admin-image-input-item animate-fadeIn" style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      padding: '12px',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--color-bg-secondary)'
+                    }}>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--color-text-secondary)', minWidth: '85px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          {index === 0 ? 'Primary 🌟' : `Photo ${index + 1}`}
+                        </span>
+                        <input 
+                          type="text" 
+                          placeholder="Paste primary image URL here..." 
+                          value={imgUrl} 
+                          onChange={(e) => handlePrimaryTextChange(index, e.target.value)}
+                          style={{ flex: 1, margin: 0, padding: '8px 12px', fontSize: '12px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                        />
+                        <button 
+                          type="button" 
+                          onClick={() => handleRemovePrimaryRow(index)}
+                          style={{
+                            padding: '8px 14px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            backgroundColor: '#fee2e2',
+                            border: '1px solid #fca5a5',
+                            color: '#dc2626',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em'
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      
+                      {imgUrl && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px' }}>
+                          <img 
+                            src={imgUrl} 
+                            alt={`Primary Preview ${index + 1}`} 
+                            style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                            onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=150'; }}
+                          />
+                          <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: '600' }}>Preview Loaded ✓</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <button 
+                  type="button" 
+                  onClick={handleAddPrimaryRow}
+                  style={{
+                    marginTop: '12px',
+                    padding: '10px 16px',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    backgroundColor: 'transparent',
+                    border: '1px dashed var(--color-text-secondary)',
+                    color: 'var(--color-text-secondary)',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}
+                >
+                  <PlusCircle size={13} />
+                  Add Another Slideshow Photo Field
+                </button>
+              </div>
+
+              {/* Designated Hover Effect Image Upload Field */}
+              <div className="form-group" style={{ gridColumn: 'span 2', padding: '16px', border: '1px solid var(--color-border)', borderRadius: '6px', backgroundColor: 'var(--color-bg-secondary)' }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
+                  <span style={{ fontWeight: '700', fontSize: '13px' }}>Hover Effect Image</span>
+                  <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: '400' }}>This photo will display when a user hovers over the product card in grids.</span>
+                </label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <label className="custom-file-upload" style={{ display: 'inline-flex', cursor: 'pointer', gap: '8px', padding: '10px 16px', border: '1px solid var(--color-border)', borderRadius: '6px', backgroundColor: 'var(--color-bg-primary)', fontSize: '12px', fontWeight: '500' }}>
+                    <Upload size={14} />
+                    <span>Upload Hover File</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleHoverUpload} 
+                    />
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="Or paste hover image URL here..." 
+                    value={hoverImage} 
+                    onChange={(e) => setHoverImage(e.target.value)}
+                    style={{ flex: 1, margin: 0, padding: '10px 12px', fontSize: '12px', borderRadius: '6px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-primary)' }}
+                  />
+                </div>
+                {hoverImage && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                    <img 
+                      src={hoverImage} 
+                      alt="Hover Swap Preview" 
+                      style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                      onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=150'; }}
+                    />
+                    <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: '600' }}>Hover Preview Loaded ✓</span>
                   </div>
                 )}
               </div>
 
-              <div className="form-group">
-                <label>Secondary Image (for Hover Swap)</label>
-                <div className="file-upload-wrapper">
-                  <label className="custom-file-upload">
-                    <Upload size={14} />
-                    <span>Select Secondary File</span>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={(e) => handleImageUpload(e, 2)} 
-                    />
-                  </label>
+              {/* Feasibility for Best Selling toggle, customizable toggle, ratings, and reviews count */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', gridColumn: 'span 2', marginTop: '10px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
+                <div className="form-group-checkbox" style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
+                  <input 
+                    type="checkbox" 
+                    id="custom-tailor" 
+                    checked={customizable} 
+                    onChange={() => setCustomizable(!customizable)} 
+                  />
+                  <label htmlFor="custom-tailor" style={{ fontWeight: '600', cursor: 'pointer' }}>Supports Custom Stitching</label>
                 </div>
-                {image2 && (
-                  <div className="admin-image-preview">
-                    <img src={image2} alt="Secondary Preview" />
-                    <span className="file-loaded-status">Secondary Image Loaded ✓</span>
-                  </div>
-                )}
-              </div>
 
-              <div className="form-group-checkbox">
-                <input 
-                  type="checkbox" 
-                  id="custom-tailor" 
-                  checked={customizable} 
-                  onChange={() => setCustomizable(!customizable)} 
-                />
-                <label htmlFor="custom-tailor">Supports Custom Stitching Form</label>
+                <div className="form-group-checkbox" style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
+                  <input 
+                    type="checkbox" 
+                    id="best-seller" 
+                    checked={bestSeller} 
+                    onChange={() => setBestSeller(!bestSeller)} 
+                  />
+                  <label htmlFor="best-seller" style={{ fontWeight: '600', cursor: 'pointer' }}>Mark as Best Seller</label>
+                </div>
+
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label style={{ fontWeight: '600', marginBottom: '4px', fontSize: '12px' }}>Product Rating (1.0 to 5.0)</label>
+                  <input 
+                    type="number" 
+                    min="1.0" 
+                    max="5.0" 
+                    step="0.1" 
+                    value={rating} 
+                    onChange={(e) => setRating(e.target.value)} 
+                    style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '4px', border: '1px solid var(--color-border)', width: '100%' }}
+                  />
+                </div>
+
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label style={{ fontWeight: '600', marginBottom: '4px', fontSize: '12px' }}>Count of Reviews</label>
+                  <input 
+                    type="number" 
+                    min="0" 
+                    value={reviewsCount} 
+                    onChange={(e) => setReviewsCount(e.target.value)} 
+                    style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '4px', border: '1px solid var(--color-border)', width: '100%' }}
+                  />
+                </div>
               </div>
 
               <div className="form-buttons-row">

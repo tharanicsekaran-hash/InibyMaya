@@ -596,11 +596,32 @@ export default function App() {
         })
         .subscribe();
 
+      // Realtime Reels Subscription — keeps admin panel & customer console in sync when reels are published or removed
+      const reelsChannel = supabase
+        .channel('realtime:reels')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'reels' }, (payload) => {
+          console.log('Realtime reel change detected:', payload);
+          if (payload.eventType === 'INSERT') {
+            const newReel = mapDbReelToClient(payload.new);
+            setReelsList(prev => {
+              if (prev.some(r => r.id === newReel.id)) return prev;
+              return [...prev, newReel];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedReel = mapDbReelToClient(payload.new);
+            setReelsList(prev => prev.map(r => r.id === updatedReel.id ? updatedReel : r));
+          } else if (payload.eventType === 'DELETE') {
+            setReelsList(prev => prev.filter(r => r.id !== payload.old.id));
+          }
+        })
+        .subscribe();
+
       return () => {
         subscription?.unsubscribe();
         supabase.removeChannel(ordersChannel);
         supabase.removeChannel(testimonialsChannel);
         supabase.removeChannel(productsChannel);
+        supabase.removeChannel(reelsChannel);
       };
     }
   }, [activePage]);
@@ -1001,9 +1022,22 @@ export default function App() {
 
   // Reels Configuration sync helpers
   const handleAddReel = async (newReel) => {
-    setReelsList(prev => [...prev, newReel]);
+    setReelsList(prev => {
+      if (prev.some(r => r.id === newReel.id)) {
+        return prev.map(r => r.id === newReel.id ? newReel : r);
+      }
+      return [...prev, newReel];
+    });
+
     if (supabase) {
-      await supabase.from('reels').insert(mapClientReelToDb(newReel));
+      try {
+        const { error } = await supabase.from('reels').upsert(mapClientReelToDb(newReel));
+        if (error) {
+          console.error('Supabase reels table upsert failed:', error.message, error);
+        }
+      } catch (err) {
+        console.error('Failed to sync reel with Supabase:', err);
+      }
     }
   };
   const handleDeleteReel = async (id) => {

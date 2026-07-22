@@ -1568,7 +1568,20 @@ alter table public.settings disable row level security;`}</pre>
               {reelsList.map((reel) => (
                 <div key={reel.id} className="inventory-card reel-admin-card">
                   {reel.videoUrl && (
-                    <video src={reel.videoUrl} muted autoPlay loop style={{ width: '60px', height: '100px', objectFit: 'cover', borderRadius: '4px' }} />
+                    <video 
+                      src={reel.videoUrl} 
+                      muted 
+                      autoPlay 
+                      loop 
+                      playsInline
+                      style={{ 
+                        width: '60px', 
+                        height: '100px', 
+                        objectFit: 'cover', 
+                        borderRadius: '6px',
+                        pointerEvents: 'none'
+                      }} 
+                    />
                   )}
                   <div className="inventory-details text-left">
                     <h5>{reel.title}</h5>

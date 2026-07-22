@@ -130,7 +130,7 @@ export default function Header({
           <div className="mobile-nav-drawer">
             <div className="drawer-header">
               <div className="brand-logo" onClick={() => { setActivePage('home'); setMobileMenuOpen(false); }}>
-                <img src="/logo.png" alt="INI By Maya" className="brand-logo-img" style={{ height: '36px' }} />
+                <img src="/logo.png" alt="INI By Maya" className="brand-logo-img" style={{ height: '44px', width: 'auto' }} />
               </div>
               <button onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">
                 <X size={24} />

@@ -97,10 +97,12 @@
 }
 
 .brand-logo-img {
-  height: 48px;
+  height: 56px;
   width: auto;
   object-fit: contain;
   display: block;
+  filter: contrast(1.2) brightness(0.92) drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.15));
+  transition: transform 0.2s ease, height 0.2s ease;
 }
 
 .header-container .brand-logo {
@@ -6093,7 +6095,7 @@
     gap: 8px !important;
   }
   .brand-logo-img {
-    height: 38px !important;
+    height: 48px !important;
   }
   
   .shop-grid-layout {
@@ -6152,7 +6154,7 @@
     padding: 4px !important;
   }
   .brand-logo-img {
-    height: 34px !important;
+    height: 44px !important;
   }
   
   /* Mobile Product Quick View Optimization - Fuller image & compact top spacing */

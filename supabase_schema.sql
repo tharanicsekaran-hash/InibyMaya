@@ -108,12 +108,13 @@ create table public.testimonials (
 -- Disable RLS for Testimonials to support local admin additions
 alter table public.testimonials disable row level security;
 
--- Enable Realtime for orders, testimonials, and products tables
+-- Enable Realtime for orders, testimonials, products, and reels tables
 -- REPLICA IDENTITY FULL is required so DELETE events include the full old row.
 -- The supabase_realtime publication tells Supabase to broadcast changes for these tables.
 alter table public.orders replica identity full;
 alter table public.testimonials replica identity full;
 alter table public.products replica identity full;
+alter table public.reels replica identity full;
 
 do $$
 begin
@@ -136,6 +137,13 @@ begin
     where pubname = 'supabase_realtime' and tablename = 'products'
   ) then
     alter publication supabase_realtime add table public.products;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'reels'
+  ) then
+    alter publication supabase_realtime add table public.reels;
   end if;
 end $$;
 

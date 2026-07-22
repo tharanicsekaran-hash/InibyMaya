@@ -1224,7 +1224,14 @@ export default function App() {
         ) : activePage === 'home' ? (
           // Home Page
           <>
-            <Hero onShopClick={() => setActivePage('shop')} />
+            <Hero 
+              onShopClick={() => setActivePage('shop')} 
+              onCustomClick={() => {
+                setActivePage('shop');
+                setSearchQuery('custom tailoring');
+              }}
+              settings={boutiqueSettings}
+            />
 
             {/* Category Icon Strip — directly below hero, configurable via admin settings */}
             <CategoryStrip

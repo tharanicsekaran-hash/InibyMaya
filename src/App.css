@@ -211,6 +211,22 @@
   text-align: left;
 }
 
+.hero-tagline-badge {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  background-color: rgba(183, 110, 121, 0.12);
+  border: 1px solid rgba(183, 110, 121, 0.3);
+  padding: 6px 16px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+  animation: fadeIn 0.6s ease;
+}
+
 .hero-title {
   font-size: 64px;
   font-weight: 200;

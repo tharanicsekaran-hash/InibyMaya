@@ -1,20 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * ReelCard — Self-contained reel video card.
- *
- * Fixes applied:
- *  1. preload="metadata" — browser downloads just the first frame + duration.
- *     This eliminates the black-flash flicker on the first (visible) reel, because
- *     the first frame is available immediately as a visual placeholder.
- *
- *  2. rootMargin: "0px 600px 0px 600px" on the IntersectionObserver — widens
- *     the detection zone 600 px to the LEFT and RIGHT of the viewport.
- *     This means ALL reels in the horizontal carousel are "considered visible"
- *     and get their play() call fired, even though they're horizontally off-screen.
- *
- *  3. Separate vertical-scroll observer — pauses videos when the entire
- *     reels section scrolls out of the vertical viewport (saves battery/CPU).
+ * ReelCard — Self-contained reel video card with instant page-load video streaming.
  */
 function ReelCard({ reel, onShopOutfit }) {
   const videoRef = useRef(null);
@@ -22,14 +9,17 @@ function ReelCard({ reel, onShopOutfit }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  const posterImg = reel.thumbnailFile || reel.productImage || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=600&h=800';
+
   useEffect(() => {
     const video = videoRef.current;
     const wrapper = wrapperRef.current;
     if (!video || !wrapper) return;
 
-    // ── Observer 1: wide horizontal rootMargin catches all carousel cards ──
-    // root: null (viewport), but with 600px margin on left & right so every
-    // reel in the horizontal scroll row is treated as "intersecting".
+    // Immediately trigger play on mount for instant loading right after page enter/refresh
+    video.play().catch(() => {});
+
+    // IntersectionObserver to auto-play when visible and pause when scrolled far vertically
     const playObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -40,12 +30,11 @@ function ReelCard({ reel, onShopOutfit }) {
       },
       {
         root: null,
-        rootMargin: '200px 800px 200px 800px', // generous horizontal margins
+        rootMargin: '300px 1000px 300px 1000px', // generous bounds so all carousel reels load & play immediately
         threshold: 0,
       }
     );
 
-    // ── Observer 2: tight vertical check — pause if section scrolls off-screen ──
     const pauseObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -56,7 +45,7 @@ function ReelCard({ reel, onShopOutfit }) {
       },
       {
         root: null,
-        rootMargin: '0px',
+        rootMargin: '200px',
         threshold: 0,
       }
     );
@@ -86,38 +75,51 @@ function ReelCard({ reel, onShopOutfit }) {
         onClick={handleClick}
         style={{ cursor: hasProduct ? 'pointer' : 'default' }}
       >
-        {/* Thumbnail placeholder shown while video is buffering — eliminates black flash */}
-        {!isLoaded && (reel.thumbnailFile || reel.productImage) && (
-          <img
-            src={reel.thumbnailFile || reel.productImage}
-            alt=""
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              zIndex: 1,
-            }}
-          />
-        )}
+        {/* Poster Backdrop Image — renders instantly on page load (0ms) so card NEVER looks broken */}
+        <img
+          src={posterImg}
+          alt={reel.title || "Reel video preview"}
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            zIndex: 1,
+            opacity: isLoaded ? 0 : 1,
+            transition: 'opacity 0.4s ease-in-out',
+            pointerEvents: 'none'
+          }}
+        />
 
-        {/*
-          preload="metadata": browser fetches just the first frame + duration.
-          This gives an instant visual frame so there's no black-screen flash.
-          It does NOT download the full video — only ~a few KB of headers.
-        */}
+        {/* Video Element — configured with autoPlay, preload="auto", and poster */}
         <video
           ref={videoRef}
           src={reel.videoUrl}
+          poster={posterImg}
           loop
           muted
+          autoPlay
           playsInline
-          preload="metadata"
+          preload="auto"
           className="reel-video"
-          style={{ position: 'relative', zIndex: 2 }}
-          onCanPlay={() => setIsLoaded(true)}
+          style={{ 
+            position: 'relative', 
+            zIndex: 2,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover'
+          }}
+          onLoadedData={() => {
+            setIsLoaded(true);
+            if (videoRef.current) videoRef.current.play().catch(() => {});
+          }}
+          onCanPlay={() => {
+            setIsLoaded(true);
+            if (videoRef.current) videoRef.current.play().catch(() => {});
+          }}
+          onPlaying={() => setIsLoaded(true)}
         />
 
         {/* Dark gradient overlay */}
@@ -149,7 +151,7 @@ function ReelCard({ reel, onShopOutfit }) {
               <p className="reel-product-title">{reel.productTitle || reel.title}</p>
               {reel.productPrice > 0 && (
                 <span className="reel-product-price">
-                  &#8377;{reel.productPrice.toLocaleString('en-IN')}
+                  &#8377;{Number(reel.productPrice).toLocaleString('en-IN')}
                 </span>
               )}
             </div>

@@ -83,10 +83,19 @@ export default function AdminDashboard({
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [settingsSuccessMsg, setSettingsSuccessMsg] = useState('');
 
-  // Storefront Categories & Occasions state
+  // Storefront Categories, Occasions & Hero Banner state
   const [storefrontCategories, setStorefrontCategories] = useState([]);
   const [storefrontOccasions, setStorefrontOccasions] = useState([]);
   const [storefrontSuccessMsg, setStorefrontSuccessMsg] = useState('');
+
+  // Homepage Hero Banner State
+  const [heroImage, setHeroImage] = useState('');
+  const [heroTagline, setHeroTagline] = useState('');
+  const [heroTitleLine1, setHeroTitleLine1] = useState('');
+  const [heroTitleLine2, setHeroTitleLine2] = useState('');
+  const [heroSubtitle, setHeroSubtitle] = useState('');
+  const [heroPrimaryBtnText, setHeroPrimaryBtnText] = useState('');
+  const [heroSecondaryBtnText, setHeroSecondaryBtnText] = useState('');
 
   useEffect(() => {
     if (boutiqueSettings && Object.keys(boutiqueSettings).length > 0) {
@@ -100,6 +109,16 @@ export default function AdminDashboard({
       setNewsletterDiscount(Number(boutiqueSettings.newsletterDiscount !== undefined ? boutiqueSettings.newsletterDiscount : 10));
       setNewsletterPromoCode(boutiqueSettings.newsletterPromoCode || 'WELCOME10');
       setNewsletterEnabled(boutiqueSettings.newsletterEnabled !== false);
+
+      // Hero Banner fields
+      setHeroImage(boutiqueSettings.heroImage || 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600');
+      setHeroTagline(boutiqueSettings.heroTagline || 'AUTUMN / WINTER 2026 COUTURE');
+      setHeroTitleLine1(boutiqueSettings.heroTitleLine1 || 'Where Heritage Meets');
+      setHeroTitleLine2(boutiqueSettings.heroTitleLine2 || 'Modern Couture');
+      setHeroSubtitle(boutiqueSettings.heroSubtitle || 'Handcrafted Chikankari, rich velvet sets, and custom-tailored Anarkalis designed for the modern connoisseur.');
+      setHeroPrimaryBtnText(boutiqueSettings.heroPrimaryBtnText || 'Explore the Collection');
+      setHeroSecondaryBtnText(boutiqueSettings.heroSecondaryBtnText || 'Custom Fitting Guide');
+
       // Load categories/occasions from settings
       try { 
         const cats = JSON.parse(boutiqueSettings.categories || '[]');
@@ -164,11 +183,20 @@ export default function AdminDashboard({
 
   const handleSaveStorefront = () => {
     if (onSaveSettings) {
-      const currentSettings = { ...boutiqueSettings };
-      currentSettings.categories = JSON.stringify(storefrontCategories.filter(c => c.name && c.name.trim()));
-      currentSettings.occasions = JSON.stringify(storefrontOccasions.filter(o => o.name && o.name.trim()));
+      const currentSettings = { 
+        ...boutiqueSettings,
+        heroImage,
+        heroTagline,
+        heroTitleLine1,
+        heroTitleLine2,
+        heroSubtitle,
+        heroPrimaryBtnText,
+        heroSecondaryBtnText,
+        categories: JSON.stringify(storefrontCategories.filter(c => c.name && c.name.trim())),
+        occasions: JSON.stringify(storefrontOccasions.filter(o => o.name && o.name.trim()))
+      };
       onSaveSettings(currentSettings);
-      setStorefrontSuccessMsg('Storefront sections updated successfully!');
+      setStorefrontSuccessMsg('Storefront & Homepage Banner configuration saved successfully!');
       setTimeout(() => setStorefrontSuccessMsg(''), 4000);
     }
   };
@@ -1950,6 +1978,140 @@ alter table public.settings disable row level security;`}</pre>
 
           <div className="admin-form-box" style={{ maxWidth: '750px', margin: '0 auto' }}>
 
+            {/* ── HOMEPAGE HERO BANNER SECTION ── */}
+            <div style={{ marginBottom: '28px', paddingBottom: '24px', borderBottom: '1px solid var(--color-border)' }}>
+              <h4 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '8px', color: 'var(--color-text-primary)' }}>
+                Homepage Hero Banner & Text
+              </h4>
+              <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '20px' }}>
+                Customize the background image, headings, taglines, and action buttons displayed on the main homepage banner.
+              </p>
+
+              {/* Banner Image Input with Upload & Preview */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
+                  Banner Background Image
+                </label>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input
+                    type="text"
+                    className="admin-input"
+                    style={{ flex: '1', minWidth: '240px' }}
+                    placeholder="Image URL (e.g. https://images.unsplash.com/...)"
+                    value={heroImage}
+                    onChange={(e) => setHeroImage(e.target.value)}
+                  />
+                  <label className="upload-btn-secondary" style={{ cursor: 'pointer', margin: 0, padding: '10px 16px', fontSize: '13px', border: '1px solid var(--color-border)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--color-bg-secondary)' }}>
+                    <Upload size={14} />
+                    <span>Upload Photo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => setHeroImage(event.target.result);
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                {heroImage && (
+                  <div style={{ marginTop: '10px', height: '120px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--color-border)', position: 'relative' }}>
+                    <img src={heroImage} alt="Hero Banner Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div style={{ position: 'absolute', bottom: '8px', left: '12px', background: 'rgba(0,0,0,0.6)', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>
+                      Live Banner Preview
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Tagline & Headings */}
+              <div className="form-grid-2col" style={{ marginBottom: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
+                    Top Tagline / Badge
+                  </label>
+                  <input
+                    type="text"
+                    className="admin-input"
+                    placeholder="e.g. AUTUMN / WINTER 2026 COUTURE"
+                    value={heroTagline}
+                    onChange={(e) => setHeroTagline(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
+                    Main Heading Line 1
+                  </label>
+                  <input
+                    type="text"
+                    className="admin-input"
+                    placeholder="e.g. Where Heritage Meets"
+                    value={heroTitleLine1}
+                    onChange={(e) => setHeroTitleLine1(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="form-grid-2col" style={{ marginBottom: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
+                    Main Heading Line 2 (Highlighted)
+                  </label>
+                  <input
+                    type="text"
+                    className="admin-input"
+                    placeholder="e.g. Modern Couture"
+                    value={heroTitleLine2}
+                    onChange={(e) => setHeroTitleLine2(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
+                    Primary Button Text
+                  </label>
+                  <input
+                    type="text"
+                    className="admin-input"
+                    placeholder="e.g. Explore the Collection"
+                    value={heroPrimaryBtnText}
+                    onChange={(e) => setHeroPrimaryBtnText(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
+                  Secondary Button Text
+                </label>
+                <input
+                  type="text"
+                  className="admin-input"
+                  placeholder="e.g. Custom Fitting Guide"
+                  value={heroSecondaryBtnText}
+                  onChange={(e) => setHeroSecondaryBtnText(e.target.value)}
+                />
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
+                  Banner Subtitle / Description
+                </label>
+                <textarea
+                  className="admin-textarea"
+                  rows={3}
+                  placeholder="Describe your boutique heritage and craftsmanship..."
+                  value={heroSubtitle}
+                  onChange={(e) => setHeroSubtitle(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit', fontSize: '13px' }}
+                />
+              </div>
+            </div>
+
             {/* ── CATEGORIES SECTION ── */}
             <h4 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '12px', color: 'var(--color-text-primary)' }}>Shop by Category Icons</h4>
             <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '16px' }}>These appear as circular icons below the hero banner. Each links to a shop filter.</p>
@@ -2110,33 +2272,10 @@ alter table public.settings disable row level security;`}</pre>
               type="button"
               onClick={() => setStorefrontOccasions(prev => [...prev, { name: '', image: '', filter: '' }])}
               className="add-btn-submit"
-              style={{ marginBottom: '28px', fontSize: '12px', padding: '8px 16px' }}
+              style={{ marginBottom: '12px', fontSize: '12px', padding: '8px 16px' }}
             >
               <PlusCircle size={14} />
               <span>Add Occasion</span>
-            </button>
-
-            <hr style={{ border: 'none', borderTop: '1px solid var(--color-border)', margin: '0 0 20px' }} />
-
-            {/* SAVE BUTTON */}
-            <button
-              type="button"
-              className="add-btn-submit"
-              style={{ marginTop: '8px' }}
-              onClick={() => {
-                // Save categories + occasions into boutiqueSettings via onSaveSettings
-                if (onSaveSettings) {
-                  const currentSettings = { ...boutiqueSettings };
-                  currentSettings.categories = JSON.stringify(storefrontCategories.filter(c => c.name.trim()));
-                  currentSettings.occasions = JSON.stringify(storefrontOccasions.filter(o => o.name.trim()));
-                  onSaveSettings(currentSettings);
-                  setStorefrontSuccessMsg('Storefront sections updated successfully!');
-                  setTimeout(() => setStorefrontSuccessMsg(''), 4000);
-                }
-              }}
-            >
-              <CheckCircle2 size={14} />
-              <span>Save Storefront Configuration</span>
             </button>
           </div>
         </div>

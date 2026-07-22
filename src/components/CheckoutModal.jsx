@@ -18,6 +18,12 @@ export default function CheckoutModal({
 
   const handleConfirmOrder = (e) => {
     e.preventDefault();
+    
+    // Blur active input to dismiss virtual keyboard & prevent mobile Safari auto-zoom
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
+
     if (!name || !address || !city || !pincode || !phone) {
       setValidationError('Please fill in all shipping details.');
       return;

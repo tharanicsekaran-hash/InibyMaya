@@ -2,7 +2,11 @@ import React from 'react';
 import { Star, Eye, Heart } from 'lucide-react';
 
 export default function ProductCard({ product, onProductClick, isFavorite = false, onToggleFavorite }) {
-  const { title, price, images, category, rating, reviewsCount, bestSeller, customizable, variants = { sizes: [], colors: [] } } = product;
+  const { title, price, images = [], category, rating, reviewsCount, bestSeller, customizable, variants = { sizes: [], colors: [] } } = product;
+
+  const defaultFallback = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800';
+  const primaryImgSrc = (images && images[0] && images[0].trim() !== '') ? images[0] : defaultFallback;
+  const secondaryImgSrc = (images && images[1] && images[1].trim() !== '') ? images[1] : null;
 
   return (
     <div className="product-card" onClick={() => onProductClick(product, null)}>
@@ -33,19 +37,25 @@ export default function ProductCard({ product, onProductClick, isFavorite = fals
 
         {/* Primary Image */}
         <img 
-          src={images[0]} 
+          src={primaryImgSrc} 
           alt={title} 
           className="product-card-image primary-image" 
           loading="lazy" 
+          onError={(e) => {
+            e.currentTarget.src = defaultFallback;
+          }}
         />
 
         {/* Secondary Image (Hover Effect) */}
-        {images[1] && (
+        {secondaryImgSrc && (
           <img 
-            src={images[1]} 
+            src={secondaryImgSrc} 
             alt={`${title} alternate view`} 
             className="product-card-image secondary-image" 
             loading="lazy" 
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
           />
         )}
 

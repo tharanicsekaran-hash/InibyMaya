@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings } from 'lucide-react';
+import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings, Layout } from 'lucide-react';
 
 const getSleeveName = (id) => {
   const sleevesMap = {
@@ -83,8 +83,13 @@ export default function AdminDashboard({
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [settingsSuccessMsg, setSettingsSuccessMsg] = useState('');
 
+  // Storefront Categories & Occasions state
+  const [storefrontCategories, setStorefrontCategories] = useState([]);
+  const [storefrontOccasions, setStorefrontOccasions] = useState([]);
+  const [storefrontSuccessMsg, setStorefrontSuccessMsg] = useState('');
+
   useEffect(() => {
-    if (boutiqueSettings && Object.keys(boutiqueSettings).length > 0 && !settingsLoaded) {
+    if (boutiqueSettings && Object.keys(boutiqueSettings).length > 0) {
       setSettingsDesc(boutiqueSettings.description || '');
       setSettingsEmail(boutiqueSettings.email || '');
       setSettingsPhone(boutiqueSettings.phone || '');
@@ -95,9 +100,78 @@ export default function AdminDashboard({
       setNewsletterDiscount(Number(boutiqueSettings.newsletterDiscount !== undefined ? boutiqueSettings.newsletterDiscount : 10));
       setNewsletterPromoCode(boutiqueSettings.newsletterPromoCode || 'WELCOME10');
       setNewsletterEnabled(boutiqueSettings.newsletterEnabled !== false);
+      // Load categories/occasions from settings
+      try { 
+        const cats = JSON.parse(boutiqueSettings.categories || '[]');
+        if (cats.length > 0) setStorefrontCategories(cats);
+      } catch {}
+      try { 
+        const occs = JSON.parse(boutiqueSettings.occasions || '[]');
+        if (occs.length > 0) setStorefrontOccasions(occs);
+      } catch {}
       setSettingsLoaded(true);
     }
-  }, [boutiqueSettings, settingsLoaded]);
+  }, [boutiqueSettings]);
+
+  // Dynamic categories and occasions derived from Storefront settings & existing products
+  const availableCategories = React.useMemo(() => {
+    let list = [];
+    if (storefrontCategories && storefrontCategories.length > 0) {
+      list = storefrontCategories.map(c => (typeof c === 'string' ? c : c.name)).filter(Boolean);
+    } else if (boutiqueSettings && boutiqueSettings.categories) {
+      try {
+        const parsed = JSON.parse(boutiqueSettings.categories);
+        list = parsed.map(c => (typeof c === 'string' ? c : c.name)).filter(Boolean);
+      } catch {}
+    }
+    
+    if (list.length === 0) {
+      list = ['Long Kurtas', 'Straight Kurtas', 'Anarkali Suits', 'Co-ord Sets', 'A-Line Kurtas', 'Custom Tailoring'];
+    }
+
+    products.forEach(p => {
+      if (p.category && !list.includes(p.category)) {
+        list.push(p.category);
+      }
+    });
+
+    return list;
+  }, [storefrontCategories, boutiqueSettings, products]);
+
+  const availableOccasions = React.useMemo(() => {
+    let list = [];
+    if (storefrontOccasions && storefrontOccasions.length > 0) {
+      list = storefrontOccasions.map(o => (typeof o === 'string' ? o : o.name)).filter(Boolean);
+    } else if (boutiqueSettings && boutiqueSettings.occasions) {
+      try {
+        const parsed = JSON.parse(boutiqueSettings.occasions);
+        list = parsed.map(o => (typeof o === 'string' ? o : o.name)).filter(Boolean);
+      } catch {}
+    }
+
+    if (list.length === 0) {
+      list = ['Daily Elegance', 'Formal Grace', 'Festive Couture', 'Celebrations'];
+    }
+
+    products.forEach(p => {
+      if (p.occasion && !list.includes(p.occasion)) {
+        list.push(p.occasion);
+      }
+    });
+
+    return list;
+  }, [storefrontOccasions, boutiqueSettings, products]);
+
+  const handleSaveStorefront = () => {
+    if (onSaveSettings) {
+      const currentSettings = { ...boutiqueSettings };
+      currentSettings.categories = JSON.stringify(storefrontCategories.filter(c => c.name && c.name.trim()));
+      currentSettings.occasions = JSON.stringify(storefrontOccasions.filter(o => o.name && o.name.trim()));
+      onSaveSettings(currentSettings);
+      setStorefrontSuccessMsg('Storefront sections updated successfully!');
+      setTimeout(() => setStorefrontSuccessMsg(''), 4000);
+    }
+  };
 
   const handleSettingsSubmit = (e) => {
     e.preventDefault();
@@ -659,6 +733,13 @@ alter table public.settings disable row level security;`}</pre>
             <Settings size={15} />
             <span>Boutique Settings</span>
           </button>
+          <button 
+            className={`tab-btn ${activeTab === 'storefront' ? 'active' : ''}`}
+            onClick={() => setActiveTab('storefront')}
+          >
+            <Layout size={15} />
+            <span>Storefront</span>
+          </button>
         </div>
       </div>
 
@@ -856,19 +937,17 @@ alter table public.settings disable row level security;`}</pre>
                 <div className="form-group">
                   <label>Category *</label>
                   <select value={category} onChange={(e) => setCategory(e.target.value)}>
-                    <option value="Long Kurtas">Long Kurtas</option>
-                    <option value="Straight Kurtas">Straight Kurtas</option>
-                    <option value="Anarkali Suits">Anarkali Suits</option>
-                    <option value="Co-ord Sets">Co-ord Sets</option>
+                    {availableCategories.map((catName) => (
+                      <option key={catName} value={catName}>{catName}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="form-group">
                   <label>Occasion Category *</label>
                   <select value={occasion} onChange={(e) => setOccasion(e.target.value)}>
-                    <option value="Daily Elegance">Daily Elegance</option>
-                    <option value="Formal Grace">Formal Grace</option>
-                    <option value="Festive Couture">Festive Couture</option>
-                    <option value="Celebrations">Celebrations</option>
+                    {availableOccasions.map((occName) => (
+                      <option key={occName} value={occName}>{occName}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1694,9 +1773,20 @@ alter table public.settings disable row level security;`}</pre>
       {/* Tab 7: Boutique Settings Configurator */}
       {activeTab === 'settings' && (
         <div className="admin-content-section animate-fadeIn">
-          <div className="admin-section-header">
-            <h3>Configure Boutique Settings</h3>
-            <p>Update your e-commerce store brand description, support emails, contact hotline, atelier showroom address, and operating hours shown in the footer and help pages.</p>
+          <div className="admin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+            <div>
+              <h3>Configure Boutique Settings</h3>
+              <p>Update your e-commerce store brand description, support emails, contact hotline, atelier showroom address, and operating hours shown in the footer and help pages.</p>
+            </div>
+            <button 
+              type="button" 
+              className="add-btn-submit"
+              style={{ width: 'auto', margin: 0, padding: '10px 24px', whiteSpace: 'nowrap' }}
+              onClick={(e) => handleSettingsSubmit(e)}
+            >
+              <CheckCircle2 size={15} />
+              <span>Save Boutique Settings</span>
+            </button>
           </div>
 
           <div className="admin-form-box" style={{ maxWidth: '680px', margin: '0 auto' }}>
@@ -1833,6 +1923,221 @@ alter table public.settings disable row level security;`}</pre>
                 <span>Save Boutique Settings</span>
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Storefront Categories & Occasions Configurator */}
+      {activeTab === 'storefront' && (
+        <div className="admin-content-section animate-fadeIn">
+          <div className="admin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+            <div>
+              <h3>Configure Storefront Sections</h3>
+              <p>Manage the "Shop by Category" icon strip and "Shop by Occasion" grid shown on the homepage.</p>
+            </div>
+            <button
+              type="button"
+              className="add-btn-submit"
+              style={{ width: 'auto', margin: 0, padding: '10px 24px', whiteSpace: 'nowrap' }}
+              onClick={handleSaveStorefront}
+            >
+              <CheckCircle2 size={15} />
+              <span>Save Storefront Configuration</span>
+            </button>
+          </div>
+
+          {storefrontSuccessMsg && <p className="success-banner" style={{ maxWidth: '750px', margin: '0 auto 16px auto' }}>{storefrontSuccessMsg}</p>}
+
+          <div className="admin-form-box" style={{ maxWidth: '750px', margin: '0 auto' }}>
+
+            {/* ── CATEGORIES SECTION ── */}
+            <h4 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '12px', color: 'var(--color-text-primary)' }}>Shop by Category Icons</h4>
+            <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '16px' }}>These appear as circular icons below the hero banner. Each links to a shop filter.</p>
+
+            {storefrontCategories.map((cat, idx) => (
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', padding: '10px', border: '1px solid var(--color-border)', borderRadius: '8px', background: 'var(--color-bg-secondary)' }}>
+                {cat.image && <img src={cat.image} alt="" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <input
+                    type="text"
+                    value={cat.name}
+                    onChange={(e) => {
+                      const updated = [...storefrontCategories];
+                      updated[idx] = { ...updated[idx], name: e.target.value };
+                      setStorefrontCategories(updated);
+                    }}
+                    placeholder="Category Name"
+                    style={{ fontSize: '13px', padding: '4px 8px' }}
+                  />
+                  <input
+                    type="text"
+                    value={cat.image || ''}
+                    onChange={(e) => {
+                      const updated = [...storefrontCategories];
+                      updated[idx] = { ...updated[idx], image: e.target.value };
+                      setStorefrontCategories(updated);
+                    }}
+                    placeholder="Image URL (paste or upload)"
+                    style={{ fontSize: '12px', padding: '4px 8px', color: 'var(--color-text-secondary)' }}
+                  />
+                  <input
+                    type="text"
+                    value={cat.filter || ''}
+                    onChange={(e) => {
+                      const updated = [...storefrontCategories];
+                      updated[idx] = { ...updated[idx], filter: e.target.value };
+                      setStorefrontCategories(updated);
+                    }}
+                    placeholder="Filter keyword (e.g. Long Kurtas)"
+                    style={{ fontSize: '12px', padding: '4px 8px', color: 'var(--color-text-secondary)' }}
+                  />
+                </div>
+                <label style={{ cursor: 'pointer', flexShrink: 0, fontSize: '11px', color: 'var(--color-accent)', textDecoration: 'underline' }}>
+                  Upload
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const updated = [...storefrontCategories];
+                        updated[idx] = { ...updated[idx], image: reader.result };
+                        setStorefrontCategories(updated);
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setStorefrontCategories(prev => prev.filter((_, i) => i !== idx))}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', flexShrink: 0 }}
+                  title="Remove Category"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => setStorefrontCategories(prev => [...prev, { name: '', image: '', filter: '' }])}
+              className="add-btn-submit"
+              style={{ marginBottom: '28px', fontSize: '12px', padding: '8px 16px' }}
+            >
+              <PlusCircle size={14} />
+              <span>Add Category</span>
+            </button>
+
+            <hr style={{ border: 'none', borderTop: '1px solid var(--color-border)', margin: '0 0 20px' }} />
+
+            {/* ── OCCASIONS SECTION ── */}
+            <h4 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '12px', color: 'var(--color-text-primary)' }}>Shop by Occasion Cards</h4>
+            <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '16px' }}>These appear as large image cards on the homepage. Each links to a filtered product search.</p>
+
+            {storefrontOccasions.map((occ, idx) => (
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', padding: '10px', border: '1px solid var(--color-border)', borderRadius: '8px', background: 'var(--color-bg-secondary)' }}>
+                {occ.image && <img src={occ.image} alt="" style={{ width: '60px', height: '40px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }} />}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <input
+                    type="text"
+                    value={occ.name}
+                    onChange={(e) => {
+                      const updated = [...storefrontOccasions];
+                      updated[idx] = { ...updated[idx], name: e.target.value };
+                      setStorefrontOccasions(updated);
+                    }}
+                    placeholder="Occasion Name (e.g. Festive Couture)"
+                    style={{ fontSize: '13px', padding: '4px 8px' }}
+                  />
+                  <input
+                    type="text"
+                    value={occ.image || ''}
+                    onChange={(e) => {
+                      const updated = [...storefrontOccasions];
+                      updated[idx] = { ...updated[idx], image: e.target.value };
+                      setStorefrontOccasions(updated);
+                    }}
+                    placeholder="Image URL"
+                    style={{ fontSize: '12px', padding: '4px 8px', color: 'var(--color-text-secondary)' }}
+                  />
+                  <input
+                    type="text"
+                    value={occ.filter || ''}
+                    onChange={(e) => {
+                      const updated = [...storefrontOccasions];
+                      updated[idx] = { ...updated[idx], filter: e.target.value };
+                      setStorefrontOccasions(updated);
+                    }}
+                    placeholder="Search filter keyword (e.g. anarkali)"
+                    style={{ fontSize: '12px', padding: '4px 8px', color: 'var(--color-text-secondary)' }}
+                  />
+                </div>
+                <label style={{ cursor: 'pointer', flexShrink: 0, fontSize: '11px', color: 'var(--color-accent)', textDecoration: 'underline' }}>
+                  Upload
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const updated = [...storefrontOccasions];
+                        updated[idx] = { ...updated[idx], image: reader.result };
+                        setStorefrontOccasions(updated);
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setStorefrontOccasions(prev => prev.filter((_, i) => i !== idx))}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', flexShrink: 0 }}
+                  title="Remove Occasion"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => setStorefrontOccasions(prev => [...prev, { name: '', image: '', filter: '' }])}
+              className="add-btn-submit"
+              style={{ marginBottom: '28px', fontSize: '12px', padding: '8px 16px' }}
+            >
+              <PlusCircle size={14} />
+              <span>Add Occasion</span>
+            </button>
+
+            <hr style={{ border: 'none', borderTop: '1px solid var(--color-border)', margin: '0 0 20px' }} />
+
+            {/* SAVE BUTTON */}
+            <button
+              type="button"
+              className="add-btn-submit"
+              style={{ marginTop: '8px' }}
+              onClick={() => {
+                // Save categories + occasions into boutiqueSettings via onSaveSettings
+                if (onSaveSettings) {
+                  const currentSettings = { ...boutiqueSettings };
+                  currentSettings.categories = JSON.stringify(storefrontCategories.filter(c => c.name.trim()));
+                  currentSettings.occasions = JSON.stringify(storefrontOccasions.filter(o => o.name.trim()));
+                  onSaveSettings(currentSettings);
+                  setStorefrontSuccessMsg('Storefront sections updated successfully!');
+                  setTimeout(() => setStorefrontSuccessMsg(''), 4000);
+                }
+              }}
+            >
+              <CheckCircle2 size={14} />
+              <span>Save Storefront Configuration</span>
+            </button>
           </div>
         </div>
       )}

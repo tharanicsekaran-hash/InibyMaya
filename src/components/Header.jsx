@@ -4,6 +4,8 @@ import { Search, ShoppingBag, User, Settings, LogOut, Menu, X, Heart } from 'luc
 export default function Header({ 
   activePage, 
   setActivePage, 
+  onCustomTailoringClick,
+  onAboutClick,
   cartCount, 
   onCartClick, 
   onProfileClick, 
@@ -53,24 +55,29 @@ export default function Header({
               Shop All
             </button>
             <button 
-              className={`nav-link ${activePage === 'long-kurtas' ? 'active' : ''}`} 
-              onClick={() => setActivePage('shop')}
+              className="nav-link" 
+              onClick={() => {
+                if (onCustomTailoringClick) onCustomTailoringClick();
+                else setActivePage('shop');
+              }}
             >
-              Long Kurtas
+              Custom Tailoring
             </button>
             <button 
-              className={`nav-link ${activePage === 'anarkali' ? 'active' : ''}`} 
-              onClick={() => setActivePage('shop')}
+              className="nav-link" 
+              onClick={() => {
+                if (onAboutClick) onAboutClick();
+                else setActivePage('info');
+              }}
             >
-              Anarkali
+              Our Story
             </button>
           </nav>
         </div>
 
         {/* Brand Logo */}
         <div className="brand-logo" onClick={() => setActivePage('home')}>
-          INIBYMAYA
-          <span>COUTURE</span>
+          <img src="/logo.png" alt="INI By Maya" className="brand-logo-img" />
         </div>
 
         {/* Actions */}
@@ -122,7 +129,9 @@ export default function Header({
           <div className="mobile-nav-overlay" onClick={() => setMobileMenuOpen(false)}></div>
           <div className="mobile-nav-drawer">
             <div className="drawer-header">
-              <div className="brand-logo">INIBYMAYA</div>
+              <div className="brand-logo" onClick={() => { setActivePage('home'); setMobileMenuOpen(false); }}>
+                <img src="/logo.png" alt="INI By Maya" className="brand-logo-img" style={{ height: '36px' }} />
+              </div>
               <button onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">
                 <X size={24} />
               </button>
@@ -141,16 +150,24 @@ export default function Header({
                 Shop All
               </button>
               <button 
-                onClick={() => { setActivePage('shop'); setMobileMenuOpen(false); }}
+                onClick={() => { 
+                  if (onCustomTailoringClick) onCustomTailoringClick();
+                  else setActivePage('shop');
+                  setMobileMenuOpen(false); 
+                }}
                 className="mobile-submenu-item"
               >
-                Long Kurtas
+                Custom Tailoring
               </button>
               <button 
-                onClick={() => { setActivePage('shop'); setMobileMenuOpen(false); }}
+                onClick={() => { 
+                  if (onAboutClick) onAboutClick();
+                  else setActivePage('info');
+                  setMobileMenuOpen(false); 
+                }}
                 className="mobile-submenu-item"
               >
-                Anarkali Suits
+                Our Story
               </button>
               {user && user.email === 'tharanichandrasekaran2000@gmail.com' && (
                 <button 

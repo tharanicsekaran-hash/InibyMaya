@@ -143,7 +143,21 @@ export default function App() {
       newsletterSubtitle: 'No Spam, No Drama – Just Good Clothes',
       newsletterDiscount: 10,
       newsletterPromoCode: 'WELCOME10',
-      newsletterEnabled: true
+      newsletterEnabled: true,
+      categories: JSON.stringify([
+        { name: 'Long Kurtas', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=200&auto=format&fit=crop', filter: 'Long Kurtas' },
+        { name: 'Straight Kurtas', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=200&auto=format&fit=crop', filter: 'Straight Kurtas' },
+        { name: 'Anarkali Suits', image: 'https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=200&auto=format&fit=crop', filter: 'Anarkali Suits' },
+        { name: 'Co-ord Sets', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=200&auto=format&fit=crop', filter: 'Co-ord Sets' },
+        { name: 'A-Line Kurtas', image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=200&auto=format&fit=crop', filter: 'A-Line Kurtas' },
+        { name: 'Custom Tailoring', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=200&auto=format&fit=crop', filter: 'custom' }
+      ]),
+      occasions: JSON.stringify([
+        { name: 'Festive Couture', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800', filter: 'anarkali' },
+        { name: 'Daily Elegance', image: 'https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=800', filter: 'cotton' },
+        { name: 'Formal Grace', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800', filter: 'straight' },
+        { name: 'Celebrations', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800', filter: 'set' }
+      ])
     };
     return cached ? { ...defaults, ...JSON.parse(cached) } : defaults;
   });
@@ -562,10 +576,31 @@ export default function App() {
         })
         .subscribe();
 
+      // Realtime Products Subscription — keeps user console in sync when admin adds/edits/deletes products
+      const productsChannel = supabase
+        .channel('realtime:products')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
+          console.log('Realtime product change detected:', payload);
+          if (payload.eventType === 'INSERT') {
+            const newProd = mapDbProductToClient(payload.new);
+            setProductsList(prev => {
+              if (prev.some(p => p.id === newProd.id)) return prev;
+              return [newProd, ...prev];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedProd = mapDbProductToClient(payload.new);
+            setProductsList(prev => prev.map(p => p.id === updatedProd.id ? updatedProd : p));
+          } else if (payload.eventType === 'DELETE') {
+            setProductsList(prev => prev.filter(p => p.id !== payload.old.id));
+          }
+        })
+        .subscribe();
+
       return () => {
         subscription?.unsubscribe();
         supabase.removeChannel(ordersChannel);
         supabase.removeChannel(testimonialsChannel);
+        supabase.removeChannel(productsChannel);
       };
     }
   }, [activePage]);
@@ -586,10 +621,12 @@ export default function App() {
   };
 
   useEffect(() => {
-    // Strip large base64 image blobs from catalog before storing
+    // Strip large base64 image blobs from catalog before storing in localStorage to avoid quota crash,
+    // while providing a valid fallback image URL so product cards are always displayed cleanly on user console.
+    const fallbackUrl = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800';
     const catalogForStorage = productsList.map(p => ({
       ...p,
-      images: (p.images || []).map(img => (img && img.startsWith('data:')) ? '' : img)
+      images: (p.images || []).map(img => (img && img.startsWith('data:')) ? fallbackUrl : (img || fallbackUrl))
     }));
     safeSetItem('im_catalog', JSON.stringify(catalogForStorage));
   }, [productsList]);
@@ -894,9 +931,21 @@ export default function App() {
 
   // Admin adjustments
   const handleAddProduct = async (newProd) => {
-    setProductsList(prev => [newProd, ...prev]);
+    setProductsList(prev => {
+      if (prev.some(p => p.id === newProd.id)) {
+        return prev.map(p => p.id === newProd.id ? newProd : p);
+      }
+      return [newProd, ...prev];
+    });
     if (supabase) {
-      await supabase.from('products').insert(mapClientProductToDb(newProd));
+      try {
+        const { error } = await supabase.from('products').upsert(mapClientProductToDb(newProd));
+        if (error) {
+          console.error('Supabase product upsert failed:', error.message, error);
+        }
+      } catch (err) {
+        console.error('Product save error:', err);
+      }
     }
   };
   const handleDeleteProduct = async (id) => {
@@ -1036,6 +1085,20 @@ export default function App() {
           setSuccessOrder(null);
           setSelectedProduct(null);
         }}
+        onCustomTailoringClick={() => {
+          setActivePage('shop');
+          setSearchQuery('custom tailoring');
+          setSuccessOrder(null);
+          setSelectedProduct(null);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onAboutClick={() => {
+          setActivePage('info');
+          setInfoPageTab('about-us');
+          setSuccessOrder(null);
+          setSelectedProduct(null);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
         cartCount={cartItems.reduce((acc, item) => acc + item.quantity, 0)}
         onCartClick={() => setIsCartOpen(true)}
         onProfileClick={handleOpenProfile}
@@ -1163,8 +1226,11 @@ export default function App() {
           <>
             <Hero onShopClick={() => setActivePage('shop')} />
 
-            {/* Category Icon Strip — directly below hero */}
+            {/* Category Icon Strip — directly below hero, configurable via admin settings */}
             <CategoryStrip
+              categories={(() => {
+                try { return JSON.parse(boutiqueSettings.categories || '[]'); } catch { return []; }
+              })()}
               onCategoryClick={(filter) => {
                 if (filter === 'custom') {
                   setActivePage('shop');
@@ -1221,69 +1287,36 @@ export default function App() {
               </div>
 
               <div className="occasion-grid">
-                <div 
-                  className="occasion-card" 
-                  onClick={() => {
-                    setSearchQuery('anarkali');
-                    setActivePage('shop');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                >
-                  <div className="occasion-image-wrapper">
-                    <img src="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800" alt="Festive Couture" className="occasion-image" />
-                  </div>
-                  <div className="occasion-title-strip">
-                    <span>Festive Couture</span>
-                  </div>
-                </div>
-
-                <div 
-                  className="occasion-card" 
-                  onClick={() => {
-                    setSearchQuery('cotton');
-                    setActivePage('shop');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                >
-                  <div className="occasion-image-wrapper">
-                    <img src="https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=800" alt="Daily Elegance" className="occasion-image" />
-                  </div>
-                  <div className="occasion-title-strip">
-                    <span>Daily Elegance</span>
-                  </div>
-                </div>
-
-                <div 
-                  className="occasion-card" 
-                  onClick={() => {
-                    setSearchQuery('straight');
-                    setActivePage('shop');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                >
-                  <div className="occasion-image-wrapper">
-                    <img src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800" alt="Formal Grace" className="occasion-image" />
-                  </div>
-                  <div className="occasion-title-strip">
-                    <span>Formal Grace</span>
-                  </div>
-                </div>
-
-                <div 
-                  className="occasion-card" 
-                  onClick={() => {
-                    setSearchQuery('set');
-                    setActivePage('shop');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                >
-                  <div className="occasion-image-wrapper">
-                    <img src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800" alt="Celebrations" className="occasion-image" />
-                  </div>
-                  <div className="occasion-title-strip">
-                    <span>Celebrations</span>
-                  </div>
-                </div>
+                {(() => {
+                  let occasions = [];
+                  try { occasions = JSON.parse(boutiqueSettings.occasions || '[]'); } catch {}
+                  if (!occasions.length) {
+                    occasions = [
+                      { name: 'Festive Couture', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800', filter: 'anarkali' },
+                      { name: 'Daily Elegance', image: 'https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=800', filter: 'cotton' },
+                      { name: 'Formal Grace', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800', filter: 'straight' },
+                      { name: 'Celebrations', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800', filter: 'set' }
+                    ];
+                  }
+                  return occasions.map((occ, idx) => (
+                    <div 
+                      key={occ.filter || idx}
+                      className="occasion-card" 
+                      onClick={() => {
+                        setSearchQuery(occ.filter || occ.name);
+                        setActivePage('shop');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                    >
+                      <div className="occasion-image-wrapper">
+                        <img src={occ.image} alt={occ.name} className="occasion-image" />
+                      </div>
+                      <div className="occasion-title-strip">
+                        <span>{occ.name}</span>
+                      </div>
+                    </div>
+                  ));
+                })()}
               </div>
             </section>
 
@@ -1479,7 +1512,9 @@ export default function App() {
       <footer className="footer-section">
         <div className="footer-container container">
           <div className="footer-column brand-col">
-            <h3 className="footer-brand">INIBYMAYA</h3>
+            <div className="footer-logo-wrapper" style={{ marginBottom: '16px' }}>
+              <img src="/logo.png" alt="INI By Maya" className="footer-logo-img" style={{ height: '46px', width: 'auto' }} />
+            </div>
             <p className="footer-desc">{boutiqueSettings.description}</p>
             <div className="footer-contact">
               <span>Email: {boutiqueSettings.email}</span>
@@ -1569,7 +1604,9 @@ export default function App() {
               <X size={18} />
             </button>
             
-            <div className="newsletter-logo-header">INIBYMAYA</div>
+            <div className="newsletter-logo-header" style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <img src="/logo.png" alt="INI By Maya" style={{ height: '42px', width: 'auto' }} />
+            </div>
             
             {offerSuccess ? (
               <div className="newsletter-success-state animate-fadeIn">

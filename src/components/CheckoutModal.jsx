@@ -56,7 +56,9 @@ export default function CheckoutModal({
       <div className="checkout-modal-container">
         {/* Header */}
         <div className="checkout-header">
-          <div className="brand-logo">INIBYMAYA</div>
+          <div className="brand-logo" style={{ display: 'flex', alignItems: 'center' }}>
+            <img src="/logo.png" alt="INI By Maya" className="brand-logo-img" style={{ height: '36px', width: 'auto' }} />
+          </div>
           <button className="close-btn" onClick={onClose} disabled={isPlacing}>
             <X size={20} />
           </button>

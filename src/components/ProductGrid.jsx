@@ -12,16 +12,30 @@ export default function ProductGrid({
   favorites = [],
   onToggleFavorite
 }) {
+  // Dynamic price range calculation from catalog
+  const catalogMaxPrice = useMemo(() => {
+    if (!products || products.length === 0) return 10000;
+    const maxP = Math.max(...products.map(p => Number(p.price) || 0));
+    return Math.max(10000, maxP);
+  }, [products]);
+
   // Multiple Filter States
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedColors, setSelectedColors] = useState([]);
   const [selectedSizes, setSelectedSizes] = useState([]);
-  const [minPrice, setMinPrice] = useState(1000);
-  const [maxPrice, setMaxPrice] = useState(6000);
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(25000);
   const [sortBy, setSortBy] = useState('featured');
   
   // Mobile Filter Drawer Toggle
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  // Sync maxPrice if catalog contains higher priced items
+  useEffect(() => {
+    if (catalogMaxPrice > maxPrice) {
+      setMaxPrice(catalogMaxPrice);
+    }
+  }, [catalogMaxPrice]);
 
   // Sync preselectedSize prop from homepage banner
   useEffect(() => {
@@ -82,8 +96,8 @@ export default function ProductGrid({
     setSelectedCategories([]);
     setSelectedColors([]);
     setSelectedSizes([]);
-    setMinPrice(1000);
-    setMaxPrice(6000);
+    setMinPrice(0);
+    setMaxPrice(catalogMaxPrice);
     setSearchQuery('');
     setSelectedSize(null);
   };
@@ -114,26 +128,30 @@ export default function ProductGrid({
     }
 
     // 4. Price Slider Filter
-    result = result.filter(p => p.price >= minPrice && p.price <= maxPrice);
+    result = result.filter(p => {
+      const priceNum = Number(p.price) || 0;
+      return priceNum >= minPrice && priceNum <= maxPrice;
+    });
 
     // 5. Search Box query filter
-    if (searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(p => 
-        p.title.toLowerCase().includes(q) || 
-        p.category.toLowerCase().includes(q) || 
-        p.description.toLowerCase().includes(q) ||
-        (p.occasion && p.occasion.toLowerCase().includes(q))
-      );
+    if (searchQuery && searchQuery.trim() !== '') {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(p => {
+        const titleMatch = p.title ? p.title.toLowerCase().includes(q) : false;
+        const catMatch = p.category ? p.category.toLowerCase().includes(q) : false;
+        const descMatch = p.description ? p.description.toLowerCase().includes(q) : false;
+        const occMatch = p.occasion ? p.occasion.toLowerCase().includes(q) : false;
+        return titleMatch || catMatch || descMatch || occMatch;
+      });
     }
 
     // 6. Sort Switchees
     if (sortBy === 'price-low') {
-      result.sort((a, b) => a.price - b.price);
+      result.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
     } else if (sortBy === 'price-high') {
-      result.sort((a, b) => b.price - a.price);
+      result.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
     } else if (sortBy === 'rating') {
-      result.sort((a, b) => b.rating - a.rating);
+      result.sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0));
     } else if (sortBy === 'featured') {
       result.sort((a, b) => (b.bestSeller ? 1 : 0) - (a.bestSeller ? 1 : 0));
     }
@@ -147,11 +165,11 @@ export default function ProductGrid({
       selectedCategories.length > 0 ||
       selectedColors.length > 0 ||
       selectedSizes.length > 0 ||
-      maxPrice < 6000 ||
-      minPrice > 1000 ||
-      searchQuery.trim() !== ''
+      minPrice > 0 ||
+      maxPrice < catalogMaxPrice ||
+      (searchQuery && searchQuery.trim() !== '')
     );
-  }, [selectedCategories, selectedColors, selectedSizes, minPrice, maxPrice, searchQuery]);
+  }, [selectedCategories, selectedColors, selectedSizes, minPrice, maxPrice, catalogMaxPrice, searchQuery]);
 
   return (
     <div className="shop-section container">
@@ -161,22 +179,34 @@ export default function ProductGrid({
         <p className="section-description">Browse handcrafted traditional wear tailored to fit you perfectly.</p>
       </div>
 
+      {/* Mobile Filter Drawer Backdrop */}
+      {showMobileFilters && (
+        <div 
+          className="mobile-filter-overlay" 
+          onClick={() => setShowMobileFilters(false)}
+        />
+      )}
 
-
-      {/* Main Side-by-Side Shop Grid Layout */}
       <div className="shop-grid-layout">
-        
-        {/* Left Column: Filter Sidebar Panel */}
+        {/* Left Column: Filter Sidebar */}
         <aside className={`filter-sidebar-panel ${showMobileFilters ? 'mobile-visible' : ''}`}>
-          <div className="sidebar-sticky-wrap">
-            <div className="sidebar-title-row">
-              <h3>Filter Options</h3>
+          <div className="sidebar-title-row">
+            <h3>Filters</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {hasActiveFilters && (
                 <button className="sidebar-clear-link" onClick={handleClearAll}>
                   Clear All
                 </button>
               )}
+              <button 
+                className="close-drawer-btn" 
+                onClick={() => setShowMobileFilters(false)}
+                aria-label="Close filters"
+              >
+                <X size={18} />
+              </button>
             </div>
+          </div>
 
             {/* Category Filter Widget */}
             <div className="filter-section-widget">
@@ -203,8 +233,8 @@ export default function ProductGrid({
               <div className="price-slider-wrapper">
                 <input 
                   type="range" 
-                  min={1000} 
-                  max={6000} 
+                  min={0} 
+                  max={catalogMaxPrice} 
                   step={100}
                   value={maxPrice} 
                   onChange={(e) => setMaxPrice(Number(e.target.value))}
@@ -259,7 +289,6 @@ export default function ProductGrid({
                 ))}
               </div>
             </div>
-          </div>
         </aside>
 
         {/* Right Column: Catalog Content Panel */}

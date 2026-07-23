@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import CategoryStrip from './components/CategoryStrip';
+import OffersBanner from './components/OffersBanner';
 import ProductCard from './components/ProductCard';
 import ProductGrid from './components/ProductGrid';
 import ProductDetailModal from './components/ProductDetailModal';
@@ -31,7 +32,7 @@ const mapDbProductToClient = (dbProd) => {
     images: dbProd.images,
     variants: dbProd.variants,
     customizable: dbProd.customizable,
-    bestSeller: dbProd.best_seller,
+    bestSeller: Boolean(dbProd.best_seller),
     occasion: dbProd.occasion || 'Daily Elegance',
     highlights: dbProd.highlights || {}
   };
@@ -50,7 +51,7 @@ const mapClientProductToDb = (clientProd) => {
     images: clientProd.images,
     variants: clientProd.variants,
     customizable: clientProd.customizable,
-    best_seller: clientProd.bestSeller,
+    best_seller: Boolean(clientProd.bestSeller),
     occasion: clientProd.occasion || 'Daily Elegance',
     highlights: clientProd.highlights || {}
   };
@@ -157,6 +158,14 @@ export default function App() {
         { name: 'Daily Elegance', image: 'https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=800', filter: 'cotton' },
         { name: 'Formal Grace', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800', filter: 'straight' },
         { name: 'Celebrations', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800', filter: 'set' }
+      ]),
+      offerBanners: JSON.stringify([
+        {
+          id: 'default-offer-1',
+          image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=1600',
+          mobileImage: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=800',
+          title: 'Special Festive Couture Offer'
+        }
       ])
     };
     return cached ? { ...defaults, ...JSON.parse(cached) } : defaults;
@@ -328,173 +337,70 @@ export default function App() {
     return '';
   });
 
-  // 1. Initial Supabase Fetch & Session Bindings
+  // 1. Initial Supabase Fetch & Session Bindings (Optimized for Instant Storefront Settings Load)
   useEffect(() => {
     const loadSupabaseData = async () => {
       if (!supabase) return;
+
+      // 1a. Load Settings IMMEDIATELY with a 2.5s max timeout so Hero & Offer Banners render instantly!
       try {
-        // Fetch Catalog
-        let rlsActive = false;
-        const { data: pData, error: pErr } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-        if (!pErr && pData) {
-          if (pData.length === 0) {
-            const { error: insErr } = await supabase.from('products').insert(initialProducts.map(mapClientProductToDb));
-            if (insErr && insErr.code === '42501') {
-              rlsActive = true;
-              setIsDbRlsActive(true);
-              console.error('DATABASE RLS WARNING: Row Level Security is active on your Supabase tables. Fetching and writing data is restricted. Please run the disable RLS SQL script.');
-            }
-            setProductsList(initialProducts);
-          } else {
-            setProductsList(pData.map(mapDbProductToClient));
-          }
-        }
+        const settingsPromise = supabase.from('settings').select('*');
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({ data: null, error: 'Timeout' }), 2500));
+        const { data: sData } = await Promise.race([settingsPromise, timeoutPromise]);
 
-        // Fetch Reels
-        const { data: rData, error: rErr } = await supabase.from('reels').select('*').order('created_at', { ascending: true });
-        if (!rErr && rData) {
-          if (rData.length === 0) {
-            const defaultReels = [
-              {
-                id: 'reel-1',
-                title: 'Indigo Chikankari Motion Showcase',
-                videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-beautiful-woman-in-traditional-indian-dress-standing-outdoors-48866-large.mp4',
-                productId: 'im-kurtaset-1',
-                productTitle: 'Indigo Chikankari Cotton Long Kurta',
-                productPrice: 2499,
-                productImage: 'https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=800'
-              },
-              {
-                id: 'reel-2',
-                title: 'Ivory Georgette Anarkali Elegance',
-                videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-woman-in-traditional-indian-clothing-dancing-48873-large.mp4',
-                productId: 'im-anarkali-1',
-                productTitle: 'Ivory Georgette Anarkali Suit',
-                productPrice: 3899,
-                productImage: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800'
-              },
-              {
-                id: 'reel-3',
-                title: 'Sage Green Organza Motion Line',
-                videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-young-woman-in-traditional-clothing-outdoors-48871-large.mp4',
-                productId: 'im-kurtaset-2',
-                productTitle: 'Sage Green Organza Straight Kurta',
-                productPrice: 2299,
-                productImage: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800'
-              }
-            ];
-            await supabase.from('reels').insert(defaultReels.map(mapClientReelToDb));
-            setReelsList(defaultReels);
-          } else {
-            setReelsList(rData.map(mapDbReelToClient));
-          }
-        }
-
-        // Fetch Coupons
-        const { data: promoData, error: promoErr } = await supabase.from('promos').select('*');
-        if (!promoErr && promoData) {
-          if (promoData.length === 0) {
-            const defaultPromos = [
-              { code: 'WELCOME10', type: 'percent', value: 10, minPurchase: 0, description: '10% off for subscribing' },
-              { code: 'MAYA300', type: 'flat', value: 300, minPurchase: 1500, description: '₹300 off on orders above ₹1,500' }
-            ];
-            await supabase.from('promos').insert(defaultPromos.map(mapClientPromoToDb));
-            setPromosList(defaultPromos);
-          } else {
-            setPromosList(promoData.map(mapDbPromoToClient));
-          }
-        }
-
-        // Fetch Orders
-        if (!rlsActive) {
-          const { data: oData, error: oErr } = await supabase.from('orders').select('*').order('timestamp', { ascending: false });
-          if (!oErr && oData) {
-            const remoteOrders = oData.map(mapDbOrderToClient);
-            setOrdersList(remoteOrders);
-            safeSetItem('im_orders', JSON.stringify(remoteOrders));
-          } else if (oErr) {
-            if (oErr.code === '42501') {
-              setIsDbRlsActive(true);
-            }
-            console.error('DATABASE FETCH WARNING: Failed to fetch orders from Supabase. Bypassing state overwrite.', oErr.message);
-          }
-        } else {
-          console.warn('Skipping orders state overwrite because Row Level Security (RLS) is active and blocking read operations.');
-        }
-
-        // Fetch Testimonials
-        const { data: tData, error: tErr } = await supabase.from('testimonials').select('*').order('created_at', { ascending: true });
-        if (!tErr && tData) {
-          if (tData.length === 0) {
-            const defaultTestimonials = [
-              {
-                id: 't-1',
-                name: 'Gayathri Arvind',
-                imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800',
-                quote: 'I have many kurtas from you. Every piece is awesome. Am so happy to buy!',
-                rating: 5,
-                tag: 'HAY!'
-              },
-              {
-                id: 't-2',
-                name: 'Preethi',
-                imageUrl: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800',
-                quote: 'Absolutely loved this piece. The quality, fit, and detailing feel so luxury.',
-                rating: 5,
-                tag: 'HAY!'
-              },
-              {
-                id: 't-3',
-                name: 'Suchi Kailash',
-                imageUrl: 'https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=800',
-                quote: 'Great service! I needed this dress for my birthday and received it right on time.',
-                rating: 5,
-                tag: 'HAY!'
-              },
-              {
-                id: 't-4',
-                name: 'Aisha',
-                imageUrl: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800',
-                quote: 'Beautiful fitting and rich colors. The custom tailoring has an extremely premium silhouette.',
-                rating: 5,
-                tag: 'HAY!'
-              }
-            ];
-            await supabase.from('testimonials').insert(defaultTestimonials.map(t => ({
-              id: t.id,
-              name: t.name,
-              image_url: t.imageUrl,
-              quote: t.quote,
-              rating: t.rating,
-              tag: t.tag
-            })));
-            setTestimonialsList(defaultTestimonials);
-          } else {
-            setTestimonialsList(tData.map(t => ({
-              id: t.id,
-              name: t.name,
-              imageUrl: t.image_url,
-              quote: t.quote,
-              rating: t.rating,
-              tag: t.tag
-            })));
-          }
-        }
-
-        // Fetch Settings
-        const { data: sData, error: sErr } = await supabase.from('settings').select('*');
-        if (!sErr && sData && sData.length > 0) {
+        if (sData && Array.isArray(sData) && sData.length > 0) {
           const settingsObj = {};
           sData.forEach(item => {
-            settingsObj[item.key] = item.value;
+            if (item.key && item.value) {
+              settingsObj[item.key] = item.value;
+            }
           });
-          setBoutiqueSettings(prev => ({
-            ...prev,
-            ...settingsObj
-          }));
+          setBoutiqueSettings(prev => {
+            const updated = { ...prev, ...settingsObj };
+            safeSetItem('im_settings', JSON.stringify(updated));
+            return updated;
+          });
         }
       } catch (err) {
-        console.error('Failed to sync Supabase tables during boot:', err);
+        console.warn('Instant settings sync bypassed:', err);
+      }
+
+      // 1b. Load remaining catalog & database tables in background
+      try {
+        const [
+          { data: pData },
+          { data: rData },
+          { data: promoData },
+          { data: oData },
+          { data: tData }
+        ] = await Promise.all([
+          supabase.from('products').select('*').order('created_at', { ascending: false }),
+          supabase.from('reels').select('*').order('created_at', { ascending: true }),
+          supabase.from('promos').select('*'),
+          supabase.from('orders').select('*').order('timestamp', { ascending: false }),
+          supabase.from('testimonials').select('*').order('created_at', { ascending: true })
+        ]);
+
+        if (pData && pData.length > 0) setProductsList(pData.map(mapDbProductToClient));
+        if (rData && rData.length > 0) setReelsList(rData.map(mapDbReelToClient));
+        if (promoData && promoData.length > 0) setPromosList(promoData.map(mapDbPromoToClient));
+        if (oData && oData.length > 0) {
+          const remoteOrders = oData.map(mapDbOrderToClient);
+          setOrdersList(remoteOrders);
+          safeSetItem('im_orders', JSON.stringify(remoteOrders));
+        }
+        if (tData && tData.length > 0) {
+          setTestimonialsList(tData.map(t => ({
+            id: t.id,
+            name: t.name,
+            imageUrl: t.image_url,
+            quote: t.quote,
+            rating: t.rating,
+            tag: t.tag
+          })));
+        }
+      } catch (err) {
+        console.error('Background table sync complete:', err);
       }
     };
 
@@ -1258,6 +1164,7 @@ export default function App() {
         ) : activePage === 'home' ? (
           // Home Page
           <>
+            {/* 1. Banner (Hero Multi-Slide Carousel) */}
             <Hero 
               onShopClick={() => setActivePage('shop')} 
               onCustomClick={() => {
@@ -1267,7 +1174,7 @@ export default function App() {
               settings={boutiqueSettings}
             />
 
-            {/* Category Icon Strip — directly below hero, configurable via admin settings */}
+            {/* 2. Shop by Categories */}
             <CategoryStrip
               categories={(() => {
                 try { return JSON.parse(boutiqueSettings.categories || '[]'); } catch { return []; }
@@ -1282,45 +1189,41 @@ export default function App() {
                 }
               }}
             />
-            {/* 1. Couture Reels in Motion Showcase */}
-            <section className="reels-section container">
-              <div className="section-header-centered">
-                <h2>Couture In Motion</h2>
-                <p>Experience the flow, weight, and texture of our hand-crafted silhouettes in real-time motion loops.</p>
-              </div>
-              
-              <div className="reels-section-wrapper">
-                <button className="reels-nav-btn prev" onClick={() => handleScrollReels('left')} aria-label="Previous Reels">
-                  <ChevronLeft size={20} />
-                </button>
-                <button className="reels-nav-btn next" onClick={() => handleScrollReels('right')} aria-label="Next Reels">
-                  <ChevronRight size={20} />
-                </button>
 
-                {reelsList.length > 0 ? (
-                  <div className="reels-carousel-container scroll-layout">
-                    {reelsList.map(reel => (
-                      <ReelCard
-                        key={reel.id}
-                        reel={reel}
-                        onShopOutfit={() => {
-                          if (reel.productId) {
-                            const matched = productsList.find(p => p.id === reel.productId);
-                            if (matched) setSelectedProduct(matched);
-                          }
-                        }}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="empty-reels-notice">
-                    <p>No video reels active. Open the Admin Console to add reels showcases.</p>
-                  </div>
-                )}
+            {/* 2b. Offers Banner (Placed after Shop by Category) */}
+            <OffersBanner 
+              onShopClick={() => { setSearchQuery(''); setActivePage('shop'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              settings={boutiqueSettings}
+            />
+
+            {/* 3. New Arrival */}
+            <section className="new-arrivals-section container">
+              <div className="section-header-centered">
+                <h2>New Arrivals</h2>
+                <p>Fresh drops & handwoven additions curated every week for the modern wardrobe.</p>
+              </div>
+              <div className="product-grid">
+                {productsList.slice().reverse().slice(0, 4).map(product => (
+                  <ProductCard 
+                    key={product.id}
+                    product={product}
+                    isFavorite={favorites.includes(product.id)}
+                    onToggleFavorite={handleToggleFavorite}
+                    onProductClick={(prod, size) => {
+                      setPreselectedSize(size);
+                      setSelectedProduct(prod);
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="view-all-row">
+                <button className="btn-primary" onClick={() => { setSearchQuery(''); setActivePage('shop'); }}>
+                  Explore All New Arrivals
+                </button>
               </div>
             </section>
 
-            {/* Shop By Occasion */}
+            {/* 4. Shop By Occasion */}
             <section className="occasion-section container">
               <div className="section-header-centered">
                 <h2>Shop By Occasion</h2>
@@ -1361,14 +1264,14 @@ export default function App() {
               </div>
             </section>
 
-            {/* 2. Bestsellers Spotlight (Featured products) */}
+            {/* 5. Our Bestseller */}
             <section className="bestsellers-spotlight container">
               <div className="section-header-centered">
-                <h2>Our Bestselling Couture</h2>
+                <h2>Our Bestsellers</h2>
                 <p>Explore traditional silhouettes loved by our patrons across the country.</p>
               </div>
               <div className="product-grid">
-                {productsList.slice(0, 3).map(product => (
+                {productsList.filter(p => Boolean(p.bestSeller)).slice(0, 4).map(product => (
                   <ProductCard 
                     key={product.id}
                     product={product}
@@ -1386,30 +1289,41 @@ export default function App() {
               </div>
             </section>
 
-            {/* 3. Features Info Section */}
-            <section className="features-info-section">
-              <div className="features-info-bar container">
-                <div className="feature-card">
-                  <div className="feature-icon-wrapper">
-                    <Sparkles size={24} strokeWidth={1.2} />
+            {/* 6. Reels */}
+            <section className="reels-section container">
+              <div className="section-header-centered">
+                <h2>Couture In Motion</h2>
+                <p>Experience the flow, weight, and texture of our hand-crafted silhouettes in real-time motion loops.</p>
+              </div>
+              
+              <div className="reels-section-wrapper">
+                <button className="reels-nav-btn prev" onClick={() => handleScrollReels('left')} aria-label="Previous Reels">
+                  <ChevronLeft size={20} />
+                </button>
+                <button className="reels-nav-btn next" onClick={() => handleScrollReels('right')} aria-label="Next Reels">
+                  <ChevronRight size={20} />
+                </button>
+
+                {reelsList.length > 0 ? (
+                  <div className="reels-carousel-container scroll-layout">
+                    {reelsList.map(reel => (
+                      <ReelCard
+                        key={reel.id}
+                        reel={reel}
+                        onShopOutfit={() => {
+                          if (reel.productId) {
+                            const matched = productsList.find(p => p.id === reel.productId);
+                            if (matched) setSelectedProduct(matched);
+                          }
+                        }}
+                      />
+                    ))}
                   </div>
-                  <h4>Luxury Fabrics</h4>
-                  <p>Curated silk weaves, rich velvets, and handpicked linen threads.</p>
-                </div>
-                <div className="feature-card">
-                  <div className="feature-icon-wrapper">
-                    <Scissors size={24} strokeWidth={1.2} />
+                ) : (
+                  <div className="empty-reels-notice">
+                    <p>No video reels active. Open the Admin Console to add reels showcases.</p>
                   </div>
-                  <h4>Custom Stitching</h4>
-                  <p>Provide measurements during checkout. Handcrafted by master tailors.</p>
-                </div>
-                <div className="feature-card">
-                  <div className="feature-icon-wrapper">
-                    <Truck size={24} strokeWidth={1.2} />
-                  </div>
-                  <h4>Pan-India Delivery</h4>
-                  <p>Free standard courier delivery across India on orders above ₹1,500.</p>
-                </div>
+                )}
               </div>
             </section>
 
@@ -1554,12 +1468,50 @@ export default function App() {
         <div className="footer-container container">
           <div className="footer-column brand-col">
             <div className="footer-logo-wrapper" style={{ marginBottom: '16px' }}>
-              <img src="/logo.png" alt="INI By Maya" className="footer-logo-img" style={{ height: '46px', width: 'auto' }} />
+              <img src="/footer-logo.png" alt="INI By Maya" className="footer-logo-img" style={{ height: '48px', width: 'auto' }} />
             </div>
             <p className="footer-desc">{boutiqueSettings.description}</p>
             <div className="footer-contact">
-              <span>Email: {boutiqueSettings.email}</span>
-              <span>Phone: {boutiqueSettings.phone}</span>
+              <p className="footer-contact-item"><strong>Email:</strong> {boutiqueSettings.email}</p>
+              <p className="footer-contact-item"><strong>Phone:</strong> {boutiqueSettings.phone}</p>
+            </div>
+            <div className="footer-instagram-card">
+              <a 
+                href="https://www.instagram.com/inibymaya?igsh=MWl1MXh3anNucDJyNg==" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="insta-profile-wrapper"
+                title="Follow INI By Maya on Instagram"
+              >
+                <div className="insta-story-ring">
+                  <div className="insta-avatar-circle">
+                    <img src="/footer-logo.png" alt="INI by Maya" className="insta-avatar-img" />
+                  </div>
+                </div>
+                <div className="insta-profile-details">
+                  <div className="insta-handle-row">
+                    <span className="insta-profile-name">INI BY MAYA</span>
+                    <svg className="insta-verified-badge" width="14" height="14" viewBox="0 0 24 24" fill="#3897f0">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                  </div>
+                  <span className="insta-profile-username">@inibymaya</span>
+                  <span className="insta-followers-tag">Join 50K+ Couture Community</span>
+                </div>
+              </a>
+              <a 
+                href="https://www.instagram.com/inibymaya?igsh=MWl1MXh3anNucDJyNg==" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="insta-follow-btn"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                </svg>
+                <span>Follow</span>
+              </a>
             </div>
           </div>
           <div className="footer-column">

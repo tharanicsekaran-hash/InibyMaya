@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings, Layout } from 'lucide-react';
+import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings, Layout, ChevronUp, ChevronDown, Plus } from 'lucide-react';
 
 const getSleeveName = (id) => {
   const sleevesMap = {
@@ -97,6 +97,14 @@ export default function AdminDashboard({
   const [heroPrimaryBtnText, setHeroPrimaryBtnText] = useState('');
   const [heroSecondaryBtnText, setHeroSecondaryBtnText] = useState('');
 
+  // Multi-Banner Hero Carousel State
+  const [storefrontHeroBanners, setStorefrontHeroBanners] = useState([]);
+  const [activeBannerTabId, setActiveBannerTabId] = useState(null);
+
+  // Multi-Banner Offers Carousel State
+  const [storefrontOfferBanners, setStorefrontOfferBanners] = useState([]);
+  const [activeOfferBannerTabId, setActiveOfferBannerTabId] = useState(null);
+
   useEffect(() => {
     if (boutiqueSettings && Object.keys(boutiqueSettings).length > 0) {
       setSettingsDesc(boutiqueSettings.description || '');
@@ -118,6 +126,66 @@ export default function AdminDashboard({
       setHeroSubtitle(boutiqueSettings.heroSubtitle || 'Handcrafted Chikankari, rich velvet sets, and custom-tailored Anarkalis designed for the modern connoisseur.');
       setHeroPrimaryBtnText(boutiqueSettings.heroPrimaryBtnText || 'Explore the Collection');
       setHeroSecondaryBtnText(boutiqueSettings.heroSecondaryBtnText || 'Custom Fitting Guide');
+
+      // Hero Banners Carousel Array
+      try {
+        const parsedBanners = JSON.parse(boutiqueSettings.heroBanners || '[]');
+        if (Array.isArray(parsedBanners) && parsedBanners.length > 0) {
+          setStorefrontHeroBanners(parsedBanners);
+          setActiveBannerTabId(parsedBanners[0].id);
+        } else {
+          const defaultB = [
+            {
+              id: 'banner-1',
+              image: boutiqueSettings.heroImage || 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600',
+              tagline: boutiqueSettings.heroTagline || 'AUTUMN / WINTER 2026 COUTURE',
+              titleLine1: boutiqueSettings.heroTitleLine1 || 'Where Heritage Meets',
+              titleLine2: boutiqueSettings.heroTitleLine2 || 'Modern Couture',
+              subtitle: boutiqueSettings.heroSubtitle || 'Handcrafted Chikankari, rich velvet sets, and custom-tailored Anarkalis designed for the modern connoisseur.',
+              primaryBtnText: boutiqueSettings.heroPrimaryBtnText || 'Explore the Collection',
+              secondaryBtnText: boutiqueSettings.heroSecondaryBtnText || 'Custom Fitting Guide'
+            },
+            {
+              id: 'banner-2',
+              image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=1600',
+              tagline: 'FRESH DROPS, EVERY WEEK',
+              titleLine1: 'The Latest',
+              titleLine2: "You'll Love",
+              subtitle: 'Discover our newest handwoven arrivals crafted with timeless artistry and modern silhouettes.',
+              primaryBtnText: 'Shop New Arrivals',
+              secondaryBtnText: 'View Bestsellers'
+            },
+            {
+              id: 'banner-3',
+              image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&q=80&w=1600',
+              tagline: 'ROYAL FESTIVE SELECTION',
+              titleLine1: 'Bespoke Anarkalis &',
+              titleLine2: 'Silk Ensembles',
+              subtitle: 'Elevate your festive wardrobe with intricate zari embroidery and custom-made fits.',
+              primaryBtnText: 'Explore Occasions',
+              secondaryBtnText: 'Book Tailor'
+            }
+          ];
+          setStorefrontHeroBanners(defaultB);
+          setActiveBannerTabId(defaultB[0].id);
+        }
+      } catch {
+        setStorefrontHeroBanners([]);
+      }
+
+      // Offers Banner Carousel Array
+      try {
+        const parsedOffers = JSON.parse(boutiqueSettings.offerBanners || '[]');
+        if (Array.isArray(parsedOffers) && parsedOffers.length > 0) {
+          setStorefrontOfferBanners(parsedOffers);
+          setActiveOfferBannerTabId(parsedOffers[0].id);
+        } else {
+          setStorefrontOfferBanners([]);
+          setActiveOfferBannerTabId(null);
+        }
+      } catch {
+        setStorefrontOfferBanners([]);
+      }
 
       // Load categories/occasions from settings
       try { 
@@ -181,22 +249,103 @@ export default function AdminDashboard({
     return list;
   }, [storefrontOccasions, boutiqueSettings, products]);
 
+  const handleAddBannerSlide = () => {
+    const newSlide = {
+      id: `banner-${Date.now()}`,
+      image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&q=80&w=1600',
+      tagline: 'NEW COUTURE BANNER',
+      titleLine1: 'Handcrafted With',
+      titleLine2: 'Royal Heritage',
+      subtitle: 'Experience exquisite silhouettes crafted by master artisans.',
+      primaryBtnText: 'Shop Collection',
+      secondaryBtnText: 'Explore Fits'
+    };
+    setStorefrontHeroBanners(prev => [...prev, newSlide]);
+    setActiveBannerTabId(newSlide.id);
+  };
+
+  const handleUpdateBannerSlide = (id, field, value) => {
+    setStorefrontHeroBanners(prev => prev.map(b => b.id === id ? { ...b, [field]: value } : b));
+  };
+
+  const handleDeleteBannerSlide = (id) => {
+    if (storefrontHeroBanners.length <= 1) {
+      alert('You must maintain at least one active hero banner slide.');
+      return;
+    }
+    const filtered = storefrontHeroBanners.filter(b => b.id !== id);
+    setStorefrontHeroBanners(filtered);
+    if (activeBannerTabId === id) {
+      setActiveBannerTabId(filtered[0]?.id || null);
+    }
+  };
+
+  const handleMoveBannerSlide = (index, direction) => {
+    const newBanners = [...storefrontHeroBanners];
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= newBanners.length) return;
+    const temp = newBanners[index];
+    newBanners[index] = newBanners[targetIdx];
+    newBanners[targetIdx] = temp;
+    setStorefrontHeroBanners(newBanners);
+  };
+
+  const handleAddOfferBannerSlide = () => {
+    const newSlide = {
+      id: `offer-banner-${Date.now()}`,
+      image: '',
+      mobileImage: '',
+      title: ''
+    };
+    setStorefrontOfferBanners(prev => [...prev, newSlide]);
+    setActiveOfferBannerTabId(newSlide.id);
+  };
+
+  const handleUpdateOfferBannerSlide = (id, field, value) => {
+    setStorefrontOfferBanners(prev => prev.map(b => b.id === id ? { ...b, [field]: value } : b));
+  };
+
+  const handleDeleteOfferBannerSlide = (id) => {
+    if (storefrontOfferBanners.length <= 1) {
+      alert('You must maintain at least one active offer banner slide.');
+      return;
+    }
+    const filtered = storefrontOfferBanners.filter(b => b.id !== id);
+    setStorefrontOfferBanners(filtered);
+    if (activeOfferBannerTabId === id) {
+      setActiveOfferBannerTabId(filtered[0]?.id || null);
+    }
+  };
+
+  const handleMoveOfferBannerSlide = (index, direction) => {
+    const newBanners = [...storefrontOfferBanners];
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= newBanners.length) return;
+    const temp = newBanners[index];
+    newBanners[index] = newBanners[targetIdx];
+    newBanners[targetIdx] = temp;
+    setStorefrontOfferBanners(newBanners);
+  };
+
   const handleSaveStorefront = () => {
     if (onSaveSettings) {
+      const firstBanner = storefrontHeroBanners[0] || {};
       const currentSettings = { 
         ...boutiqueSettings,
-        heroImage,
-        heroTagline,
-        heroTitleLine1,
-        heroTitleLine2,
-        heroSubtitle,
-        heroPrimaryBtnText,
-        heroSecondaryBtnText,
+        heroImage: firstBanner.image || heroImage,
+        heroTagline: firstBanner.tagline || heroTagline,
+        heroTitleLine1: firstBanner.titleLine1 || heroTitleLine1,
+        heroTitleLine2: firstBanner.titleLine2 || heroTitleLine2,
+        heroSubtitle: firstBanner.subtitle || heroSubtitle,
+        heroPrimaryBtnText: firstBanner.primaryBtnText || heroPrimaryBtnText,
+        heroSecondaryBtnText: firstBanner.secondaryBtnText || heroSecondaryBtnText,
+        heroBanners: JSON.stringify(storefrontHeroBanners),
+        offerBanners: JSON.stringify(storefrontOfferBanners),
         categories: JSON.stringify(storefrontCategories.filter(c => c.name && c.name.trim())),
         occasions: JSON.stringify(storefrontOccasions.filter(o => o.name && o.name.trim()))
       };
       onSaveSettings(currentSettings);
-      setStorefrontSuccessMsg('Storefront & Homepage Banner configuration saved successfully!');
+      setStorefrontSuccessMsg('Storefront & Hero/Offer Banner Carousel configuration saved successfully!');
       setTimeout(() => setStorefrontSuccessMsg(''), 4000);
     }
   };
@@ -281,30 +430,59 @@ export default function AdminDashboard({
   const [reviewsCount, setReviewsCount] = useState(1);
   const [successMsg, setSuccessMsg] = useState('');
 
-  const handleMultiplePrimaryUpload = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-    
-    files.forEach((file) => {
+  // Lightweight canvas image compressor utility (cuts bandwidth & DB egress usage by 99%)
+  const compressImage = (file, maxWidth = 1200, quality = 0.8) => {
+    return new Promise((resolve) => {
+      if (!file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+        return;
+      }
       const reader = new FileReader();
-      reader.onload = () => {
-        setPrimaryImages(prev => {
-          const filtered = prev.filter(x => x && x.trim() !== '');
-          return [...filtered, reader.result];
-        });
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = e.target.result;
       };
       reader.readAsDataURL(file);
     });
   };
 
-  const handleHoverUpload = (e) => {
+  const handleMultiplePrimaryUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    
+    for (const file of files) {
+      const compressedData = await compressImage(file);
+      setPrimaryImages(prev => {
+        const filtered = prev.filter(x => x && x.trim() !== '');
+        return [...filtered, compressedData];
+      });
+    }
+  };
+
+  const handleHoverUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setHoverImage(reader.result);
-    };
-    reader.readAsDataURL(file);
+    const compressedData = await compressImage(file);
+    setHoverImage(compressedData);
   };
 
   const handleAddPrimaryRow = () => {
@@ -539,8 +717,8 @@ export default function AdminDashboard({
     setPrimaryImages(primaryImgs.length > 0 ? primaryImgs : ['']);
     setHoverImage(hoverImg);
     
-    setCustomizable(prod.customizable);
-    setBestSeller(prod.bestSeller || false);
+    setCustomizable(Boolean(prod.customizable));
+    setBestSeller(Boolean(prod.bestSeller));
     setRating(prod.rating || 5.0);
     setReviewsCount(prod.reviewsCount || 1);
     
@@ -1814,20 +1992,9 @@ alter table public.settings disable row level security;`}</pre>
       {/* Tab 7: Boutique Settings Configurator */}
       {activeTab === 'settings' && (
         <div className="admin-content-section animate-fadeIn">
-          <div className="admin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
-            <div>
-              <h3>Configure Boutique Settings</h3>
-              <p>Update your e-commerce store brand description, support emails, contact hotline, atelier showroom address, and operating hours shown in the footer and help pages.</p>
-            </div>
-            <button 
-              type="button" 
-              className="add-btn-submit"
-              style={{ width: 'auto', margin: 0, padding: '10px 24px', whiteSpace: 'nowrap' }}
-              onClick={(e) => handleSettingsSubmit(e)}
-            >
-              <CheckCircle2 size={15} />
-              <span>Save Boutique Settings</span>
-            </button>
+          <div className="admin-section-header" style={{ marginBottom: '20px' }}>
+            <h3>Configure Boutique Settings</h3>
+            <p>Update your e-commerce store brand description, support emails, contact hotline, atelier showroom address, and operating hours shown in the footer and help pages.</p>
           </div>
 
           <div className="admin-form-box" style={{ maxWidth: '680px', margin: '0 auto' }}>
@@ -1991,138 +2158,435 @@ alter table public.settings disable row level security;`}</pre>
 
           <div className="admin-form-box" style={{ maxWidth: '750px', margin: '0 auto' }}>
 
-            {/* ── HOMEPAGE HERO BANNER SECTION ── */}
+            {/* ── HOMEPAGE HERO BANNER CAROUSEL SECTION ── */}
             <div style={{ marginBottom: '28px', paddingBottom: '24px', borderBottom: '1px solid var(--color-border)' }}>
-              <h4 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '8px', color: 'var(--color-text-primary)' }}>
-                Homepage Hero Banner & Text
-              </h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
+                <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--color-text-primary)', margin: 0 }}>
+                  Homepage Hero Banner Carousel ({storefrontHeroBanners.length} Slides)
+                </h4>
+                <button
+                  type="button"
+                  onClick={handleAddBannerSlide}
+                  className="add-btn-submit"
+                  style={{ width: 'auto', margin: 0, padding: '6px 14px', fontSize: '12px' }}
+                >
+                  <Plus size={13} />
+                  <span>Add Banner Slide</span>
+                </button>
+              </div>
               <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '20px' }}>
-                Customize the background image, headings, taglines, and action buttons displayed on the main homepage banner.
+                Upload multiple bright portrait banner images and customize their titles, taglines, and buttons for the homepage carousel.
               </p>
 
-              {/* Banner Image Input with Upload & Preview */}
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
-                  Banner Background Image
-                </label>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <input
-                    type="text"
-                    className="admin-input"
-                    style={{ flex: '1', minWidth: '240px' }}
-                    placeholder="Image URL (e.g. https://images.unsplash.com/...)"
-                    value={heroImage}
-                    onChange={(e) => setHeroImage(e.target.value)}
-                  />
-                  <label className="upload-btn-secondary" style={{ cursor: 'pointer', margin: 0, padding: '10px 16px', fontSize: '13px', border: '1px solid var(--color-border)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--color-bg-secondary)' }}>
-                    <Upload size={14} />
-                    <span>Upload Photo</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={(e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (event) => setHeroImage(event.target.result);
-                          reader.readAsDataURL(file);
-                        }
+              {/* Banner Slide Select Tabs / List */}
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '20px' }}>
+                {storefrontHeroBanners.map((banner, index) => {
+                  const isActive = banner.id === activeBannerTabId;
+                  return (
+                    <div
+                      key={banner.id || index}
+                      onClick={() => setActiveBannerTabId(banner.id)}
+                      style={{
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 14px',
+                        borderRadius: '24px',
+                        border: isActive ? '2px solid #111111' : '1.5px solid var(--color-border)',
+                        backgroundColor: isActive ? '#111111' : 'var(--color-bg-secondary)',
+                        color: isActive ? '#ffffff' : 'var(--color-text-primary)',
+                        cursor: 'pointer',
+                        boxShadow: isActive ? '0 4px 12px rgba(0, 0, 0, 0.18)' : 'none',
+                        transition: 'all 0.2s ease'
                       }}
-                    />
-                  </label>
-                </div>
-                {heroImage && (
-                  <div style={{ marginTop: '10px', height: '120px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--color-border)', position: 'relative' }}>
-                    <img src={heroImage} alt="Hero Banner Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <div style={{ position: 'absolute', bottom: '8px', left: '12px', background: 'rgba(0,0,0,0.6)', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>
-                      Live Banner Preview
+                    >
+                      {banner.image && (
+                        <img 
+                          src={banner.image} 
+                          alt="" 
+                          style={{ width: '32px', height: '22px', objectFit: 'cover', borderRadius: '4px', border: isActive ? '1px solid rgba(255,255,255,0.4)' : '1px solid var(--color-border)' }} 
+                        />
+                      )}
+                      <span style={{ fontSize: '12px', fontWeight: isActive ? '700' : '500', color: isActive ? '#ffffff' : 'var(--color-text-primary)' }}>
+                        Slide #{index + 1}
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px', marginLeft: '4px' }}>
+                        <button
+                          type="button"
+                          disabled={index === 0}
+                          onClick={(e) => { e.stopPropagation(); handleMoveBannerSlide(index, 'up'); }}
+                          style={{ border: 'none', background: 'none', padding: '2px', cursor: index === 0 ? 'default' : 'pointer', color: isActive ? '#ffffff' : 'var(--color-text-primary)', opacity: index === 0 ? 0.3 : 0.9 }}
+                          title="Move Slide Up"
+                        >
+                          <ChevronUp size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={index === storefrontHeroBanners.length - 1}
+                          onClick={(e) => { e.stopPropagation(); handleMoveBannerSlide(index, 'down'); }}
+                          style={{ border: 'none', background: 'none', padding: '2px', cursor: index === storefrontHeroBanners.length - 1 ? 'default' : 'pointer', color: isActive ? '#ffffff' : 'var(--color-text-primary)', opacity: index === storefrontHeroBanners.length - 1 ? 0.3 : 0.9 }}
+                          title="Move Slide Down"
+                        >
+                          <ChevronDown size={13} />
+                        </button>
+                        {storefrontHeroBanners.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handleDeleteBannerSlide(banner.id); }}
+                            style={{ border: 'none', background: 'none', padding: '2px', cursor: 'pointer', color: isActive ? '#ff6b6b' : '#e53e3e', opacity: 0.9, marginLeft: '2px' }}
+                            title="Delete Slide"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Active Banner Slide Form Editor */}
+              {(() => {
+                const activeBanner = storefrontHeroBanners.find(b => b.id === activeBannerTabId) || storefrontHeroBanners[0];
+                if (!activeBanner) return null;
+
+                return (
+                  <div style={{ background: 'var(--color-bg-secondary)', padding: '16px', borderRadius: '10px', border: '1px solid var(--color-border)' }}>
+                    {/* Desktop & Mobile Banner Images */}
+                    <div style={{ marginBottom: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
+                          Desktop Banner Image (Landscape)
+                        </label>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input
+                            type="text"
+                            className="admin-input"
+                            style={{ flex: '1' }}
+                            placeholder="Desktop Image URL"
+                            value={activeBanner.image || ''}
+                            onChange={(e) => handleUpdateBannerSlide(activeBanner.id, 'image', e.target.value)}
+                          />
+                          <label className="upload-btn-secondary" style={{ cursor: 'pointer', margin: 0, padding: '8px 12px', fontSize: '12px', border: '1px solid var(--color-border)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#fff', whiteSpace: 'nowrap' }}>
+                            <Upload size={14} />
+                            <span>Upload</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              style={{ display: 'none' }}
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => handleUpdateBannerSlide(activeBanner.id, 'image', event.target.result);
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                        {activeBanner.image && (
+                          <div style={{ marginTop: '8px', height: '100px', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--color-border)', position: 'relative' }}>
+                            <img src={activeBanner.image} alt="Desktop Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <div style={{ position: 'absolute', bottom: '4px', left: '6px', background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '1px 6px', borderRadius: '3px', fontSize: '10px' }}>Desktop Preview</div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
+                          Mobile Banner Image (Optional Portrait)
+                        </label>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input
+                            type="text"
+                            className="admin-input"
+                            style={{ flex: '1' }}
+                            placeholder="Mobile Image URL (Optional)"
+                            value={activeBanner.mobileImage || ''}
+                            onChange={(e) => handleUpdateBannerSlide(activeBanner.id, 'mobileImage', e.target.value)}
+                          />
+                          <label className="upload-btn-secondary" style={{ cursor: 'pointer', margin: 0, padding: '8px 12px', fontSize: '12px', border: '1px solid var(--color-border)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#fff', whiteSpace: 'nowrap' }}>
+                            <Upload size={14} />
+                            <span>Upload</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              style={{ display: 'none' }}
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => handleUpdateBannerSlide(activeBanner.id, 'mobileImage', event.target.result);
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                        {activeBanner.mobileImage && (
+                          <div style={{ marginTop: '8px', height: '100px', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--color-border)', position: 'relative' }}>
+                            <img src={activeBanner.mobileImage} alt="Mobile Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <div style={{ position: 'absolute', bottom: '4px', left: '6px', background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '1px 6px', borderRadius: '3px', fontSize: '10px' }}>Mobile Preview</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="form-grid-2col" style={{ marginBottom: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
+                          Top Tagline / Badge
+                        </label>
+                        <input
+                          type="text"
+                          className="admin-input"
+                          placeholder="e.g. AUTUMN / WINTER 2026 COUTURE"
+                          value={activeBanner.tagline || ''}
+                          onChange={(e) => handleUpdateBannerSlide(activeBanner.id, 'tagline', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
+                          Main Heading Line 1
+                        </label>
+                        <input
+                          type="text"
+                          className="admin-input"
+                          placeholder="e.g. Where Heritage Meets"
+                          value={activeBanner.titleLine1 || ''}
+                          onChange={(e) => handleUpdateBannerSlide(activeBanner.id, 'titleLine1', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-grid-2col" style={{ marginBottom: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
+                          Main Heading Line 2 (Highlighted)
+                        </label>
+                        <input
+                          type="text"
+                          className="admin-input"
+                          placeholder="e.g. Modern Couture"
+                          value={activeBanner.titleLine2 || ''}
+                          onChange={(e) => handleUpdateBannerSlide(activeBanner.id, 'titleLine2', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
+                          Primary Button Text
+                        </label>
+                        <input
+                          type="text"
+                          className="admin-input"
+                          placeholder="e.g. Explore the Collection"
+                          value={activeBanner.primaryBtnText || ''}
+                          onChange={(e) => handleUpdateBannerSlide(activeBanner.id, 'primaryBtnText', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
+                        Secondary Button Text
+                      </label>
+                      <input
+                        type="text"
+                        className="admin-input"
+                        placeholder="e.g. Custom Fitting Guide"
+                        value={activeBanner.secondaryBtnText || ''}
+                        onChange={(e) => handleUpdateBannerSlide(activeBanner.id, 'secondaryBtnText', e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
+                        Banner Subtitle / Description
+                      </label>
+                      <textarea
+                        className="admin-textarea"
+                        rows={2}
+                        placeholder="Describe your boutique heritage and craftsmanship..."
+                        value={activeBanner.subtitle || ''}
+                        onChange={(e) => handleUpdateBannerSlide(activeBanner.id, 'subtitle', e.target.value)}
+                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit', fontSize: '13px' }}
+                      />
                     </div>
                   </div>
-                )}
+                );
+              })()}
+            </div>
+
+            {/* ── OFFERS BANNER CAROUSEL SECTION ── */}
+            <div style={{ marginBottom: '32px', paddingTop: '20px', borderTop: '1px solid var(--color-border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div>
+                  <h4 style={{ fontSize: '15px', fontWeight: '600', margin: 0, color: 'var(--color-text-primary)' }}>Offers Banner Section (Appears after Shop by Category)</h4>
+                  <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', margin: '4px 0 0 0' }}>Upload offer graphics/banners. Clicking an offer banner opens the All Products page.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddOfferBannerSlide}
+                  className="btn-primary"
+                  style={{ padding: '8px 16px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Plus size={14} />
+                  <span>Add Offer Slide</span>
+                </button>
               </div>
 
-              {/* Tagline & Headings */}
-              <div className="form-grid-2col" style={{ marginBottom: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
-                    Top Tagline / Badge
-                  </label>
-                  <input
-                    type="text"
-                    className="admin-input"
-                    placeholder="e.g. AUTUMN / WINTER 2026 COUTURE"
-                    value={heroTagline}
-                    onChange={(e) => setHeroTagline(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
-                    Main Heading Line 1
-                  </label>
-                  <input
-                    type="text"
-                    className="admin-input"
-                    placeholder="e.g. Where Heritage Meets"
-                    value={heroTitleLine1}
-                    onChange={(e) => setHeroTitleLine1(e.target.value)}
-                  />
-                </div>
+              {/* Offer Banner Tab Pills */}
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '16px' }}>
+                {storefrontOfferBanners.map((slide, index) => {
+                  const isActive = slide.id === activeOfferBannerTabId;
+                  return (
+                    <div
+                      key={slide.id}
+                      onClick={() => setActiveOfferBannerTabId(slide.id)}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '24px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: isActive ? '700' : '500',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        backgroundColor: isActive ? '#111111' : 'var(--color-bg-secondary)',
+                        color: isActive ? '#ffffff' : 'var(--color-text-primary)',
+                        border: isActive ? '2px solid #111111' : '1.5px solid var(--color-border)',
+                        boxShadow: isActive ? '0 4px 12px rgba(0, 0, 0, 0.18)' : 'none',
+                        transition: 'all 0.2s ease',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      <span style={{ color: isActive ? '#ffffff' : 'var(--color-text-primary)' }}>Offer #{index + 1}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }} onClick={(e) => e.stopPropagation()}>
+                        {index > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleMoveOfferBannerSlide(index, 'up')}
+                            style={{ border: 'none', background: 'none', padding: '2px', cursor: 'pointer', color: isActive ? '#ffffff' : 'var(--color-text-primary)', opacity: 0.9 }}
+                            title="Move Up"
+                          >
+                            <ChevronUp size={13} />
+                          </button>
+                        )}
+                        {index < storefrontOfferBanners.length - 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleMoveOfferBannerSlide(index, 'down')}
+                            style={{ border: 'none', background: 'none', padding: '2px', cursor: 'pointer', color: isActive ? '#ffffff' : 'var(--color-text-primary)', opacity: 0.9 }}
+                            title="Move Down"
+                          >
+                            <ChevronDown size={13} />
+                          </button>
+                        )}
+                        {storefrontOfferBanners.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteOfferBannerSlide(slide.id)}
+                            style={{ border: 'none', background: 'none', padding: '2px', cursor: 'pointer', color: isActive ? '#ff6b6b' : '#e53e3e', opacity: 0.9, marginLeft: '2px' }}
+                            title="Delete Slide"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
-              <div className="form-grid-2col" style={{ marginBottom: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
-                    Main Heading Line 2 (Highlighted)
-                  </label>
-                  <input
-                    type="text"
-                    className="admin-input"
-                    placeholder="e.g. Modern Couture"
-                    value={heroTitleLine2}
-                    onChange={(e) => setHeroTitleLine2(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
-                    Primary Button Text
-                  </label>
-                  <input
-                    type="text"
-                    className="admin-input"
-                    placeholder="e.g. Explore the Collection"
-                    value={heroPrimaryBtnText}
-                    onChange={(e) => setHeroPrimaryBtnText(e.target.value)}
-                  />
-                </div>
-              </div>
+              {/* Active Offer Banner Slide Form Editor */}
+              {(() => {
+                const activeOffer = storefrontOfferBanners.find(b => b.id === activeOfferBannerTabId) || storefrontOfferBanners[0];
+                if (!activeOffer) return null;
 
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
-                  Secondary Button Text
-                </label>
-                <input
-                  type="text"
-                  className="admin-input"
-                  placeholder="e.g. Custom Fitting Guide"
-                  value={heroSecondaryBtnText}
-                  onChange={(e) => setHeroSecondaryBtnText(e.target.value)}
-                />
-              </div>
+                return (
+                  <div style={{ background: 'var(--color-bg-secondary)', padding: '16px', borderRadius: '10px', border: '1px solid var(--color-border)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
+                          Desktop Offer Image (Landscape)
+                        </label>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input
+                            type="text"
+                            className="admin-input"
+                            style={{ flex: '1' }}
+                            placeholder="Desktop Offer Image URL"
+                            value={activeOffer.image || ''}
+                            onChange={(e) => handleUpdateOfferBannerSlide(activeOffer.id, 'image', e.target.value)}
+                          />
+                          <label className="upload-btn-secondary" style={{ cursor: 'pointer', margin: 0, padding: '8px 12px', fontSize: '12px', border: '1px solid var(--color-border)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#fff', whiteSpace: 'nowrap' }}>
+                            <Upload size={14} />
+                            <span>Upload</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              style={{ display: 'none' }}
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => handleUpdateOfferBannerSlide(activeOffer.id, 'image', event.target.result);
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                        {activeOffer.image && (
+                          <div style={{ marginTop: '8px', height: '100px', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--color-border)', position: 'relative' }}>
+                            <img src={activeOffer.image} alt="Offer Desktop Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </div>
+                        )}
+                      </div>
 
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
-                  Banner Subtitle / Description
-                </label>
-                <textarea
-                  className="admin-textarea"
-                  rows={3}
-                  placeholder="Describe your boutique heritage and craftsmanship..."
-                  value={heroSubtitle}
-                  onChange={(e) => setHeroSubtitle(e.target.value)}
-                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit', fontSize: '13px' }}
-                />
-              </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
+                          Mobile Offer Image (Optional Portrait)
+                        </label>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input
+                            type="text"
+                            className="admin-input"
+                            style={{ flex: '1' }}
+                            placeholder="Mobile Offer Image URL (Optional)"
+                            value={activeOffer.mobileImage || ''}
+                            onChange={(e) => handleUpdateOfferBannerSlide(activeOffer.id, 'mobileImage', e.target.value)}
+                          />
+                          <label className="upload-btn-secondary" style={{ cursor: 'pointer', margin: 0, padding: '8px 12px', fontSize: '12px', border: '1px solid var(--color-border)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#fff', whiteSpace: 'nowrap' }}>
+                            <Upload size={14} />
+                            <span>Upload</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              style={{ display: 'none' }}
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => handleUpdateOfferBannerSlide(activeOffer.id, 'mobileImage', event.target.result);
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                        {activeOffer.mobileImage && (
+                          <div style={{ marginTop: '8px', height: '100px', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--color-border)', position: 'relative' }}>
+                            <img src={activeOffer.mobileImage} alt="Offer Mobile Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* ── CATEGORIES SECTION ── */}

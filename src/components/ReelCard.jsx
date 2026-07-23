@@ -16,46 +16,27 @@ function ReelCard({ reel, onShopOutfit }) {
     const wrapper = wrapperRef.current;
     if (!video || !wrapper) return;
 
-    // Immediately trigger play on mount for instant loading right after page enter/refresh
-    video.play().catch(() => {});
-
-    // IntersectionObserver to auto-play when visible and pause when scrolled far vertically
-    const playObserver = new IntersectionObserver(
+    // Smart IntersectionObserver to play video only when scrolled into view
+    const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             video.play().catch(() => {});
-          }
-        });
-      },
-      {
-        root: null,
-        rootMargin: '300px 1000px 300px 1000px', // generous bounds so all carousel reels load & play immediately
-        threshold: 0,
-      }
-    );
-
-    const pauseObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) {
+          } else {
             video.pause();
           }
         });
       },
       {
         root: null,
-        rootMargin: '200px',
-        threshold: 0,
+        threshold: 0.25,
       }
     );
 
-    playObserver.observe(wrapper);
-    pauseObserver.observe(wrapper);
+    observer.observe(wrapper);
 
     return () => {
-      playObserver.disconnect();
-      pauseObserver.disconnect();
+      observer.disconnect();
     };
   }, [reel.videoUrl]);
 
@@ -100,9 +81,8 @@ function ReelCard({ reel, onShopOutfit }) {
           poster={posterImg}
           loop
           muted
-          autoPlay
           playsInline
-          preload="auto"
+          preload="metadata"
           className="reel-video"
           style={{ 
             position: 'relative', 

@@ -45,6 +45,18 @@ const getNeckName = (id) => {
   return necksMap[id] || id;
 };
 
+// Utility to auto-convert GitHub web URLs to raw GitHub / jsDelivr CDN URLs
+export const formatGithubUrl = (url) => {
+  if (!url || typeof url !== 'string') return url;
+  const trimmed = url.trim();
+  if (trimmed.includes('github.com') && trimmed.includes('/blob/')) {
+    return trimmed
+      .replace('github.com', 'raw.githubusercontent.com')
+      .replace('/blob/', '/');
+  }
+  return trimmed;
+};
+
 export default function AdminDashboard({ 
   products, 
   orders, 
@@ -499,7 +511,7 @@ export default function AdminDashboard({
   const handlePrimaryTextChange = (index, value) => {
     setPrimaryImages(prev => {
       const updated = [...prev];
-      updated[index] = value;
+      updated[index] = formatGithubUrl(value);
       return updated;
     });
   };

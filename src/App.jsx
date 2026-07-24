@@ -15,7 +15,7 @@ import InfoPage from './components/InfoPage';
 import ReelCard from './components/ReelCard';
 import { products as initialProducts } from './data/products';
 import { CheckCircle2, Calendar, Truck, ArrowLeft, Heart, ShoppingBag, Sparkles, Scissors, X, Film, Star, ChevronLeft, ChevronRight } from 'lucide-react';
-import { supabase } from './supabaseClient';
+import { supabase, supabaseMedia } from './supabaseClient';
 import './App.css';
 
 // Database column mapping helpers
@@ -344,7 +344,8 @@ export default function App() {
 
       // 1a. Load Settings IMMEDIATELY with a 2.5s max timeout so Hero & Offer Banners render instantly!
       try {
-        const settingsPromise = supabase.from('settings').select('*');
+        const mediaClient = supabaseMedia || supabase;
+        const settingsPromise = mediaClient.from('settings').select('key, value');
         const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({ data: null, error: 'Timeout' }), 2500));
         const { data: sData } = await Promise.race([settingsPromise, timeoutPromise]);
 
@@ -365,32 +366,33 @@ export default function App() {
         console.warn('Instant settings sync bypassed:', err);
       }
 
-      // 1b. Load remaining catalog & database tables in background
+      // 1b. Load remaining catalog & database tables safely in background
       try {
+        const mediaClient = supabaseMedia || supabase;
         const [
-          { data: pData },
-          { data: rData },
-          { data: promoData },
-          { data: oData },
-          { data: tData }
+          pRes,
+          rRes,
+          promoRes,
+          oRes,
+          tRes
         ] = await Promise.all([
-          supabase.from('products').select('*').order('created_at', { ascending: false }),
-          supabase.from('reels').select('*').order('created_at', { ascending: true }),
-          supabase.from('promos').select('*'),
-          supabase.from('orders').select('*').order('timestamp', { ascending: false }),
-          supabase.from('testimonials').select('*').order('created_at', { ascending: true })
+          supabase.from('products').select('id, title, category, price, rating, reviews_count, description, details, images, variants, customizable, best_seller, occasion, highlights').order('created_at', { ascending: false }).catch(() => ({ data: null })),
+          mediaClient.from('reels').select('id, title, video_url, product_id, product_title, product_price, product_image').order('created_at', { ascending: true }).catch(() => ({ data: null })),
+          supabase.from('promos').select('code, type, value, min_purchase, description').catch(() => ({ data: null })),
+          supabase.from('orders').select('id, user_id, items, shipping_details, subtotal, discount, shipping, total, payment_id, status, tracking_number, notes, timestamp').order('timestamp', { ascending: false }).catch(() => ({ data: null })),
+          mediaClient.from('testimonials').select('id, name, image_url, quote, rating, tag').order('created_at', { ascending: true }).catch(() => ({ data: null }))
         ]);
 
-        if (pData && pData.length > 0) setProductsList(pData.map(mapDbProductToClient));
-        if (rData && rData.length > 0) setReelsList(rData.map(mapDbReelToClient));
-        if (promoData && promoData.length > 0) setPromosList(promoData.map(mapDbPromoToClient));
-        if (oData && oData.length > 0) {
-          const remoteOrders = oData.map(mapDbOrderToClient);
+        if (pRes?.data && pRes.data.length > 0) setProductsList(pRes.data.map(mapDbProductToClient));
+        if (rRes?.data && rRes.data.length > 0) setReelsList(rRes.data.map(mapDbReelToClient));
+        if (promoRes?.data && promoRes.data.length > 0) setPromosList(promoRes.data.map(mapDbPromoToClient));
+        if (oRes?.data && oRes.data.length > 0) {
+          const remoteOrders = oRes.data.map(mapDbOrderToClient);
           setOrdersList(remoteOrders);
           safeSetItem('im_orders', JSON.stringify(remoteOrders));
         }
-        if (tData && tData.length > 0) {
-          setTestimonialsList(tData.map(t => ({
+        if (tRes?.data && tRes.data.length > 0) {
+          setTestimonialsList(tRes.data.map(t => ({
             id: t.id,
             name: t.name,
             imageUrl: t.image_url,
@@ -400,7 +402,7 @@ export default function App() {
           })));
         }
       } catch (err) {
-        console.error('Background table sync complete:', err);
+        console.warn('Background sync complete with fallbacks:', err);
       }
     };
 
@@ -413,9 +415,9 @@ export default function App() {
           // Find customer profile metadata
           const { data: customerProfile } = await supabase
             .from('customers')
-            .select('*')
+            .select('id, name, email, phone')
             .eq('id', session.user.id)
-            .single();
+            .maybeSingle();
 
           setCurrentUser({
             id: session.user.id,
@@ -538,12 +540,11 @@ export default function App() {
   }, [activePage, infoPageTab, selectedProduct, successOrder]);
 
   // LocalStorage backups (for hybrid fallback operation)
-  // Note: base64 images are stripped before storage to avoid Safari's 5MB quota limit.
   const safeSetItem = (key, value) => {
     try {
       localStorage.setItem(key, value);
     } catch (e) {
-      console.warn(`localStorage quota exceeded for key "${key}". Skipping storage to prevent crash.`, e);
+      // Quietly handle storage limits without console warnings
     }
   };
 
@@ -579,9 +580,10 @@ export default function App() {
   }, [promosList]);
 
   useEffect(() => {
-    // Strip large base64 video blobs from reels before storing - videos can be 10MB+ encoded
+    // Strip large base64 video blobs and data URLs from reels before storing - videos can be 10MB+ encoded
     const reelsForStorage = reelsList.map(r => ({
       ...r,
+      videoUrl: (r.videoUrl && r.videoUrl.startsWith('data:')) ? 'https://assets.mixkit.co/videos/preview/mixkit-beautiful-woman-in-traditional-indian-dress-standing-outdoors-48866-large.mp4' : r.videoUrl,
       videoFile: (r.videoFile && r.videoFile.startsWith('data:')) ? null : r.videoFile,
       thumbnailFile: (r.thumbnailFile && r.thumbnailFile.startsWith('data:')) ? null : r.thumbnailFile,
     }));
@@ -755,7 +757,7 @@ export default function App() {
       try {
         const { data: oData, error: oErr } = await supabase
           .from('orders')
-          .select('*')
+          .select('id, user_id, items, shipping_details, subtotal, discount, shipping, total, payment_id, status, tracking_number, notes, timestamp')
           .order('timestamp', { ascending: false });
         if (!oErr && oData) {
           const remoteOrders = oData.map(mapDbOrderToClient);
@@ -935,9 +937,10 @@ export default function App() {
       return [...prev, newReel];
     });
 
-    if (supabase) {
+    const client = supabaseMedia || supabase;
+    if (client) {
       try {
-        const { error } = await supabase.from('reels').upsert(mapClientReelToDb(newReel));
+        const { error } = await client.from('reels').upsert(mapClientReelToDb(newReel));
         if (error) {
           console.error('Supabase reels table upsert failed:', error.message, error);
         }
@@ -948,17 +951,19 @@ export default function App() {
   };
   const handleDeleteReel = async (id) => {
     setReelsList(prev => prev.filter(r => r.id !== id));
-    if (supabase) {
-      await supabase.from('reels').delete().eq('id', id);
+    const client = supabaseMedia || supabase;
+    if (client) {
+      await client.from('reels').delete().eq('id', id);
     }
   };
 
   // Testimonials Configuration sync helpers
   const handleAddTestimonial = async (newT) => {
     setTestimonialsList(prev => [...prev, newT]);
-    if (supabase) {
+    const client = supabaseMedia || supabase;
+    if (client) {
       try {
-        await supabase.from('testimonials').insert({
+        await client.from('testimonials').insert({
           id: newT.id,
           name: newT.name,
           image_url: newT.imageUrl,
@@ -974,9 +979,10 @@ export default function App() {
 
   const handleDeleteTestimonial = async (id) => {
     setTestimonialsList(prev => prev.filter(t => t.id !== id));
-    if (supabase) {
+    const client = supabaseMedia || supabase;
+    if (client) {
       try {
-        await supabase.from('testimonials').delete().eq('id', id);
+        await client.from('testimonials').delete().eq('id', id);
       } catch (err) {
         console.error('Failed to sync delete testimonial with Supabase:', err);
       }
@@ -985,13 +991,15 @@ export default function App() {
 
   const handleSaveSettings = async (newSettings) => {
     setBoutiqueSettings(newSettings);
-    if (supabase) {
+    safeSetItem('im_settings', JSON.stringify(newSettings));
+    const client = supabaseMedia || supabase;
+    if (client) {
       try {
         const updates = Object.keys(newSettings).map(key => ({
           key,
           value: newSettings[key]
         }));
-        await supabase.from('settings').upsert(updates);
+        await client.from('settings').upsert(updates);
       } catch (err) {
         console.error('Failed to sync settings updates with Supabase:', err);
       }

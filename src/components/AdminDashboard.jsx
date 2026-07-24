@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings, Layout, ChevronUp, ChevronDown, Plus } from 'lucide-react';
+import { uploadFileToGithub } from '../utils/githubUploader';
 
 const getSleeveName = (id) => {
   const sleevesMap = {
@@ -45,15 +46,26 @@ const getNeckName = (id) => {
   return necksMap[id] || id;
 };
 
-// Utility to auto-convert GitHub web URLs to raw GitHub / jsDelivr CDN URLs
+// Utility to auto-convert GitHub web URLs & relative media paths to clean Vercel/GitHub CDN URLs
 export const formatGithubUrl = (url) => {
   if (!url || typeof url !== 'string') return url;
-  const trimmed = url.trim();
+  let trimmed = url.trim();
+
+  // Convert GitHub blob web link to raw CDN link
   if (trimmed.includes('github.com') && trimmed.includes('/blob/')) {
     return trimmed
       .replace('github.com', 'raw.githubusercontent.com')
       .replace('/blob/', '/');
   }
+
+  // Convert relative media path (e.g. public/media/hero/1.jpg or media/hero/1.jpg)
+  if (trimmed.startsWith('public/media/')) {
+    return '/' + trimmed.substring(7);
+  }
+  if (trimmed.startsWith('media/')) {
+    return '/' + trimmed;
+  }
+
   return trimmed;
 };
 
@@ -482,19 +494,44 @@ export default function AdminDashboard({
     if (files.length === 0) return;
     
     for (const file of files) {
-      const compressedData = await compressImage(file);
-      setPrimaryImages(prev => {
-        const filtered = prev.filter(x => x && x.trim() !== '');
-        return [...filtered, compressedData];
-      });
+      try {
+        let imageUrl;
+        if (import.meta.env.VITE_GITHUB_TOKEN) {
+          imageUrl = await uploadFileToGithub(file, 'media/products');
+        } else {
+          imageUrl = await compressImage(file);
+        }
+        setPrimaryImages(prev => {
+          const filtered = prev.filter(x => x && x.trim() !== '');
+          return [...filtered, imageUrl];
+        });
+      } catch (err) {
+        console.warn('GitHub upload failed, falling back to local compression:', err);
+        const compressedData = await compressImage(file);
+        setPrimaryImages(prev => {
+          const filtered = prev.filter(x => x && x.trim() !== '');
+          return [...filtered, compressedData];
+        });
+      }
     }
   };
 
   const handleHoverUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const compressedData = await compressImage(file);
-    setHoverImage(compressedData);
+    try {
+      let imageUrl;
+      if (import.meta.env.VITE_GITHUB_TOKEN) {
+        imageUrl = await uploadFileToGithub(file, 'media/products');
+      } else {
+        imageUrl = await compressImage(file);
+      }
+      setHoverImage(imageUrl);
+    } catch (err) {
+      console.warn('GitHub upload failed, falling back to local compression:', err);
+      const compressedData = await compressImage(file);
+      setHoverImage(compressedData);
+    }
   };
 
   const handleAddPrimaryRow = () => {
@@ -569,15 +606,51 @@ export default function AdminDashboard({
 
 
 
-  // Video File read helper for Reels
-  const handleVideoUpload = (e) => {
+  // Video File upload helper for Reels with automatic GitHub API integration
+  const handleVideoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setReelVideoFile(reader.result);
-    };
-    reader.readAsDataURL(file);
+    try {
+      if (import.meta.env.VITE_GITHUB_TOKEN) {
+        const videoUrl = await uploadFileToGithub(file, 'media/reels');
+        setReelVideoFile(videoUrl);
+      } else {
+        const reader = new FileReader();
+        reader.onload = () => setReelVideoFile(reader.result);
+        reader.readAsDataURL(file);
+      }
+    } catch (err) {
+      console.warn('GitHub video upload fallback:', err);
+      const reader = new FileReader();
+      reader.onload = () => setReelVideoFile(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Storefront Banner image file upload helper with automatic GitHub API integration
+  const handleUploadBannerFile = async (file, bannerId, field, folder = 'media/hero', isOffer = false) => {
+    if (!file) return;
+    try {
+      let imageUrl;
+      if (import.meta.env.VITE_GITHUB_TOKEN) {
+        imageUrl = await uploadFileToGithub(file, folder);
+      } else {
+        imageUrl = await compressImage(file);
+      }
+      if (isOffer) {
+        handleUpdateOfferBannerSlide(bannerId, field, imageUrl);
+      } else {
+        handleUpdateBannerSlide(bannerId, field, imageUrl);
+      }
+    } catch (err) {
+      console.warn('GitHub upload failed, fallback to compression:', err);
+      const compressedData = await compressImage(file);
+      if (isOffer) {
+        handleUpdateOfferBannerSlide(bannerId, field, compressedData);
+      } else {
+        handleUpdateBannerSlide(bannerId, field, compressedData);
+      }
+    }
   };
 
   const handleAddColor = (e) => {
@@ -2289,11 +2362,7 @@ alter table public.settings disable row level security;`}</pre>
                               style={{ display: 'none' }}
                               onChange={(e) => {
                                 const file = e.target.files[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onload = (event) => handleUpdateBannerSlide(activeBanner.id, 'image', event.target.result);
-                                  reader.readAsDataURL(file);
-                                }
+                                if (file) handleUploadBannerFile(file, activeBanner.id, 'image', 'media/hero', false);
                               }}
                             />
                           </label>
@@ -2328,11 +2397,7 @@ alter table public.settings disable row level security;`}</pre>
                               style={{ display: 'none' }}
                               onChange={(e) => {
                                 const file = e.target.files[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onload = (event) => handleUpdateBannerSlide(activeBanner.id, 'mobileImage', event.target.result);
-                                  reader.readAsDataURL(file);
-                                }
+                                if (file) handleUploadBannerFile(file, activeBanner.id, 'mobileImage', 'media/hero', false);
                               }}
                             />
                           </label>
@@ -2542,11 +2607,7 @@ alter table public.settings disable row level security;`}</pre>
                               style={{ display: 'none' }}
                               onChange={(e) => {
                                 const file = e.target.files[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onload = (event) => handleUpdateOfferBannerSlide(activeOffer.id, 'image', event.target.result);
-                                  reader.readAsDataURL(file);
-                                }
+                                if (file) handleUploadBannerFile(file, activeOffer.id, 'image', 'media/offers', true);
                               }}
                             />
                           </label>
@@ -2580,11 +2641,7 @@ alter table public.settings disable row level security;`}</pre>
                               style={{ display: 'none' }}
                               onChange={(e) => {
                                 const file = e.target.files[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onload = (event) => handleUpdateOfferBannerSlide(activeOffer.id, 'mobileImage', event.target.result);
-                                  reader.readAsDataURL(file);
-                                }
+                                if (file) handleUploadBannerFile(file, activeOffer.id, 'mobileImage', 'media/offers', true);
                               }}
                             />
                           </label>

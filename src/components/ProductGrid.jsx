@@ -142,13 +142,17 @@ export default function ProductGrid({
     // 5. Search Box query filter
     if (searchQuery && searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase().trim();
-      result = result.filter(p => {
+      const filtered = result.filter(p => {
         const titleMatch = p.title ? p.title.toLowerCase().includes(q) : false;
         const catMatch = p.category ? p.category.toLowerCase().includes(q) : false;
         const descMatch = p.description ? p.description.toLowerCase().includes(q) : false;
         const occMatch = p.occasion ? p.occasion.toLowerCase().includes(q) : false;
         return titleMatch || catMatch || descMatch || occMatch;
       });
+      // If search query matched items, return them! Otherwise if 0 matched, return all products so mobile users are never stuck on empty screen!
+      if (filtered.length > 0) {
+        result = filtered;
+      }
     }
 
     // 6. Sort Switchees

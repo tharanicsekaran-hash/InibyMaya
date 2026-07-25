@@ -2,6 +2,7 @@ import React from 'react';
 import { Star, Eye, Heart } from 'lucide-react';
 
 export default function ProductCard({ product, onProductClick, isFavorite = false, onToggleFavorite }) {
+  if (!product) return null;
   const { title, price, images = [], category, rating, reviewsCount, bestSeller, customizable, variants = { sizes: [], colors: [] } } = product;
 
   const defaultFallback = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800';

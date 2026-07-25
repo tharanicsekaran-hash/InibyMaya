@@ -11,7 +11,7 @@
 const RESEND_API_KEY = import.meta.env.VITE_RESEND_API_KEY || '';
 const SENDER_EMAIL = import.meta.env.VITE_SENDER_EMAIL || 'Ini by Maya Couture <orders@inibymaya.com>';
 const SENDER_FALLBACK = 'Ini by Maya Couture <onboarding@resend.dev>';
-const ADMIN_EMAILS = ['care@inibymaya.com', 'tharanichandrasekaran2000@gmail.com'];
+const ADMIN_EMAILS = ['inibymaya@gmail.com', 'care@inibymaya.com', 'tharanichandrasekaran2000@gmail.com'];
 
 /**
  * Core HTTP Dispatcher to Resend REST API

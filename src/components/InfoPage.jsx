@@ -86,7 +86,46 @@ export default function InfoPage({ tab, setTab, orders = [], boutiqueSettings = 
 
   return (
     <div className="info-page-layout-grid container animate-fadeIn">
-      {/* Sidebar Navigation */}
+      {/* Mobile-Only Horizontal Touch Pill & Dropdown Navigation Header */}
+      <div className="info-mobile-nav-wrapper">
+        <div className="mobile-dropdown-header">
+          <label htmlFor="info-mobile-select">Select Support Page:</label>
+          <select 
+            id="info-mobile-select"
+            value={tab} 
+            onChange={(e) => {
+              setTab(e.target.value);
+              setSearchError('');
+              setTrackedOrder(null);
+            }}
+            className="info-mobile-select-dropdown"
+          >
+            {menuItems.map(item => (
+              <option key={item.id} value={item.id}>{item.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Scrollable Horizontal Touch Pill Strip */}
+        <div className="info-mobile-pill-strip">
+          {menuItems.map(item => (
+            <button
+              key={item.id}
+              type="button"
+              className={`mobile-pill-btn ${tab === item.id ? 'active' : ''}`}
+              onClick={() => {
+                setTab(item.id);
+                setSearchError('');
+                setTrackedOrder(null);
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Desktop Sidebar Navigation */}
       <aside className="info-sidebar-column">
         <h3 className="sidebar-brand-title">INIBYMAYA</h3>
         <p className="sidebar-brand-subtitle">Support Center</p>

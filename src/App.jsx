@@ -20,6 +20,11 @@ import './App.css';
 
 // Database column mapping helpers
 const mapDbProductToClient = (dbProd) => {
+  const hNewArrival = dbProd.highlights?.newArrival;
+  const isNewArrival = dbProd.new_arrival !== undefined 
+    ? Boolean(dbProd.new_arrival) 
+    : (hNewArrival !== undefined ? Boolean(hNewArrival) : (dbProd.newArrival !== undefined ? Boolean(dbProd.newArrival) : true));
+
   return {
     id: dbProd.id,
     title: dbProd.title,
@@ -33,7 +38,7 @@ const mapDbProductToClient = (dbProd) => {
     variants: dbProd.variants,
     customizable: dbProd.customizable,
     bestSeller: Boolean(dbProd.best_seller),
-    newArrival: dbProd.new_arrival !== undefined ? Boolean(dbProd.new_arrival) : Boolean(dbProd.newArrival),
+    newArrival: isNewArrival,
     occasion: dbProd.occasion || 'Daily Elegance',
     highlights: dbProd.highlights || {}
   };
@@ -55,7 +60,10 @@ const mapClientProductToDb = (clientProd) => {
     best_seller: Boolean(clientProd.bestSeller),
     new_arrival: Boolean(clientProd.newArrival),
     occasion: clientProd.occasion || 'Daily Elegance',
-    highlights: clientProd.highlights || {}
+    highlights: {
+      ...(clientProd.highlights || {}),
+      newArrival: Boolean(clientProd.newArrival)
+    }
   };
 };
 

@@ -33,7 +33,7 @@ const mapDbProductToClient = (dbProd) => {
     variants: dbProd.variants,
     customizable: dbProd.customizable,
     bestSeller: Boolean(dbProd.best_seller),
-    newArrival: dbProd.new_arrival !== undefined ? Boolean(dbProd.new_arrival) : (dbProd.newArrival !== undefined ? Boolean(dbProd.newArrival) : true),
+    newArrival: dbProd.new_arrival !== undefined ? Boolean(dbProd.new_arrival) : Boolean(dbProd.newArrival),
     occasion: dbProd.occasion || 'Daily Elegance',
     highlights: dbProd.highlights || {}
   };
@@ -1277,7 +1277,7 @@ export default function App() {
                 <p>Fresh drops & handwoven additions curated every week for the modern wardrobe.</p>
               </div>
               <div className="product-grid">
-                {productsList.slice().reverse().slice(0, 4).map(product => (
+                {productsList.filter(p => Boolean(p.newArrival)).slice(0, 4).map(product => (
                   <ProductCard 
                     key={product.id}
                     product={product}
@@ -1291,7 +1291,7 @@ export default function App() {
                 ))}
               </div>
               <div className="view-all-row">
-                <button className="btn-primary" onClick={() => { setSearchQuery(''); setActivePage('shop'); }}>
+                <button className="btn-primary" onClick={() => { setSearchQuery('New Arrivals'); setActivePage('shop'); }}>
                   Explore All New Arrivals
                 </button>
               </div>

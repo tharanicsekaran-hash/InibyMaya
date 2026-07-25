@@ -339,17 +339,13 @@ export default function App() {
     const loadSupabaseData = async () => {
       if (!supabase) return;
 
-      // 1a. Load Settings IMMEDIATELY with a 2.5s max timeout so Hero & Offer Banners render instantly!
+      // 1a. Load Settings IMMEDIATELY from primary Supabase client (Instant Safari & Chrome Storefront Sync)
       try {
-        const mediaClient = supabaseMedia || supabase;
-        const settingsPromise = mediaClient.from('settings').select('key, value');
-        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({ data: null, error: 'Timeout' }), 2500));
-        const { data: sData } = await Promise.race([settingsPromise, timeoutPromise]);
-
+        const { data: sData, error: sErr } = await supabase.from('settings').select('key, value');
         if (sData && Array.isArray(sData) && sData.length > 0) {
           const settingsObj = {};
           sData.forEach(item => {
-            if (item.key && item.value) {
+            if (item.key && item.value !== undefined) {
               settingsObj[item.key] = item.value;
             }
           });
@@ -358,9 +354,11 @@ export default function App() {
             safeSetItem('im_settings', JSON.stringify(updated));
             return updated;
           });
+        } else if (sErr) {
+          console.warn('Primary settings fetch notice:', sErr.message);
         }
       } catch (err) {
-        console.warn('Instant settings sync bypassed:', err);
+        console.warn('Settings query exception:', err);
       }
 
       // 1b. Load products table immediately with top priority
@@ -978,10 +976,9 @@ export default function App() {
       return updated;
     });
 
-    const client = supabaseMedia || supabase;
-    if (client) {
+    if (supabase) {
       try {
-        const { error } = await client.from('reels').upsert(mapClientReelToDb(newReel));
+        const { error } = await supabase.from('reels').upsert(mapClientReelToDb(newReel));
         if (error) {
           console.error('Supabase reels table upsert failed:', error.message, error);
         }
@@ -996,19 +993,17 @@ export default function App() {
       safeSetItem('im_reels', JSON.stringify(updated));
       return updated;
     });
-    const client = supabaseMedia || supabase;
-    if (client) {
-      await client.from('reels').delete().eq('id', id);
+    if (supabase) {
+      await supabase.from('reels').delete().eq('id', id);
     }
   };
 
   // Testimonials Configuration sync helpers
   const handleAddTestimonial = async (newT) => {
     setTestimonialsList(prev => [...prev, newT]);
-    const client = supabaseMedia || supabase;
-    if (client) {
+    if (supabase) {
       try {
-        await client.from('testimonials').insert({
+        await supabase.from('testimonials').insert({
           id: newT.id,
           name: newT.name,
           image_url: newT.imageUrl,
@@ -1024,10 +1019,9 @@ export default function App() {
 
   const handleDeleteTestimonial = async (id) => {
     setTestimonialsList(prev => prev.filter(t => t.id !== id));
-    const client = supabaseMedia || supabase;
-    if (client) {
+    if (supabase) {
       try {
-        await client.from('testimonials').delete().eq('id', id);
+        await supabase.from('testimonials').delete().eq('id', id);
       } catch (err) {
         console.error('Failed to sync delete testimonial with Supabase:', err);
       }
@@ -1037,14 +1031,13 @@ export default function App() {
   const handleSaveSettings = async (newSettings) => {
     setBoutiqueSettings(newSettings);
     safeSetItem('im_settings', JSON.stringify(newSettings));
-    const client = supabaseMedia || supabase;
-    if (client) {
+    if (supabase) {
       try {
         const updates = Object.keys(newSettings).map(key => ({
           key,
           value: newSettings[key]
         }));
-        await client.from('settings').upsert(updates);
+        await supabase.from('settings').upsert(updates);
       } catch (err) {
         console.error('Failed to sync settings updates with Supabase:', err);
       }

@@ -16,6 +16,11 @@ function ReelCard({ reel, onShopOutfit }) {
     const wrapper = wrapperRef.current;
     if (!video || !wrapper) return;
 
+    // Immediately set inline video properties and trigger playback for mobile compatibility
+    video.muted = true;
+    video.playsInline = true;
+    video.play().catch(() => {});
+
     // Smart IntersectionObserver to play video only when scrolled into view
     const observer = new IntersectionObserver(
       (entries) => {
@@ -29,7 +34,7 @@ function ReelCard({ reel, onShopOutfit }) {
       },
       {
         root: null,
-        threshold: 0.25,
+        threshold: 0.15,
       }
     );
 
@@ -56,7 +61,7 @@ function ReelCard({ reel, onShopOutfit }) {
         onClick={handleClick}
         style={{ cursor: hasProduct ? 'pointer' : 'default' }}
       >
-        {/* Poster Backdrop Image — renders instantly on page load (0ms) so card NEVER looks broken */}
+        {/* Poster Backdrop Image — renders instantly on page load so card NEVER looks broken or black */}
         <img
           src={posterImg}
           alt={reel.title || "Reel video preview"}
@@ -74,15 +79,16 @@ function ReelCard({ reel, onShopOutfit }) {
           }}
         />
 
-        {/* Video Element — configured with autoPlay, preload="auto", and poster */}
+        {/* Video Element — configured with autoPlay, preload="auto", muted, and playsInline */}
         <video
           ref={videoRef}
           src={reel.videoUrl}
           poster={posterImg}
+          autoPlay
           loop
           muted
           playsInline
-          preload="metadata"
+          preload="auto"
           className="reel-video"
           style={{ 
             position: 'relative', 

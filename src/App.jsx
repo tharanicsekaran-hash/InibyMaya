@@ -23,7 +23,7 @@ const mapDbProductToClient = (dbProd) => {
   const hNewArrival = dbProd.highlights?.newArrival;
   const isNewArrival = dbProd.new_arrival !== undefined 
     ? Boolean(dbProd.new_arrival) 
-    : (hNewArrival !== undefined ? Boolean(hNewArrival) : (dbProd.newArrival !== undefined ? Boolean(dbProd.newArrival) : true));
+    : (hNewArrival !== undefined ? Boolean(hNewArrival) : Boolean(dbProd.newArrival));
 
   return {
     id: dbProd.id,

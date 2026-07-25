@@ -651,6 +651,46 @@ export default function AdminDashboard({
     }
   };
 
+  const handleUploadCategoryFile = async (file, idx) => {
+    if (!file) return;
+    try {
+      let imageUrl;
+      if (import.meta.env.VITE_GITHUB_TOKEN) {
+        imageUrl = await uploadFileToGithub(file, 'media/storefront');
+      } else {
+        imageUrl = await compressImage(file);
+      }
+      setStorefrontCategories(prev => {
+        const updated = [...prev];
+        updated[idx] = { ...updated[idx], image: imageUrl };
+        return updated;
+      });
+    } catch (err) {
+      console.error('❌ [Category Upload Error]:', err);
+      alert(`❌ Category Upload Failed: ${err.message || 'Error uploading image'}`);
+    }
+  };
+
+  const handleUploadOccasionFile = async (file, idx) => {
+    if (!file) return;
+    try {
+      let imageUrl;
+      if (import.meta.env.VITE_GITHUB_TOKEN) {
+        imageUrl = await uploadFileToGithub(file, 'media/storefront');
+      } else {
+        imageUrl = await compressImage(file);
+      }
+      setStorefrontOccasions(prev => {
+        const updated = [...prev];
+        updated[idx] = { ...updated[idx], image: imageUrl };
+        return updated;
+      });
+    } catch (err) {
+      console.error('❌ [Occasion Upload Error]:', err);
+      alert(`❌ Occasion Upload Failed: ${err.message || 'Error uploading image'}`);
+    }
+  };
+
   const handleAddColor = (e) => {
     e.preventDefault();
     if (!newColorName.trim()) return;
@@ -2656,14 +2696,7 @@ alter table public.settings disable row level security;`}</pre>
                     style={{ display: 'none' }}
                     onChange={(e) => {
                       const file = e.target.files[0];
-                      if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        const updated = [...storefrontCategories];
-                        updated[idx] = { ...updated[idx], image: reader.result };
-                        setStorefrontCategories(updated);
-                      };
-                      reader.readAsDataURL(file);
+                      if (file) handleUploadCategoryFile(file, idx);
                     }}
                   />
                 </label>
@@ -2740,14 +2773,7 @@ alter table public.settings disable row level security;`}</pre>
                     style={{ display: 'none' }}
                     onChange={(e) => {
                       const file = e.target.files[0];
-                      if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        const updated = [...storefrontOccasions];
-                        updated[idx] = { ...updated[idx], image: reader.result };
-                        setStorefrontOccasions(updated);
-                      };
-                      reader.readAsDataURL(file);
+                      if (file) handleUploadOccasionFile(file, idx);
                     }}
                   />
                 </label>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings, Layout, ChevronUp, ChevronDown, Plus, Mail } from 'lucide-react';
+import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings, Layout, ChevronUp, ChevronDown, Plus, Mail, FileText } from 'lucide-react';
 import { uploadFileToGithub } from '../utils/githubUploader';
 import { sendOrderConfirmationEmail } from '../utils/resendEmail';
+import { DEFAULT_FOOTER_PAGES } from '../utils/footerPagesData';
 
 const getSleeveName = (id) => {
   const sleevesMap = {
@@ -188,6 +189,18 @@ export default function AdminDashboard({
   const [storefrontOfferBanners, setStorefrontOfferBanners] = useState([]);
   const [activeOfferBannerTabId, setActiveOfferBannerTabId] = useState(null);
 
+  // Footer & Policies Pages State
+  const [footerPagesConfig, setFooterPagesConfig] = useState(() => {
+    try {
+      if (boutiqueSettings?.footerPages) {
+        return { ...DEFAULT_FOOTER_PAGES, ...JSON.parse(boutiqueSettings.footerPages) };
+      }
+    } catch (e) {}
+    return DEFAULT_FOOTER_PAGES;
+  });
+  const [selectedFooterPageId, setSelectedFooterPageId] = useState('about-us');
+  const [footerSaveSuccessMsg, setFooterSaveSuccessMsg] = useState('');
+
   useEffect(() => {
     if (boutiqueSettings && Object.keys(boutiqueSettings).length > 0) {
       setSettingsDesc(boutiqueSettings.description || '');
@@ -200,6 +213,14 @@ export default function AdminDashboard({
       setNewsletterDiscount(Number(boutiqueSettings.newsletterDiscount !== undefined ? boutiqueSettings.newsletterDiscount : 10));
       setNewsletterPromoCode(boutiqueSettings.newsletterPromoCode || 'WELCOME10');
       setNewsletterEnabled(boutiqueSettings.newsletterEnabled !== false);
+
+      // Footer Pages Config
+      try {
+        if (boutiqueSettings.footerPages) {
+          const parsedFooterPages = JSON.parse(boutiqueSettings.footerPages);
+          setFooterPagesConfig(prev => ({ ...DEFAULT_FOOTER_PAGES, ...parsedFooterPages }));
+        }
+      } catch (e) {}
 
       // Hero Banner fields
       setHeroImage(boutiqueSettings.heroImage || 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600');
@@ -1024,6 +1045,28 @@ export default function AdminDashboard({
     alert(`Delhivery Tracking Number ${num} saved for Order ${orderId}!`);
   };
 
+  const handleSaveFooterPages = (e) => {
+    if (e) e.preventDefault();
+    const updatedSettings = {
+      ...boutiqueSettings,
+      footerPages: JSON.stringify(footerPagesConfig)
+    };
+    onSaveSettings(updatedSettings);
+    const currentPageObj = footerPagesConfig[selectedFooterPageId];
+    setFooterSaveSuccessMsg(`✅ "${currentPageObj?.navLabel || selectedFooterPageId}" content saved and published live on storefront!`);
+    setTimeout(() => setFooterSaveSuccessMsg(''), 4000);
+  };
+
+  const handleUpdateCurrentFooterPage = (field, value) => {
+    setFooterPagesConfig(prev => ({
+      ...prev,
+      [selectedFooterPageId]: {
+        ...prev[selectedFooterPageId] || {},
+        [field]: value
+      }
+    }));
+  };
+
   return (
     <div className="admin-dashboard-container container">
       {isDbRlsActive && (
@@ -1130,7 +1173,14 @@ alter table public.settings disable row level security;`}</pre>
             onClick={() => setActiveTab('storefront')}
           >
             <Layout size={15} />
-            <span>Storefront</span>
+            <span>Storefront Customizer</span>
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'footer' ? 'active' : ''}`}
+            onClick={() => setActiveTab('footer')}
+          >
+            <FileText size={15} />
+            <span>Footer & Policies</span>
           </button>
         </div>
       </div>
@@ -2884,6 +2934,197 @@ alter table public.settings disable row level security;`}</pre>
               <span>Add Occasion</span>
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Tab: Footer & Policies Context Content Configurator */}
+      {activeTab === 'footer' && (
+        <div className="admin-content-section animate-fadeIn">
+          <div className="admin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+            <div>
+              <h3>Footer Pages & Policy Content Management</h3>
+              <p>Context-edit and customize all Customer Support and Store Policy pages rendered across your boutique's footer.</p>
+            </div>
+            <button
+              type="button"
+              className="add-btn-submit"
+              style={{ width: 'auto', margin: 0, padding: '10px 24px', whiteSpace: 'nowrap' }}
+              onClick={handleSaveFooterPages}
+            >
+              <CheckCircle2 size={15} />
+              <span>Save & Publish All Footer Pages</span>
+            </button>
+          </div>
+
+          {footerSaveSuccessMsg && (
+            <p className="success-banner" style={{ maxWidth: '850px', margin: '0 auto 16px auto' }}>
+              {footerSaveSuccessMsg}
+            </p>
+          )}
+
+          {/* Sub-Tab Selector for the 8 Footer Pages */}
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            overflowX: 'auto',
+            paddingBottom: '10px',
+            marginBottom: '24px',
+            maxWidth: '850px',
+            margin: '0 auto 24px auto'
+          }}>
+            {Object.keys(DEFAULT_FOOTER_PAGES).map(pageKey => {
+              const pageObj = footerPagesConfig[pageKey] || DEFAULT_FOOTER_PAGES[pageKey];
+              const isSelected = selectedFooterPageId === pageKey;
+              return (
+                <button
+                  key={pageKey}
+                  type="button"
+                  onClick={() => setSelectedFooterPageId(pageKey)}
+                  style={{
+                    flexShrink: 0,
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    border: isSelected ? '2px solid #8b0000' : '1px solid var(--color-border)',
+                    backgroundColor: isSelected ? '#8b0000' : 'var(--color-bg-secondary)',
+                    color: isSelected ? '#ffffff' : 'var(--color-text-primary)',
+                    fontWeight: isSelected ? '600' : 'normal',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: isSelected ? '0 4px 10px rgba(139, 0, 0, 0.2)' : 'none'
+                  }}
+                >
+                  {pageObj.navLabel || pageKey}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Active Footer Page Editor Form */}
+          {(() => {
+            const currentPage = footerPagesConfig[selectedFooterPageId] || DEFAULT_FOOTER_PAGES[selectedFooterPageId] || {};
+            return (
+              <div className="admin-form-box" style={{ maxWidth: '850px', margin: '0 auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--color-border)' }}>
+                  <h4 style={{ margin: 0, fontSize: '16px', color: '#8b0000', fontFamily: 'var(--font-display)' }}>
+                    Editing: {currentPage.navLabel || selectedFooterPageId} Page
+                  </h4>
+                  <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                    Target Page Tab: <code>{selectedFooterPageId}</code>
+                  </span>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label>Page Title *</label>
+                  <input
+                    type="text"
+                    value={currentPage.title || ''}
+                    onChange={(e) => handleUpdateCurrentFooterPage('title', e.target.value)}
+                    placeholder="e.g. Shipping & Delivery Policy"
+                    required
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label>Hero Subtitle / Tagline *</label>
+                  <input
+                    type="text"
+                    value={currentPage.subtitle || ''}
+                    onChange={(e) => handleUpdateCurrentFooterPage('subtitle', e.target.value)}
+                    placeholder="e.g. Express Courier Shipping & Secure Transit Worldwide"
+                  />
+                </div>
+
+                {/* Section 1 Content */}
+                <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid var(--color-border)' }}>
+                  <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600' }}>Section 1: Core Policy Details</h5>
+                  
+                  <div className="form-group" style={{ marginBottom: '12px' }}>
+                    <label>Section 1 Heading</label>
+                    <input
+                      type="text"
+                      value={currentPage.section1Heading || ''}
+                      onChange={(e) => handleUpdateCurrentFooterPage('section1Heading', e.target.value)}
+                      placeholder="e.g. Dispatch Timeline & Delivery Standards"
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Section 1 Body Content</label>
+                    <textarea
+                      rows={5}
+                      value={currentPage.section1Content || ''}
+                      onChange={(e) => handleUpdateCurrentFooterPage('section1Content', e.target.value)}
+                      placeholder="Write your section content here..."
+                      style={{ width: '100%', fontFamily: 'sans-serif', fontSize: '13px', lineHeight: '1.6', padding: '10px' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Section 2 Content */}
+                <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid var(--color-border)' }}>
+                  <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600' }}>Section 2: Secondary Guidelines & Information</h5>
+                  
+                  <div className="form-group" style={{ marginBottom: '12px' }}>
+                    <label>Section 2 Heading</label>
+                    <input
+                      type="text"
+                      value={currentPage.section2Heading || ''}
+                      onChange={(e) => handleUpdateCurrentFooterPage('section2Heading', e.target.value)}
+                      placeholder="e.g. Live Tracking & Delivery Partner Updates"
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Section 2 Body Content</label>
+                    <textarea
+                      rows={5}
+                      value={currentPage.section2Content || ''}
+                      onChange={(e) => handleUpdateCurrentFooterPage('section2Content', e.target.value)}
+                      placeholder="Write secondary guidelines, policies, or sizing details here..."
+                      style={{ width: '100%', fontFamily: 'sans-serif', fontSize: '13px', lineHeight: '1.6', padding: '10px' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Highlight Callout Box Notice */}
+                <div style={{ backgroundColor: '#fffdfa', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #d4af37' }}>
+                  <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600', color: '#8b0000' }}>✨ Highlighted Notice Box (Callout Box)</h5>
+                  
+                  <div className="form-group" style={{ marginBottom: '12px' }}>
+                    <label>Callout Box Title</label>
+                    <input
+                      type="text"
+                      value={currentPage.calloutTitle || ''}
+                      onChange={(e) => handleUpdateCurrentFooterPage('calloutTitle', e.target.value)}
+                      placeholder="e.g. Free Express Shipping Across India"
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Callout Box Message / Description</label>
+                    <textarea
+                      rows={3}
+                      value={currentPage.calloutText || ''}
+                      onChange={(e) => handleUpdateCurrentFooterPage('calloutText', e.target.value)}
+                      placeholder="Callout highlight message shown at the bottom of the page..."
+                      style={{ width: '100%', fontFamily: 'sans-serif', fontSize: '13px', lineHeight: '1.5', padding: '10px' }}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="add-btn-submit"
+                  onClick={handleSaveFooterPages}
+                  style={{ width: '100%', marginTop: '10px' }}
+                >
+                  <CheckCircle2 size={16} />
+                  <span>Save "{currentPage.navLabel || selectedFooterPageId}" Content</span>
+                </button>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>

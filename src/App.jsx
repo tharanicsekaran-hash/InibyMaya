@@ -23,6 +23,7 @@ import {
   sendOrderCancelledEmail, 
   sendStitchingProgressEmail 
 } from './utils/resendEmail';
+import { DEFAULT_FOOTER_PAGES } from './utils/footerPagesData';
 import './App.css';
 
 // Database column mapping helpers
@@ -192,7 +193,8 @@ export default function App() {
           mobileImage: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=800',
           title: 'Special Festive Couture Offer'
         }
-      ])
+      ]),
+      footerPages: JSON.stringify(DEFAULT_FOOTER_PAGES)
     };
     return cached ? { ...defaults, ...JSON.parse(cached) } : defaults;
   });

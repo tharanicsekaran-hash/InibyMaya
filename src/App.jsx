@@ -879,8 +879,19 @@ export default function App() {
     setCheckoutSummary(null); 
     setSuccessOrder(orderData); 
 
-    // Trigger automated Order Confirmation Email via Resend
-    sendOrderConfirmationEmail(orderData).catch(err => console.warn('Resend Order Confirmation Email trigger notice:', err));
+    // Trigger automated Order Confirmation Email via Resend with rich console & toast logging
+    sendOrderConfirmationEmail(orderData)
+      .then((res) => {
+        if (res && res.success) {
+          console.log(`✅ [App] Order confirmation email dispatched for #${orderData.id}`);
+          setGlobalToast(`✨ Order #${orderData.id} placed! Confirmation email sent to ${orderData.shippingDetails?.email || 'your email'}.`);
+        } else if (res && res.error) {
+          console.error(`🚨 [App Email Error] Order confirmation email dispatch issue for #${orderData.id}:`, res.error);
+        }
+      })
+      .catch(err => {
+        console.error(`🚨 [App Exception] Order confirmation email trigger exception for #${orderData.id}:`, err);
+      });
     
     // Mark subscriber coupon as used so it doesn't auto-apply to future carts
     localStorage.setItem('im_newsletter_promo_used', 'true');

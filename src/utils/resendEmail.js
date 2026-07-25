@@ -19,27 +19,54 @@ const getApiKey = () => {
 const SENDER_DEFAULT = '"Ini by Maya" <orders@inibymaya.com>';
 const ADMIN_EMAILS = ['inibymaya@gmail.com', 'care@inibymaya.com', 'tharanichandrasekaran2000@gmail.com'];
 
+// Initialize global in-memory log store for instant browser console inspection
+if (typeof window !== 'undefined' && !window.__IM_EMAIL_LOGS__) {
+  window.__IM_EMAIL_LOGS__ = [];
+}
+
+const logEmailDispatch = (logEntry) => {
+  if (typeof window !== 'undefined' && window.__IM_EMAIL_LOGS__) {
+    window.__IM_EMAIL_LOGS__.unshift(logEntry);
+  }
+};
+
 /**
  * Core HTTP Dispatcher to Resend REST API
  */
 async function sendResendEmail({ to, subject, html, replyTo }) {
-  if (!to || (Array.isArray(to) && to.length === 0)) return;
+  const recipients = Array.isArray(to) ? to : [to];
+  if (!recipients || recipients.length === 0) {
+    console.error('🚨 [Resend Email Error]: No recipient email addresses provided to sendResendEmail.');
+    return { success: false, error: 'No recipients provided' };
+  }
+
+  const timestamp = new Date().toLocaleTimeString();
 
   // 1. Dispatch via Vercel Serverless Function (/api/send-email) for 100% CORS & Serverless Security
   try {
     const apiResponse = await fetch('/api/send-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to, subject, html, replyTo })
+      body: JSON.stringify({ to: recipients, subject, html, replyTo })
     });
 
+    const data = await apiResponse.json();
+
     if (apiResponse.ok) {
-      const data = await apiResponse.json();
-      console.log('✅ [Vercel Serverless Resend Email Sent]:', data.id);
+      console.groupCollapsed(`%c📧 [Resend Email Sent @ ${timestamp}]: ${subject}`, 'color: #059669; font-weight: bold;');
+      console.log('To:', recipients.join(', '));
+      console.log('Subject:', subject);
+      console.log('Resend ID:', data.id);
+      console.groupEnd();
+
+      logEmailDispatch({ timestamp, status: 'SUCCESS', to: recipients, subject, id: data.id });
       return { success: true, id: data.id };
+    } else {
+      console.error(`🚨 [Resend Serverless API Error @ ${timestamp}]:`, data.error || data);
+      logEmailDispatch({ timestamp, status: 'ERROR', to: recipients, subject, error: data });
     }
   } catch (err) {
-    console.warn('ℹ️ Serverless endpoint notice, trying direct client fallback:', err.message);
+    console.warn(`ℹ️ Serverless endpoint notice @ ${timestamp}, attempting direct client fallback:`, err.message);
   }
 
   // 2. Direct client fallback dispatcher
@@ -47,7 +74,8 @@ async function sendResendEmail({ to, subject, html, replyTo }) {
   const fromAddress = import.meta.env.VITE_SENDER_EMAIL || SENDER_DEFAULT;
 
   if (!apiKey || apiKey === 're_placeholder') {
-    console.log(`✉️ [Resend Simulation] Subject: "${subject}" | To: ${Array.isArray(to) ? to.join(', ') : to}`);
+    console.log(`✉️ [Resend Simulation Mode]: Subject: "${subject}" | To: ${recipients.join(', ')}`);
+    logEmailDispatch({ timestamp, status: 'SIMULATED', to: recipients, subject });
     return { success: true, simulated: true };
   }
 
@@ -60,7 +88,7 @@ async function sendResendEmail({ to, subject, html, replyTo }) {
       },
       body: JSON.stringify({
         from: fromAddress,
-        to: Array.isArray(to) ? to : [to],
+        to: recipients,
         subject: subject,
         html: html,
         reply_to: replyTo || 'care@inibymaya.com'
@@ -69,14 +97,22 @@ async function sendResendEmail({ to, subject, html, replyTo }) {
 
     const data = await response.json();
     if (!response.ok) {
-      console.warn('⚠️ [Resend API Notice]:', data.message || data);
+      console.error(`🚨 [Resend Direct API Failure @ ${timestamp}]:`, data.message || data);
+      logEmailDispatch({ timestamp, status: 'DIRECT_API_ERROR', to: recipients, subject, error: data });
       return { success: false, error: data };
     }
 
-    console.log('✅ [Resend Email Sent]:', data.id);
+    console.groupCollapsed(`%c✅ [Resend Direct Email Sent @ ${timestamp}]: ${subject}`, 'color: #059669; font-weight: bold;');
+    console.log('To:', recipients.join(', '));
+    console.log('Subject:', subject);
+    console.log('Resend ID:', data.id);
+    console.groupEnd();
+
+    logEmailDispatch({ timestamp, status: 'SUCCESS', to: recipients, subject, id: data.id });
     return { success: true, id: data.id };
   } catch (err) {
-    console.error('❌ [Resend Network Exception]:', err.message || err);
+    console.error(`❌ [Resend Network Exception @ ${timestamp}]:`, err.message || err);
+    logEmailDispatch({ timestamp, status: 'EXCEPTION', to: recipients, subject, error: err.message });
     return { success: false, error: err };
   }
 }

@@ -302,10 +302,12 @@ export default function AdminDashboard({
       alert('You must maintain at least one active hero banner slide.');
       return;
     }
-    const filtered = storefrontHeroBanners.filter(b => b.id !== id);
-    setStorefrontHeroBanners(filtered);
-    if (activeBannerTabId === id) {
-      setActiveBannerTabId(filtered[0]?.id || null);
+    if (window.confirm('Are you sure you want to delete this hero banner slide?')) {
+      const filtered = storefrontHeroBanners.filter(b => b.id !== id);
+      setStorefrontHeroBanners(filtered);
+      if (activeBannerTabId === id) {
+        setActiveBannerTabId(filtered[0]?.id || null);
+      }
     }
   };
 
@@ -339,10 +341,12 @@ export default function AdminDashboard({
       alert('You must maintain at least one active offer banner slide.');
       return;
     }
-    const filtered = storefrontOfferBanners.filter(b => b.id !== id);
-    setStorefrontOfferBanners(filtered);
-    if (activeOfferBannerTabId === id) {
-      setActiveOfferBannerTabId(filtered[0]?.id || null);
+    if (window.confirm('Are you sure you want to delete this offer banner slide?')) {
+      const filtered = storefrontOfferBanners.filter(b => b.id !== id);
+      setStorefrontOfferBanners(filtered);
+      if (activeOfferBannerTabId === id) {
+        setActiveOfferBannerTabId(filtered[0]?.id || null);
+      }
     }
   };
 
@@ -867,10 +871,12 @@ export default function AdminDashboard({
   };
 
   const handleDeletePromo = (code) => {
-    if (onDeletePromo) {
-      onDeletePromo(code);
-    } else {
-      setPromosList(prev => prev.filter(p => p.code !== code));
+    if (window.confirm(`Are you sure you want to delete promo code "${code}"?`)) {
+      if (onDeletePromo) {
+        onDeletePromo(code);
+      } else {
+        setPromosList(prev => prev.filter(p => p.code !== code));
+      }
     }
   };
 
@@ -907,10 +913,12 @@ export default function AdminDashboard({
   };
 
   const handleDeleteReel = (id) => {
-    if (onDeleteReel) {
-      onDeleteReel(id);
-    } else {
-      setReelsList(prev => prev.filter(r => r.id !== id));
+    if (window.confirm('Are you sure you want to delete this video reel showcase?')) {
+      if (onDeleteReel) {
+        onDeleteReel(id);
+      } else {
+        setReelsList(prev => prev.filter(r => r.id !== id));
+      }
     }
   };
 
@@ -1661,7 +1669,11 @@ alter table public.settings disable row level security;`}</pre>
                     </button>
                     <button 
                       className="delete-item-btn" 
-                      onClick={() => onDeleteProduct(prod.id)}
+                      onClick={() => {
+                        if (window.confirm(`Are you sure you want to delete "${prod.title}"? This item will be permanently removed.`)) {
+                          onDeleteProduct(prod.id);
+                        }
+                      }}
                       title="Delete Item"
                     >
                       <Trash2 size={15} />

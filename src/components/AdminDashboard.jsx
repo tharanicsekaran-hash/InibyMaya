@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings, Layout, ChevronUp, ChevronDown, Plus } from 'lucide-react';
+import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings, Layout, ChevronUp, ChevronDown, Plus, Mail } from 'lucide-react';
 import { uploadFileToGithub } from '../utils/githubUploader';
+import { sendOrderConfirmationEmail } from '../utils/resendEmail';
 
 const getSleeveName = (id) => {
   const sleevesMap = {
@@ -111,6 +112,59 @@ export default function AdminDashboard({
   const [newsletterEnabled, setNewsletterEnabled] = useState(true);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [settingsSuccessMsg, setSettingsSuccessMsg] = useState('');
+
+  // Resend Email Integration State
+  const [resendApiKey, setResendApiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('im_resend_api_key') || '' : ''));
+  const [resendStatus, setResendStatus] = useState('');
+
+  const handleSaveResendKey = (e) => {
+    e.preventDefault();
+    localStorage.setItem('im_resend_api_key', resendApiKey.trim());
+    setResendStatus('✅ Resend API Key saved successfully!');
+    setTimeout(() => setResendStatus(''), 4000);
+  };
+
+  const handleSendTestEmail = async () => {
+    setResendStatus('⏳ Dispatching live test email to inibymaya@gmail.com...');
+    try {
+      const result = await sendOrderConfirmationEmail({
+        id: 'TEST-ORDER-101',
+        shippingDetails: {
+          name: 'Boutique Administrator',
+          email: 'inibymaya@gmail.com',
+          address: 'Ini by Maya Atelier, Padur',
+          city: 'Chennai',
+          state: 'Tamil Nadu',
+          pinCode: '603103',
+          phone: '+91 98765 43210'
+        },
+        items: [
+          {
+            title: 'Ivory Chikankari Embroidered Anarkali',
+            color: 'Ivory White',
+            selectedSize: 'M',
+            quantity: 1,
+            price: 4999
+          }
+        ],
+        subtotal: 4999,
+        discount: 0,
+        shippingFee: 0,
+        total: 4999,
+        paymentId: 'COD-TEST'
+      });
+
+      if (result && result.simulated) {
+        setResendStatus('⚠️ Running in simulation mode. Enter a valid Resend API Key starting with re_ to send live emails.');
+      } else if (result && result.success) {
+        setResendStatus('🎉 Live Test Email sent successfully to inibymaya@gmail.com! Check your inbox.');
+      } else {
+        setResendStatus(`❌ Resend Notice: ${JSON.stringify(result?.error || 'Check API key or verified sender')}`);
+      }
+    } catch (err) {
+      setResendStatus(`❌ Network Exception: ${err.message || err}`);
+    }
+  };
 
   // Storefront Categories, Occasions & Hero Banner state
   const [storefrontCategories, setStorefrontCategories] = useState([]);
@@ -2312,7 +2366,64 @@ alter table public.settings disable row level security;`}</pre>
                 )}
               </div>
 
-              <button type="submit" className="add-btn-submit" style={{ marginTop: '16px' }}>
+              {/* Resend Email Integration Section */}
+              <div className="resend-config-section" style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <Mail size={16} style={{ color: '#8b0000' }} />
+                  <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--color-text-primary)', margin: 0 }}>Resend Email Notifications Integration</h4>
+                </div>
+                <p style={{ fontSize: '12.5px', color: 'var(--color-text-secondary)', margin: '0 0 14px 0', lineHeight: '1.5' }}>
+                  Paste your Resend API Key (`re_xxxxxxxx`) below to enable live HTML email dispatch for Order Confirmations, Delhivery Tracking updates, Delivery Testimonials, and Cancellations directly to <strong>inibymaya@gmail.com</strong>.
+                </p>
+
+                {resendStatus && (
+                  <p className="admin-status-toast" style={{
+                    padding: '10px 14px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    marginBottom: '14px',
+                    backgroundColor: resendStatus.includes('❌') ? 'rgba(220, 38, 38, 0.1)' : 'rgba(5, 150, 105, 0.1)',
+                    color: resendStatus.includes('❌') ? '#dc2626' : '#059669',
+                    border: `1px solid ${resendStatus.includes('❌') ? 'rgba(220, 38, 38, 0.2)' : 'rgba(5, 150, 105, 0.2)'}`
+                  }}>
+                    {resendStatus}
+                  </p>
+                )}
+
+                <div className="form-group" style={{ marginBottom: '14px' }}>
+                  <label>Resend API Key (`re_...`) *</label>
+                  <input 
+                    type="password" 
+                    value={resendApiKey} 
+                    onChange={(e) => setResendApiKey(e.target.value)} 
+                    placeholder="re_123456789_abcdefghijklmnopqrstuvwxyz" 
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <button 
+                    type="button" 
+                    className="add-btn-submit" 
+                    onClick={handleSaveResendKey}
+                    style={{ flex: 1, minWidth: '160px', backgroundColor: '#1a1a1a', color: '#fff' }}
+                  >
+                    <CheckCircle2 size={14} />
+                    <span>Save Resend Key</span>
+                  </button>
+
+                  <button 
+                    type="button" 
+                    className="add-btn-submit" 
+                    onClick={handleSendTestEmail}
+                    style={{ flex: 1, minWidth: '220px', backgroundColor: '#8b0000', color: '#fff' }}
+                  >
+                    <Mail size={14} />
+                    <span>Send Live Test Email to Admin</span>
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" className="add-btn-submit" style={{ marginTop: '24px', width: '100%' }}>
                 <CheckCircle2 size={14} />
                 <span>Save Boutique Settings</span>
               </button>

@@ -8,8 +8,14 @@
  * 5. Bespoke Stitching Progress Update (Customer)
  */
 
-const RESEND_API_KEY = import.meta.env.VITE_RESEND_API_KEY || '';
-const SENDER_EMAIL = import.meta.env.VITE_SENDER_EMAIL || 'Ini by Maya Couture <orders@inibymaya.com>';
+const getApiKey = () => {
+  if (typeof window !== 'undefined') {
+    const localKey = localStorage.getItem('im_resend_api_key');
+    if (localKey && localKey.trim()) return localKey.trim();
+  }
+  return import.meta.env.VITE_RESEND_API_KEY || '';
+};
+
 const SENDER_FALLBACK = 'Ini by Maya Couture <onboarding@resend.dev>';
 const ADMIN_EMAILS = ['inibymaya@gmail.com', 'care@inibymaya.com', 'tharanichandrasekaran2000@gmail.com'];
 
@@ -19,8 +25,8 @@ const ADMIN_EMAILS = ['inibymaya@gmail.com', 'care@inibymaya.com', 'tharanichand
 async function sendResendEmail({ to, subject, html, replyTo }) {
   if (!to || (Array.isArray(to) && to.length === 0)) return;
 
-  const apiKey = RESEND_API_KEY;
-  const fromAddress = apiKey.includes('re_') && !apiKey.startsWith('re_dummy') ? SENDER_EMAIL : SENDER_FALLBACK;
+  const apiKey = getApiKey();
+  const fromAddress = import.meta.env.VITE_SENDER_EMAIL || SENDER_FALLBACK;
 
   // Log in development/testing mode if API key is unconfigured
   if (!apiKey || apiKey === 're_placeholder') {

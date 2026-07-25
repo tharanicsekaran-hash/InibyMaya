@@ -819,6 +819,7 @@ export default function App() {
 
   // Cart operations
   const handleAddToCart = (item) => {
+    const itemTitle = item.product?.title || item.title || 'Couture item';
     setCartItems(prev => {
       const idx = prev.findIndex(i => 
         i.product.id === item.product.id && 
@@ -832,6 +833,12 @@ export default function App() {
       }
       return [...prev, item];
     });
+
+    // Trigger luxury floating toast notification
+    setAuthToast(`✨ ${itemTitle} added to your cart!`);
+    setTimeout(() => {
+      setAuthToast(null);
+    }, 3000);
   };
 
   const handleToggleFavorite = (productId) => {

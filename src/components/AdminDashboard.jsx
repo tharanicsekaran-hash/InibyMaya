@@ -46,31 +46,29 @@ const getNeckName = (id) => {
   return necksMap[id] || id;
 };
 
-// Utility to auto-convert GitHub web URLs & raw CDN links to clean Vercel media paths
+// Utility to format GitHub web URLs to clean raw CDN links for public repository media
 export const formatGithubUrl = (url) => {
   if (!url || typeof url !== 'string') return url;
   let trimmed = url.trim();
 
-  // If URL contains public/media/ or /media/ in a raw.githubusercontent.com or github.com link:
-  if (trimmed.includes('public/media/')) {
-    const idx = trimmed.indexOf('public/media/');
-    return '/' + trimmed.substring(idx + 7);
-  }
-  if (trimmed.includes('/media/')) {
-    const idx = trimmed.indexOf('/media/');
-    return trimmed.substring(idx);
+  // If URL is already a raw GitHub CDN link, return as is!
+  if (trimmed.includes('raw.githubusercontent.com')) {
+    return trimmed;
   }
 
-  // Convert GitHub blob web link
+  // Convert GitHub blob web link (e.g. github.com/user/repo/blob/main/public/media/...) to raw CDN link
   if (trimmed.includes('github.com') && trimmed.includes('/blob/')) {
-    const raw = trimmed
+    return trimmed
       .replace('github.com', 'raw.githubusercontent.com')
       .replace('/blob/', '/');
-    if (raw.includes('public/media/')) {
-      const idx = raw.indexOf('public/media/');
-      return '/' + raw.substring(idx + 7);
-    }
-    return raw;
+  }
+
+  // Convert relative path if user typed public/media/... or media/...
+  if (trimmed.startsWith('public/media/')) {
+    return `https://raw.githubusercontent.com/tharanicsekaran-hash/InibyMaya/main/${trimmed}`;
+  }
+  if (trimmed.startsWith('media/')) {
+    return `https://raw.githubusercontent.com/tharanicsekaran-hash/InibyMaya/main/public/${trimmed}`;
   }
 
   return trimmed;

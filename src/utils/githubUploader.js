@@ -1,6 +1,6 @@
 /**
  * Direct 1-Click Automated GitHub API File Uploader
- * Uploads media files directly into GitHub public/media/ and returns site media path (/media/...)
+ * Uploads media files directly into GitHub public/media/ and returns raw CDN URL
  */
 export const uploadFileToGithub = async (file, folder = 'media/products') => {
   const token = import.meta.env.VITE_GITHUB_TOKEN;
@@ -53,10 +53,10 @@ export const uploadFileToGithub = async (file, folder = 'media/products') => {
 
       const data = await response.json();
       if (response.ok && data.content) {
-        // Return Vercel relative path so private GitHub repos don't cause 404s on raw.githubusercontent.com
-        const mediaPath = `/${folder}/${fileName}`;
-        console.log('✅ [GitHub Uploader Success]: File uploaded successfully to GitHub repo:', mediaPath);
-        return mediaPath;
+        // Return direct GitHub Raw CDN URL (Repository is Public)
+        const rawCdnUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`;
+        console.log('✅ [GitHub Uploader Success]: File uploaded successfully to GitHub CDN:', rawCdnUrl);
+        return rawCdnUrl;
       }
       lastErrorData = data;
     } catch (err) {

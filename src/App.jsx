@@ -1333,20 +1333,29 @@ export default function App() {
                 <h2>Our Bestsellers</h2>
                 <p>Explore traditional silhouettes loved by our patrons across the country.</p>
               </div>
-              <div className="product-grid">
-                {productsList.filter(p => Boolean(p.bestSeller)).slice(0, 4).map(product => (
-                  <ProductCard 
-                    key={product.id}
-                    product={product}
-                    isFavorite={favorites.includes(product.id)}
-                    onToggleFavorite={handleToggleFavorite}
-                    onProductClick={(prod, size) => {
-                      setPreselectedSize(size);
-                      setSelectedProduct(prod);
-                    }}
-                  />
-                ))}
-              </div>
+              {productsList.length > 0 ? (
+                <div className="product-grid">
+                  {(productsList.filter(p => Boolean(p.bestSeller)).length > 0 
+                    ? productsList.filter(p => Boolean(p.bestSeller)) 
+                    : productsList
+                  ).slice(0, 4).map(product => (
+                    <ProductCard 
+                      key={product.id}
+                      product={product}
+                      isFavorite={favorites.includes(product.id)}
+                      onToggleFavorite={handleToggleFavorite}
+                      onProductClick={(prod, size) => {
+                        setPreselectedSize(size);
+                        setSelectedProduct(prod);
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
+                  <p>No active boutique creations yet. Publish products from the Admin Console to feature them here.</p>
+                </div>
+              )}
               <div className="view-all-row">
                 <button className="btn-primary" onClick={() => setActivePage('shop')}>View Entire Collection</button>
               </div>

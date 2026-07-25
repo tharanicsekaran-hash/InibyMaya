@@ -1056,27 +1056,29 @@ alter table public.settings disable row level security;`}</pre>
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((order, idx) => {
-                    const isCustom = order.items.some(i => i.wantsCustomStitching);
+                  {(orders || []).map((order, idx) => {
+                    const orderItems = Array.isArray(order.items) ? order.items : [];
+                    const isCustom = orderItems.some(i => i && i.wantsCustomStitching);
+                    const shipping = order.shippingDetails || {};
                     return (
-                      <tr key={idx}>
+                      <tr key={order.id || idx}>
                         <td>
-                          <strong className="order-id-label">{order.id}</strong>
+                          <strong className="order-id-label">{order.id || `ORD-${idx+1}`}</strong>
                           <div className="order-meta-small">
-                            <span>{new Date(order.timestamp).toLocaleDateString()}</span>
+                            <span>{order.timestamp ? new Date(order.timestamp).toLocaleDateString() : 'N/A'}</span>
                             <br />
-                            <span className="pay-id-badge">{order.paymentId}</span>
+                            <span className="pay-id-badge">{order.paymentId || 'COD'}</span>
                           </div>
                         </td>
                         <td>
                           <div className="cust-info">
                             <User size={12} />
-                            <span><strong>{order.shippingDetails.name}</strong></span>
+                            <span><strong>{shipping.name || 'Customer'}</strong></span>
                           </div>
-                          <p className="cust-address">{order.shippingDetails.address}, {order.shippingDetails.city} - {order.shippingDetails.pincode}</p>
+                          <p className="cust-address">{shipping.address || ''}, {shipping.city || ''} {shipping.pincode ? `- ${shipping.pincode}` : ''}</p>
                           <p className="cust-phone">
                             <Phone size={11} style={{ marginRight: '4px', verticalAlign: 'middle', opacity: 0.7 }} />
-                            <span>+91 {order.shippingDetails.phone}</span>
+                            <span>+91 {shipping.phone || 'N/A'}</span>
                           </p>
                           {order.notes && (
                             <div className="admin-order-customer-note-callout">
@@ -1086,11 +1088,17 @@ alter table public.settings disable row level security;`}</pre>
                         </td>
                         <td>
                           <div className="order-table-items-list">
-                            {order.items.map((item, itemIdx) => (
-                              <div key={itemIdx} className="table-item-desc">
-                                <span>• <strong>{item.product.title}</strong> ({item.color}) - Qty: {item.quantity}</span>
-                                <div className="sizing-readout-row">
-                                  <span>Standard Size: <span className="size-badge-table">{item.size}</span></span>
+                            {orderItems.map((item, itemIdx) => {
+                              const itemTitle = item.product?.title || item.title || item.productTitle || 'Couture Item';
+                              const itemColor = item.color || item.selectedColor || 'Standard';
+                              const itemSize = item.size || item.selectedSize || 'M';
+                              const itemQty = item.quantity || item.qty || 1;
+                              return (
+                                <div key={itemIdx} className="table-item-desc">
+                                  <span>• <strong>{itemTitle}</strong> ({itemColor}) - Qty: {itemQty}</span>
+                                  <div className="sizing-readout-row">
+                                    <span>Standard Size: <span className="size-badge-table">{itemSize}</span></span>
+                                  </div>
                                   {item.wantsCustomStitching && (item.measurements || item.styleCustomization) && (
                                     <div className="table-item-measurements animate-fadeIn" style={{
                                       marginTop: '6px',
@@ -1133,8 +1141,8 @@ alter table public.settings disable row level security;`}</pre>
                                     </div>
                                   )}
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </td>
                         <td>

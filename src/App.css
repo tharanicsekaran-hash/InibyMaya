@@ -5545,11 +5545,15 @@
 /* Mobile Navigation Header for Footer/Info Pages */
 .info-mobile-nav-wrapper {
   display: none;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   background-color: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
   border-radius: 12px;
-  padding: 16px;
+  padding: 14px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .mobile-dropdown-header {
@@ -5557,6 +5561,8 @@
   flex-direction: column;
   gap: 6px;
   margin-bottom: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .mobile-dropdown-header label {
@@ -5569,6 +5575,8 @@
 
 .info-mobile-select-dropdown {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 12px 16px;
   border-radius: 8px;
   border: 1.5px solid #8b0000;
@@ -5587,20 +5595,27 @@
 }
 
 .info-mobile-pill-strip {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+  display: flex !important;
+  gap: 8px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  white-space: nowrap !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x !important;
+  padding-bottom: 6px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  scrollbar-width: none !important;
 }
 
 .info-mobile-pill-strip::-webkit-scrollbar {
-  display: none;
+  display: none !important;
 }
 
 .mobile-pill-btn {
-  flex-shrink: 0;
+  flex-shrink: 0 !important;
+  display: inline-block !important;
   padding: 8px 16px;
   border-radius: 20px;
   border: 1px solid var(--color-border);
@@ -5623,26 +5638,59 @@
 
 @media (max-width: 768px) {
   .info-mobile-nav-wrapper {
-    display: block;
+    display: block !important;
   }
 
   .info-sidebar-column {
-    display: none !important; /* Hide bulky vertical desktop sidebar on mobile */
+    display: none !important;
   }
 
   .info-page-layout-grid {
+    display: block !important;
     grid-template-columns: 1fr !important;
     gap: 0 !important;
+    padding-top: 90px !important;
+    margin: 0 auto 40px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .info-content-column {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .info-content-tab-block {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
   }
 
   .order-tracker-lookup-form {
-    padding: 20px 16px !important;
+    padding: 16px 14px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
   }
 
   .order-tracker-lookup-form .form-row-double {
     display: flex !important;
     flex-direction: column !important;
-    gap: 16px !important;
+    gap: 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .order-tracker-lookup-form .form-group {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .order-tracker-lookup-form .form-group label {
@@ -5656,6 +5704,7 @@
 
   .order-tracker-lookup-form input {
     width: 100% !important;
+    max-width: 100% !important;
     box-sizing: border-box !important;
   }
 }
@@ -6012,30 +6061,13 @@
 }
 
 @media (max-width: 768px) {
-  .info-page-layout-grid {
-    grid-template-columns: 1fr;
-    gap: 32px;
-    padding-top: 100px;
-    margin: 0 auto 60px;
-  }
-  
-  .info-sidebar-column {
-    position: static;
-    padding: 20px;
-  }
-  
-  .sidebar-brand-subtitle {
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-  }
-  
   .heritage-pillars-grid, .contact-details-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }
   
   .info-content-tab-block h2 {
-    font-size: 26px;
+    font-size: 24px;
   }
 }
 

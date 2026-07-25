@@ -110,21 +110,30 @@ const mapClientPromoToDb = (clientPromo) => {
 };
 
 const mapDbOrderToClient = (dbOrder) => {
+  let parsedItems = dbOrder.items;
+  if (typeof parsedItems === 'string') {
+    try { parsedItems = JSON.parse(parsedItems); } catch (e) {}
+  }
+  let parsedShipping = dbOrder.shipping_details;
+  if (typeof parsedShipping === 'string') {
+    try { parsedShipping = JSON.parse(parsedShipping); } catch (e) {}
+  }
+
   return {
     id: dbOrder.id,
     user_id: dbOrder.user_id,
     userId: dbOrder.user_id,
-    items: dbOrder.items,
-    shippingDetails: dbOrder.shipping_details,
-    subtotal: Number(dbOrder.subtotal),
+    items: Array.isArray(parsedItems) ? parsedItems : [],
+    shippingDetails: parsedShipping || {},
+    subtotal: Number(dbOrder.subtotal || 0),
     discount: Number(dbOrder.discount || 0),
     shipping: Number(dbOrder.shipping || 0),
-    total: Number(dbOrder.total),
-    paymentId: dbOrder.payment_id,
-    status: dbOrder.status,
+    total: Number(dbOrder.total || 0),
+    paymentId: dbOrder.payment_id || '',
+    status: dbOrder.status || 'Pending',
     trackingNumber: dbOrder.tracking_number || '',
     notes: dbOrder.notes || '',
-    timestamp: dbOrder.timestamp
+    timestamp: dbOrder.timestamp || new Date().toISOString()
   };
 };
 
@@ -388,58 +397,18 @@ export default function App() {
           mediaClient.from('testimonials').select('id, name, image_url, quote, rating, tag').order('created_at', { ascending: true }).catch(() => ({ data: null }))
         ]);
 
-        if (pRes?.data && pRes.data.length > 0) {
+        if (pRes?.data && Array.isArray(pRes.data)) {
           const remoteProds = pRes.data.map(mapDbProductToClient);
-          setProductsList(prev => {
-            const localMap = new Map(prev.map(p => [p.id, p]));
-            const merged = remoteProds.map(remoteP => {
-              const localP = localMap.get(remoteP.id);
-              if (!localP) return remoteP;
-
-              // Preserve local updated images if local has GitHub CDN or custom media links
-              const hasCustomImg = localP.images?.some(img => img && (img.includes('githubusercontent') || img.includes('/media/')));
-              if (hasCustomImg) {
-                return { ...remoteP, ...localP };
-              }
-              return remoteP;
-            });
-
-            const remoteIds = new Set(remoteProds.map(p => p.id));
-            prev.forEach(localP => {
-              if (!remoteIds.has(localP.id)) merged.push(localP);
-            });
-
-            safeSetItem('im_catalog', JSON.stringify(merged));
-            return merged;
-          });
+          setProductsList(remoteProds);
+          safeSetItem('im_catalog', JSON.stringify(remoteProds));
         }
-        if (rRes?.data && rRes.data.length > 0) {
+        if (rRes?.data && Array.isArray(rRes.data)) {
           const remoteReels = rRes.data.map(mapDbReelToClient);
-          setReelsList(prev => {
-            const localMap = new Map(prev.map(r => [r.id, r]));
-            const merged = remoteReels.map(remoteR => {
-              const localR = localMap.get(remoteR.id);
-              if (!localR) return remoteR;
-
-              // Preserve local updated videoUrl if local has GitHub CDN or custom media links
-              const hasCustomVideo = localR.videoUrl && (localR.videoUrl.includes('githubusercontent') || localR.videoUrl.includes('/media/'));
-              if (hasCustomVideo) {
-                return { ...remoteR, ...localR };
-              }
-              return remoteR;
-            });
-
-            const remoteIds = new Set(remoteReels.map(r => r.id));
-            prev.forEach(localR => {
-              if (!remoteIds.has(localR.id)) merged.push(localR);
-            });
-
-            safeSetItem('im_reels', JSON.stringify(merged));
-            return merged;
-          });
+          setReelsList(remoteReels);
+          safeSetItem('im_reels', JSON.stringify(remoteReels));
         }
         if (promoRes?.data && promoRes.data.length > 0) setPromosList(promoRes.data.map(mapDbPromoToClient));
-        if (oRes?.data && oRes.data.length > 0) {
+        if (oRes?.data && Array.isArray(oRes.data)) {
           const remoteOrders = oRes.data.map(mapDbOrderToClient);
           setOrdersList(remoteOrders);
           safeSetItem('im_orders', JSON.stringify(remoteOrders));

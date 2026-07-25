@@ -141,16 +141,25 @@ export async function sendOrderConfirmationEmail(order) {
   const customerEmail = order.shippingDetails?.email || order.customerEmail || 'inibymaya@gmail.com';
   const isCustomStitched = order.items?.some(i => i && i.wantsCustomStitching);
 
-  const itemsHtml = (order.items || []).map(item => `
-    <tr>
-      <td>
-        <strong>${item.title}</strong><br>
-        <span style="color:#666; font-size:12px;">Size: ${item.selectedSize} ${item.wantsCustomStitching ? '<span class="badge-custom">Bespoke Custom Stitching</span>' : ''}</span>
-      </td>
-      <td style="text-align:center;">${item.quantity}</td>
-      <td style="text-align:right;">₹${(item.price * item.quantity).toLocaleString('en-IN')}</td>
-    </tr>
-  `).join('');
+  const itemsHtml = (order.items || []).map(item => {
+    const title = item.product?.title || item.title || item.productTitle || 'Couture Apparel';
+    const size = item.size || item.selectedSize || 'Standard M';
+    const qty = item.quantity || item.qty || 1;
+    const unitPrice = Number(item.price || item.product?.price || (item.product?.pricing?.finalPrice) || 0);
+    const totalPrice = unitPrice * qty;
+    const color = item.color || item.selectedColor || '';
+
+    return `
+      <tr>
+        <td style="padding: 12px 10px;">
+          <strong style="color: #1a1a1a; font-size: 14px;">${title}</strong> ${color ? `<span style="color:#666; font-size:12px;">(${color})</span>` : ''}<br>
+          <span style="color:#666; font-size:12px;">Size: <strong>${size}</strong> ${item.wantsCustomStitching ? '<span class="badge-custom">Bespoke Custom Stitching</span>' : ''}</span>
+        </td>
+        <td style="text-align:center; padding: 12px 10px;">${qty}</td>
+        <td style="text-align:right; padding: 12px 10px; font-weight:600;">₹${totalPrice.toLocaleString('en-IN')}</td>
+      </tr>
+    `;
+  }).join('');
 
   const customerContent = `
     <h2 style="font-family:'Georgia',serif; color:#8b0000; margin-top:0;">Thank You for Your Order, ${customerName}! ✨</h2>

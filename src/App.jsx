@@ -380,40 +380,51 @@ export default function App() {
         console.warn('Instant settings sync bypassed:', err);
       }
 
-      // 1b. Load remaining catalog & database tables safely in background
+      // 1b. Load products table immediately with top priority (Instant Mobile & Desktop Render)
+      try {
+        const { data: prodData, error: prodErr } = await supabase
+          .from('products')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (prodData && Array.isArray(prodData)) {
+          const remoteProds = prodData.map(mapDbProductToClient);
+          setProductsList(remoteProds);
+          safeSetItem('im_catalog', JSON.stringify(remoteProds));
+        } else if (prodErr) {
+          console.warn('Primary products fetch notice:', prodErr.message);
+        }
+      } catch (err) {
+        console.warn('Products query exception:', err);
+      }
+
+      // 1c. Load remaining auxiliary tables (Reels, Promos, Orders, Testimonials)
       try {
         const mediaClient = supabaseMedia || supabase;
         const [
-          pRes,
           rRes,
           promoRes,
           oRes,
           tRes
         ] = await Promise.all([
-          supabase.from('products').select('*').order('created_at', { ascending: false }).catch(() => ({ data: null })),
-          mediaClient.from('reels').select('id, title, video_url, product_id, product_title, product_price, product_image').order('created_at', { ascending: true }).catch(() => ({ data: null })),
-          supabase.from('promos').select('code, type, value, min_purchase, description').catch(() => ({ data: null })),
-          supabase.from('orders').select('id, user_id, items, shipping_details, subtotal, discount, shipping, total, payment_id, status, tracking_number, notes, timestamp').order('timestamp', { ascending: false }).catch(() => ({ data: null })),
-          mediaClient.from('testimonials').select('id, name, image_url, quote, rating, tag').order('created_at', { ascending: true }).catch(() => ({ data: null }))
+          mediaClient.from('reels').select('*').order('created_at', { ascending: true }).catch(() => ({ data: null })),
+          supabase.from('promos').select('*').catch(() => ({ data: null })),
+          supabase.from('orders').select('*').order('timestamp', { ascending: false }).catch(() => ({ data: null })),
+          mediaClient.from('testimonials').select('*').order('created_at', { ascending: true }).catch(() => ({ data: null }))
         ]);
 
-        if (pRes?.data && Array.isArray(pRes.data)) {
-          const remoteProds = pRes.data.map(mapDbProductToClient);
-          setProductsList(remoteProds);
-          safeSetItem('im_catalog', JSON.stringify(remoteProds));
-        }
         if (rRes?.data && Array.isArray(rRes.data)) {
           const remoteReels = rRes.data.map(mapDbReelToClient);
           setReelsList(remoteReels);
           safeSetItem('im_reels', JSON.stringify(remoteReels));
         }
-        if (promoRes?.data && promoRes.data.length > 0) setPromosList(promoRes.data.map(mapDbPromoToClient));
+        if (promoRes?.data && Array.isArray(promoRes.data)) setPromosList(promoRes.data.map(mapDbPromoToClient));
         if (oRes?.data && Array.isArray(oRes.data)) {
           const remoteOrders = oRes.data.map(mapDbOrderToClient);
           setOrdersList(remoteOrders);
           safeSetItem('im_orders', JSON.stringify(remoteOrders));
         }
-        if (tRes?.data && tRes.data.length > 0) {
+        if (tRes?.data && Array.isArray(tRes.data)) {
           setTestimonialsList(tRes.data.map(t => ({
             id: t.id,
             name: t.name,

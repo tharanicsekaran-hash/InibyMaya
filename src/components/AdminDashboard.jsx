@@ -2366,64 +2366,7 @@ alter table public.settings disable row level security;`}</pre>
                 )}
               </div>
 
-              {/* Resend Email Integration Section */}
-              <div className="resend-config-section" style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--color-border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <Mail size={16} style={{ color: '#8b0000' }} />
-                  <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--color-text-primary)', margin: 0 }}>Resend Email Notifications Integration</h4>
-                </div>
-                <p style={{ fontSize: '12.5px', color: 'var(--color-text-secondary)', margin: '0 0 14px 0', lineHeight: '1.5' }}>
-                  Paste your Resend API Key (`re_xxxxxxxx`) below to enable live HTML email dispatch for Order Confirmations, Delhivery Tracking updates, Delivery Testimonials, and Cancellations directly to <strong>inibymaya@gmail.com</strong>.
-                </p>
-
-                {resendStatus && (
-                  <p className="admin-status-toast" style={{
-                    padding: '10px 14px',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    marginBottom: '14px',
-                    backgroundColor: resendStatus.includes('❌') ? 'rgba(220, 38, 38, 0.1)' : 'rgba(5, 150, 105, 0.1)',
-                    color: resendStatus.includes('❌') ? '#dc2626' : '#059669',
-                    border: `1px solid ${resendStatus.includes('❌') ? 'rgba(220, 38, 38, 0.2)' : 'rgba(5, 150, 105, 0.2)'}`
-                  }}>
-                    {resendStatus}
-                  </p>
-                )}
-
-                <div className="form-group" style={{ marginBottom: '14px' }}>
-                  <label>Resend API Key (`re_...`) *</label>
-                  <input 
-                    type="password" 
-                    value={resendApiKey} 
-                    onChange={(e) => setResendApiKey(e.target.value)} 
-                    placeholder="re_123456789_abcdefghijklmnopqrstuvwxyz" 
-                  />
-                </div>
-
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  <button 
-                    type="button" 
-                    className="add-btn-submit" 
-                    onClick={handleSaveResendKey}
-                    style={{ flex: 1, minWidth: '160px', backgroundColor: '#1a1a1a', color: '#fff' }}
-                  >
-                    <CheckCircle2 size={14} />
-                    <span>Save Resend Key</span>
-                  </button>
-
-                  <button 
-                    type="button" 
-                    className="add-btn-submit" 
-                    onClick={handleSendTestEmail}
-                    style={{ flex: 1, minWidth: '220px', backgroundColor: '#8b0000', color: '#fff' }}
-                  >
-                    <Mail size={14} />
-                    <span>Send Live Test Email to Admin</span>
-                  </button>
-                </div>
-              </div>
-
-              <button type="submit" className="add-btn-submit" style={{ marginTop: '24px', width: '100%' }}>
+              <button type="submit" className="add-btn-submit" style={{ marginTop: '16px' }}>
                 <CheckCircle2 size={14} />
                 <span>Save Boutique Settings</span>
               </button>

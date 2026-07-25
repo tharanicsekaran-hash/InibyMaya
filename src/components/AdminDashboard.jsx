@@ -1141,7 +1141,19 @@ alter table public.settings disable row level security;`}</pre>
                               const itemColor = item.color || item.selectedColor || 'Standard';
                               const itemSize = item.size || item.selectedSize || 'M';
                               const itemQty = item.quantity || item.qty || 1;
-                              const itemImg = item.product?.image || item.image || item.productImage || (item.images && item.images[0]) || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=200';
+
+                              // Dynamic product lookup from catalog to ensure exact image is displayed
+                              const matchedProd = (products || []).find(p => String(p.id) === String(item.productId || item.id || item.product?.id)) 
+                                || (products || []).find(p => p.title?.toLowerCase().trim() === itemTitle.toLowerCase().trim());
+
+                              const rawImg = item.image 
+                                || item.product?.image 
+                                || item.productImage 
+                                || (item.images && item.images[0]) 
+                                || matchedProd?.image 
+                                || (matchedProd?.images && matchedProd?.images[0]);
+
+                              const itemImg = rawImg ? formatGithubUrl(rawImg) : 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=200';
 
                               return (
                                 <div key={itemIdx} className="table-item-desc" style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '10px', paddingBottom: itemIdx < orderItems.length - 1 ? '8px' : '0', borderBottom: itemIdx < orderItems.length - 1 ? '1px dashed var(--color-border)' : 'none' }}>
@@ -1156,6 +1168,10 @@ alter table public.settings disable row level security;`}</pre>
                                       flexShrink: 0,
                                       border: '1px solid var(--color-border)' 
                                     }} 
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=200';
+                                    }}
                                   />
                                   <div style={{ flex: 1 }}>
                                     <span>• <strong>{itemTitle}</strong> ({itemColor}) - Qty: {itemQty}</span>

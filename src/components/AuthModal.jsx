@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, User, Sparkles, LogOut, CheckCircle, Package, Truck } from 'lucide-react';
 import { supabase } from '../supabaseClient';
+import { products as catalogProducts } from '../data/products';
+import { formatGithubUrl } from './AdminDashboard';
 
 export default function AuthModal({ user, login, signup, logout, onClose, orderHistory = [], onUpdateOrderStatus }) {
   const [isLoginView, setIsLoginView] = useState(true);
@@ -263,10 +265,29 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
                             <div className="order-items-preview-row" style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '6px 0', margin: '8px 0', scrollbarWidth: 'none' }}>
                               {order.items.map((it, iIdx) => {
                                 const itTitle = it.product?.title || it.title || it.productTitle || 'Couture Item';
-                                const itImg = it.product?.image || it.image || it.productImage || (it.images && it.images[0]) || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=200';
+                                const matchedCatalog = (catalogProducts || []).find(p => String(p.id) === String(it.productId || it.id || it.product?.id))
+                                  || (catalogProducts || []).find(p => p.title?.toLowerCase().trim() === itTitle.toLowerCase().trim());
+
+                                const rawImg = it.image 
+                                  || it.product?.image 
+                                  || it.productImage 
+                                  || (it.images && it.images[0]) 
+                                  || matchedCatalog?.image 
+                                  || (matchedCatalog?.images && matchedCatalog?.images[0]);
+
+                                const itImg = rawImg ? formatGithubUrl(rawImg) : 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=200';
+
                                 return (
                                   <div key={iIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-bg-secondary)', padding: '4px 10px 4px 6px', borderRadius: '6px', border: '1px solid var(--color-border)', flexShrink: 0 }}>
-                                    <img src={itImg} alt={itTitle} style={{ width: '36px', height: '36px', borderRadius: '4px', objectFit: 'cover' }} />
+                                    <img 
+                                      src={itImg} 
+                                      alt={itTitle} 
+                                      style={{ width: '36px', height: '36px', borderRadius: '4px', objectFit: 'cover' }} 
+                                      onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=200';
+                                      }}
+                                    />
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                       <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-primary)' }}>{itTitle}</span>
                                       <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>Size: {it.size || it.selectedSize || 'M'} (x{it.quantity || 1})</span>

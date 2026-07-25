@@ -46,24 +46,31 @@ const getNeckName = (id) => {
   return necksMap[id] || id;
 };
 
-// Utility to auto-convert GitHub web URLs & relative media paths to clean Vercel/GitHub CDN URLs
+// Utility to auto-convert GitHub web URLs & raw CDN links to clean Vercel media paths
 export const formatGithubUrl = (url) => {
   if (!url || typeof url !== 'string') return url;
   let trimmed = url.trim();
 
-  // Convert GitHub blob web link to raw CDN link
-  if (trimmed.includes('github.com') && trimmed.includes('/blob/')) {
-    return trimmed
-      .replace('github.com', 'raw.githubusercontent.com')
-      .replace('/blob/', '/');
+  // If URL contains public/media/ or /media/ in a raw.githubusercontent.com or github.com link:
+  if (trimmed.includes('public/media/')) {
+    const idx = trimmed.indexOf('public/media/');
+    return '/' + trimmed.substring(idx + 7);
+  }
+  if (trimmed.includes('/media/')) {
+    const idx = trimmed.indexOf('/media/');
+    return trimmed.substring(idx);
   }
 
-  // Convert relative media path (e.g. public/media/hero/1.jpg or media/hero/1.jpg)
-  if (trimmed.startsWith('public/media/')) {
-    return '/' + trimmed.substring(7);
-  }
-  if (trimmed.startsWith('media/')) {
-    return '/' + trimmed;
+  // Convert GitHub blob web link
+  if (trimmed.includes('github.com') && trimmed.includes('/blob/')) {
+    const raw = trimmed
+      .replace('github.com', 'raw.githubusercontent.com')
+      .replace('/blob/', '/');
+    if (raw.includes('public/media/')) {
+      const idx = raw.indexOf('public/media/');
+      return '/' + raw.substring(idx + 7);
+    }
+    return raw;
   }
 
   return trimmed;

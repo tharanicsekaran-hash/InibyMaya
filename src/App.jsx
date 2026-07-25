@@ -239,43 +239,18 @@ export default function App() {
     ];
   });
 
-  // Dynamic Reels State (configurable by Admin)
+  // Dynamic Reels State (100% Direct Database Sync)
   const [reelsList, setReelsList] = useState(() => {
     const saved = localStorage.getItem('im_reels');
-    if (saved && !saved.includes('vimeo.com')) {
-      return JSON.parse(saved);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Purge old mock reels from local storage cache
+        const clean = parsed.filter(r => r && r.id && !r.id.startsWith('reel-1') && !r.id.startsWith('reel-2') && !r.id.startsWith('reel-3') && r.id !== 'reel-1784668409811');
+        if (clean.length > 0) return clean;
+      } catch (e) {}
     }
-    const defaults = [
-      {
-        id: 'reel-1',
-        title: 'Indigo Chikankari Motion Showcase',
-        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-        productId: 'im-kurtaset-1',
-        productTitle: 'Indigo Chikankari Cotton Long Kurta',
-        productPrice: 2499,
-        productImage: 'https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=800'
-      },
-      {
-        id: 'reel-2',
-        title: 'Ivory Georgette Anarkali Elegance',
-        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-        productId: 'im-anarkali-1',
-        productTitle: 'Ivory Georgette Anarkali Suit',
-        productPrice: 3899,
-        productImage: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800'
-      },
-      {
-        id: 'reel-3',
-        title: 'Sage Green Organza Motion Line',
-        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-        productId: 'im-kurtaset-2',
-        productTitle: 'Sage Green Organza Straight Kurta',
-        productPrice: 2299,
-        productImage: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800'
-      }
-    ];
-    localStorage.setItem('im_reels', JSON.stringify(defaults));
-    return defaults;
+    return [];
   });
 
   // Reels interactive autoplay & scroll states
@@ -1257,6 +1232,7 @@ export default function App() {
               categories={(() => {
                 try { return JSON.parse(boutiqueSettings.categories || '[]'); } catch { return []; }
               })()}
+              products={productsList}
               onCategoryClick={(filter) => {
                 if (filter === 'custom') {
                   setActivePage('shop');

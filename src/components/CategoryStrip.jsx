@@ -5,22 +5,37 @@ import React from 'react';
  * Shown directly below the Hero banner on the homepage.
  * Each icon navigates to the Shop page filtered by that category.
  *
- * Categories are now configurable from the Admin Console settings.
+ * Categories are populated directly from Admin settings or live catalog.
  */
 
-const DEFAULT_CATEGORIES = [
-  { name: 'Long Kurtas', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=200&auto=format&fit=crop', filter: 'Long Kurtas' },
-  { name: 'Straight Kurtas', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=200&auto=format&fit=crop', filter: 'Straight Kurtas' },
-  { name: 'Anarkali Suits', image: 'https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=200&auto=format&fit=crop', filter: 'Anarkali Suits' },
-  { name: 'Co-ord Sets', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=200&auto=format&fit=crop', filter: 'Co-ord Sets' },
-  { name: 'A-Line Kurtas', image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=200&auto=format&fit=crop', filter: 'A-Line Kurtas' },
-  { name: 'Custom Tailoring', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=200&auto=format&fit=crop', filter: 'custom' },
-];
+export default function CategoryStrip({ categories = [], products = [], onCategoryClick }) {
+  // If categories are explicitly configured in Admin settings, use them!
+  // Otherwise, dynamically derive categories from active products in the store.
+  const items = React.useMemo(() => {
+    if (Array.isArray(categories) && categories.length > 0) {
+      return categories;
+    }
+    
+    // Derive unique active categories from live products
+    if (Array.isArray(products) && products.length > 0) {
+      const categoryMap = new Map();
+      products.forEach(p => {
+        if (p.category && !categoryMap.has(p.category)) {
+          const sampleImg = p.images && p.images[0] ? p.images[0] : '';
+          categoryMap.set(p.category, {
+            name: p.category,
+            filter: p.category,
+            image: sampleImg
+          });
+        }
+      });
+      return Array.from(categoryMap.values());
+    }
 
-export { DEFAULT_CATEGORIES };
+    return [];
+  }, [categories, products]);
 
-export default function CategoryStrip({ categories, onCategoryClick }) {
-  const items = (categories && categories.length > 0) ? categories : DEFAULT_CATEGORIES;
+  if (!items || items.length === 0) return null;
 
   return (
     <section className="category-strip-section" aria-label="Shop by Category">
@@ -28,7 +43,7 @@ export default function CategoryStrip({ categories, onCategoryClick }) {
       <div className="category-strip-scroll">
         {items.map((cat, idx) => (
           <button
-            key={cat.filter || idx}
+            key={cat.filter || cat.name || idx}
             className="category-icon-item"
             onClick={() => onCategoryClick(cat.filter || cat.name)}
             aria-label={`Browse ${cat.name}`}
@@ -41,11 +56,11 @@ export default function CategoryStrip({ categories, onCategoryClick }) {
                   loading="lazy"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextSibling.style.display = 'flex';
+                    if (e.currentTarget.nextSibling) e.currentTarget.nextSibling.style.display = 'flex';
                   }}
                 />
               ) : null}
-              {/* Emoji/letter fallback */}
+              {/* Letter fallback */}
               <span className="category-emoji-fallback" style={{ display: cat.image ? 'none' : 'flex' }}>
                 {cat.name?.charAt(0) || '•'}
               </span>

@@ -438,13 +438,33 @@ export default function App() {
             .eq('id', session.user.id)
             .maybeSingle();
 
+          const userName = customerProfile 
+            ? customerProfile.name 
+            : (session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0]);
+
           setCurrentUser({
             id: session.user.id,
             email: session.user.email,
-            name: customerProfile ? customerProfile.name : (session.user.user_metadata?.name || session.user.email.split('@')[0])
+            name: userName
           });
+
+          // Ensure customer record is registered in public.customers table
+          try {
+            await supabase.from('customers').upsert({
+              id: session.user.id,
+              email: session.user.email,
+              name: userName
+            }, { onConflict: 'id' });
+          } catch (e) {}
+
+          // Trigger Welcome Notification Toast for Google OIDC Sign-In
+          if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+            setAuthToast(`Welcome back, ${userName}! ✨`);
+            setTimeout(() => {
+              setAuthToast(null);
+            }, 3500);
+          }
         } else if (event === 'SIGNED_OUT') {
-          // Keep local / simulated sessions valid upon reloads and page transitions
           setCurrentUser(null);
         }
       });

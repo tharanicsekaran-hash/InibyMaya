@@ -86,27 +86,8 @@ export default function InfoPage({ tab, setTab, orders = [], boutiqueSettings = 
 
   return (
     <div className="info-page-layout-grid container animate-fadeIn">
-      {/* Mobile-Only Horizontal Touch Pill & Dropdown Navigation Header */}
+      {/* Mobile-Only Horizontal Scrollable Touch Pill Strip */}
       <div className="info-mobile-nav-wrapper">
-        <div className="mobile-dropdown-header">
-          <label htmlFor="info-mobile-select">Select Support Page:</label>
-          <select 
-            id="info-mobile-select"
-            value={tab} 
-            onChange={(e) => {
-              setTab(e.target.value);
-              setSearchError('');
-              setTrackedOrder(null);
-            }}
-            className="info-mobile-select-dropdown"
-          >
-            {menuItems.map(item => (
-              <option key={item.id} value={item.id}>{item.label}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Scrollable Horizontal Touch Pill Strip */}
         <div className="info-mobile-pill-strip">
           {menuItems.map(item => (
             <button

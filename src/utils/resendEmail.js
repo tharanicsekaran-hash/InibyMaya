@@ -135,11 +135,11 @@ function wrapLuxuryEmailTemplate(contentHtml, title = 'Ini by Maya Couture') {
  * 1. ORDER CONFIRMATION EMAIL (Customer & Admin)
  */
 export async function sendOrderConfirmationEmail(order) {
-  if (!order || !order.shippingDetails?.email) return;
+  if (!order) return;
 
-  const customerName = order.shippingDetails.name || 'Valued Patron';
-  const customerEmail = order.shippingDetails.email;
-  const isCustomStitched = order.items?.some(i => i.wantsCustomStitching);
+  const customerName = order.shippingDetails?.name || 'Valued Patron';
+  const customerEmail = order.shippingDetails?.email || order.customerEmail || 'inibymaya@gmail.com';
+  const isCustomStitched = order.items?.some(i => i && i.wantsCustomStitching);
 
   const itemsHtml = (order.items || []).map(item => `
     <tr>

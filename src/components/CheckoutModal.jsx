@@ -42,10 +42,11 @@ export default function CheckoutModal({
       const orderData = {
         id: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
         items: cartItems,
-        shippingDetails: { name, address, city, pincode, phone },
+        shippingDetails: { name, address, city, pincode, phone, email: user?.email || 'inibymaya@gmail.com' },
         subtotal: priceSummary.subtotal,
         discount: priceSummary.appliedDiscount,
         shipping: priceSummary.shipping,
+        shippingFee: priceSummary.shipping,
         total: priceSummary.finalTotal,
         paymentId: payId,
         timestamp: new Date().toISOString(),

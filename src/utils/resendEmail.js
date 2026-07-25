@@ -25,10 +25,27 @@ const ADMIN_EMAILS = ['inibymaya@gmail.com', 'care@inibymaya.com', 'tharanichand
 async function sendResendEmail({ to, subject, html, replyTo }) {
   if (!to || (Array.isArray(to) && to.length === 0)) return;
 
+  // 1. Dispatch via Vercel Serverless Function (/api/send-email) for 100% CORS & Serverless Security
+  try {
+    const apiResponse = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, subject, html, replyTo })
+    });
+
+    if (apiResponse.ok) {
+      const data = await apiResponse.json();
+      console.log('✅ [Vercel Serverless Resend Email Sent]:', data.id);
+      return { success: true, id: data.id };
+    }
+  } catch (err) {
+    console.warn('ℹ️ Serverless endpoint notice, trying direct client fallback:', err.message);
+  }
+
+  // 2. Direct client fallback dispatcher
   const apiKey = getApiKey();
   const fromAddress = import.meta.env.VITE_SENDER_EMAIL || SENDER_DEFAULT;
 
-  // Log in development/testing mode if API key is unconfigured
   if (!apiKey || apiKey === 're_placeholder') {
     console.log(`✉️ [Resend Simulation] Subject: "${subject}" | To: ${Array.isArray(to) ? to.join(', ') : to}`);
     return { success: true, simulated: true };

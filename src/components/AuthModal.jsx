@@ -259,7 +259,25 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
                            </p>
                          )}
 
-                         <div className="order-summary-row">
+                          {order.items && order.items.length > 0 && (
+                            <div className="order-items-preview-row" style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '6px 0', margin: '8px 0', scrollbarWidth: 'none' }}>
+                              {order.items.map((it, iIdx) => {
+                                const itTitle = it.product?.title || it.title || it.productTitle || 'Couture Item';
+                                const itImg = it.product?.image || it.image || it.productImage || (it.images && it.images[0]) || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=200';
+                                return (
+                                  <div key={iIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-bg-secondary)', padding: '4px 10px 4px 6px', borderRadius: '6px', border: '1px solid var(--color-border)', flexShrink: 0 }}>
+                                    <img src={itImg} alt={itTitle} style={{ width: '36px', height: '36px', borderRadius: '4px', objectFit: 'cover' }} />
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                      <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-primary)' }}>{itTitle}</span>
+                                      <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>Size: {it.size || it.selectedSize || 'M'} (x{it.quantity || 1})</span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          <div className="order-summary-row">
                            <span>{order.items.length} item(s) • {isCustomOrder ? 'Bespoke Tailored' : 'Standard sizes'}</span>
                            <span className="red-totals">Total: <strong className="total-amount-red">₹{order.total.toLocaleString('en-IN')}</strong></span>
                          </div>

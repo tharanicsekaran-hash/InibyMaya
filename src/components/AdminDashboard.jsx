@@ -1141,12 +1141,27 @@ alter table public.settings disable row level security;`}</pre>
                               const itemColor = item.color || item.selectedColor || 'Standard';
                               const itemSize = item.size || item.selectedSize || 'M';
                               const itemQty = item.quantity || item.qty || 1;
+                              const itemImg = item.product?.image || item.image || item.productImage || (item.images && item.images[0]) || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=200';
+
                               return (
-                                <div key={itemIdx} className="table-item-desc">
-                                  <span>• <strong>{itemTitle}</strong> ({itemColor}) - Qty: {itemQty}</span>
-                                  <div className="sizing-readout-row">
-                                    <span>Standard Size: <span className="size-badge-table">{itemSize}</span></span>
-                                  </div>
+                                <div key={itemIdx} className="table-item-desc" style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '10px', paddingBottom: itemIdx < orderItems.length - 1 ? '8px' : '0', borderBottom: itemIdx < orderItems.length - 1 ? '1px dashed var(--color-border)' : 'none' }}>
+                                  <img 
+                                    src={itemImg} 
+                                    alt={itemTitle} 
+                                    style={{ 
+                                      width: '44px', 
+                                      height: '44px', 
+                                      borderRadius: '6px', 
+                                      objectFit: 'cover', 
+                                      flexShrink: 0,
+                                      border: '1px solid var(--color-border)' 
+                                    }} 
+                                  />
+                                  <div style={{ flex: 1 }}>
+                                    <span>• <strong>{itemTitle}</strong> ({itemColor}) - Qty: {itemQty}</span>
+                                    <div className="sizing-readout-row">
+                                      <span>Standard Size: <span className="size-badge-table">{itemSize}</span></span>
+                                    </div>
                                   {item.wantsCustomStitching && (item.measurements || item.styleCustomization) && (
                                     <div className="table-item-measurements animate-fadeIn" style={{
                                       marginTop: '6px',
@@ -1189,7 +1204,8 @@ alter table public.settings disable row level security;`}</pre>
                                     </div>
                                   )}
                                 </div>
-                              );
+                              </div>
+                            );
                             })}
                           </div>
                         </td>

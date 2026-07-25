@@ -388,9 +388,9 @@ export default function App() {
         console.warn('Instant settings sync bypassed:', err);
       }
 
-      // 1b. Load products table immediately with top priority (Instant Mobile & Desktop Render)
+      // 1b. Load products table immediately with top priority
       try {
-        const { data: prodData, error: prodErr } = await supabase
+        const { data: prodData } = await supabase
           .from('products')
           .select('*')
           .order('created_at', { ascending: false });
@@ -399,41 +399,38 @@ export default function App() {
           const remoteProds = prodData.map(mapDbProductToClient);
           setProductsList(remoteProds);
           safeSetItem('im_catalog', JSON.stringify(remoteProds));
-        } else if (prodErr) {
-          console.warn('Primary products fetch notice:', prodErr.message);
         }
       } catch (err) {
-        console.warn('Products query exception:', err);
+        console.warn('Products query notice:', err);
       }
 
-      // 1c. Load remaining auxiliary tables (Reels, Promos, Orders, Testimonials)
+      // 1c. Load reels table independently (Top Priority for Customer Homepage)
       try {
-        const mediaClient = supabaseMedia || supabase;
-        const [
-          rRes,
-          promoRes,
-          oRes,
-          tRes
-        ] = await Promise.all([
-          mediaClient.from('reels').select('*').order('created_at', { ascending: true }).catch(() => ({ data: null })),
-          supabase.from('promos').select('*').catch(() => ({ data: null })),
-          supabase.from('orders').select('*').order('timestamp', { ascending: false }).catch(() => ({ data: null })),
-          mediaClient.from('testimonials').select('*').order('created_at', { ascending: true }).catch(() => ({ data: null }))
-        ]);
+        const { data: reelData } = await supabase
+          .from('reels')
+          .select('*')
+          .order('created_at', { ascending: true });
 
-        if (rRes?.data && Array.isArray(rRes.data)) {
-          const remoteReels = rRes.data.map(mapDbReelToClient);
+        if (reelData && Array.isArray(reelData)) {
+          const remoteReels = reelData.map(mapDbReelToClient);
           setReelsList(remoteReels);
           safeSetItem('im_reels', JSON.stringify(remoteReels));
         }
-        if (promoRes?.data && Array.isArray(promoRes.data)) setPromosList(promoRes.data.map(mapDbPromoToClient));
-        if (oRes?.data && Array.isArray(oRes.data)) {
-          const remoteOrders = oRes.data.map(mapDbOrderToClient);
-          setOrdersList(remoteOrders);
-          safeSetItem('im_orders', JSON.stringify(remoteOrders));
-        }
-        if (tRes?.data && Array.isArray(tRes.data)) {
-          setTestimonialsList(tRes.data.map(t => ({
+      } catch (err) {
+        console.warn('Reels query notice:', err);
+      }
+
+      // 1d. Load promos table independently
+      try {
+        const { data: promoData } = await supabase.from('promos').select('*');
+        if (promoData && Array.isArray(promoData)) setPromosList(promoData.map(mapDbPromoToClient));
+      } catch (err) {}
+
+      // 1e. Load testimonials table independently
+      try {
+        const { data: tData } = await supabase.from('testimonials').select('*').order('created_at', { ascending: true });
+        if (tData && Array.isArray(tData)) {
+          setTestimonialsList(tData.map(t => ({
             id: t.id,
             name: t.name,
             imageUrl: t.image_url,
@@ -442,9 +439,17 @@ export default function App() {
             tag: t.tag
           })));
         }
-      } catch (err) {
-        console.warn('Background sync complete with fallbacks:', err);
-      }
+      } catch (err) {}
+
+      // 1f. Load orders table independently (Admin / Logged-in user)
+      try {
+        const { data: oData } = await supabase.from('orders').select('*').order('timestamp', { ascending: false });
+        if (oData && Array.isArray(oData)) {
+          const remoteOrders = oData.map(mapDbOrderToClient);
+          setOrdersList(remoteOrders);
+          safeSetItem('im_orders', JSON.stringify(remoteOrders));
+        }
+      } catch (err) {}
     };
 
     loadSupabaseData();

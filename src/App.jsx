@@ -381,7 +381,7 @@ export default function App() {
           oRes,
           tRes
         ] = await Promise.all([
-          supabase.from('products').select('id, title, category, price, rating, reviews_count, description, details, images, variants, customizable, best_seller, occasion, highlights').order('created_at', { ascending: false }).catch(() => ({ data: null })),
+          supabase.from('products').select('*').order('created_at', { ascending: false }).catch(() => ({ data: null })),
           mediaClient.from('reels').select('id, title, video_url, product_id, product_title, product_price, product_image').order('created_at', { ascending: true }).catch(() => ({ data: null })),
           supabase.from('promos').select('code, type, value, min_purchase, description').catch(() => ({ data: null })),
           supabase.from('orders').select('id, user_id, items, shipping_details, subtotal, discount, shipping, total, payment_id, status, tracking_number, notes, timestamp').order('timestamp', { ascending: false }).catch(() => ({ data: null })),
@@ -930,9 +930,12 @@ export default function App() {
     });
     if (supabase) {
       try {
-        const { error } = await supabase.from('products').upsert(mapClientProductToDb(newProd));
+        const payload = mapClientProductToDb(newProd);
+        const { error } = await supabase.from('products').upsert(payload);
         if (error) {
-          console.error('Supabase product upsert failed:', error.message, error);
+          console.warn('Supabase product upsert initial attempt error, retrying fallback:', error.message);
+          delete payload.new_arrival;
+          await supabase.from('products').upsert(payload);
         }
       } catch (err) {
         console.error('Product save error:', err);
@@ -956,7 +959,17 @@ export default function App() {
       return updated;
     });
     if (supabase) {
-      await supabase.from('products').update(mapClientProductToDb(updatedProd)).eq('id', updatedProd.id);
+      try {
+        const payload = mapClientProductToDb(updatedProd);
+        const { error } = await supabase.from('products').update(payload).eq('id', updatedProd.id);
+        if (error) {
+          console.warn('Supabase product update initial attempt error, retrying fallback:', error.message);
+          delete payload.new_arrival;
+          await supabase.from('products').update(payload).eq('id', updatedProd.id);
+        }
+      } catch (err) {
+        console.error('Product update error:', err);
+      }
     }
   };
   const handleUpdateOrderStatus = async (orderId, nextStatus, trackingNum = '') => {

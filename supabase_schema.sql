@@ -23,6 +23,7 @@ create table public.products (
   variants jsonb not null,
   customizable boolean default true,
   best_seller boolean default false,
+  new_arrival boolean default true,
   occasion text default 'Daily Elegance',
   highlights jsonb default '{}'::jsonb,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null

@@ -16,7 +16,7 @@ const getApiKey = () => {
   return import.meta.env.VITE_RESEND_API_KEY || '';
 };
 
-const SENDER_FALLBACK = 'Ini by Maya Couture <onboarding@resend.dev>';
+const SENDER_DEFAULT = 'Ini by Maya Couture <orders@inibymaya.com>';
 const ADMIN_EMAILS = ['inibymaya@gmail.com', 'care@inibymaya.com', 'tharanichandrasekaran2000@gmail.com'];
 
 /**
@@ -26,7 +26,7 @@ async function sendResendEmail({ to, subject, html, replyTo }) {
   if (!to || (Array.isArray(to) && to.length === 0)) return;
 
   const apiKey = getApiKey();
-  const fromAddress = import.meta.env.VITE_SENDER_EMAIL || SENDER_FALLBACK;
+  const fromAddress = import.meta.env.VITE_SENDER_EMAIL || SENDER_DEFAULT;
 
   // Log in development/testing mode if API key is unconfigured
   if (!apiKey || apiKey === 're_placeholder') {

@@ -20,13 +20,14 @@ export default function Header({
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 50) {
+      const currentScroll = window.scrollY || window.pageYOffset || 0;
+      if (currentScroll > 60) {
         setIsScrolled(true);
-      } else {
+      } else if (currentScroll < 20) {
         setIsScrolled(false);
       }
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 

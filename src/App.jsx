@@ -16,6 +16,13 @@ import ReelCard from './components/ReelCard';
 import { products as initialProducts } from './data/products';
 import { CheckCircle2, Calendar, Truck, ArrowLeft, Heart, ShoppingBag, Sparkles, Scissors, X, Film, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase, supabaseMedia } from './supabaseClient';
+import { 
+  sendOrderConfirmationEmail, 
+  sendOrderShippedEmail, 
+  sendOrderDeliveredEmail, 
+  sendOrderCancelledEmail, 
+  sendStitchingProgressEmail 
+} from './utils/resendEmail';
 import './App.css';
 
 // Database column mapping helpers
@@ -864,6 +871,9 @@ export default function App() {
     setCartItems([]); 
     setCheckoutSummary(null); 
     setSuccessOrder(orderData); 
+
+    // Trigger automated Order Confirmation Email via Resend
+    sendOrderConfirmationEmail(orderData).catch(err => console.warn('Resend Order Confirmation Email trigger notice:', err));
     
     // Mark subscriber coupon as used so it doesn't auto-apply to future carts
     localStorage.setItem('im_newsletter_promo_used', 'true');
@@ -878,20 +888,14 @@ export default function App() {
           shipping_details: orderData.shippingDetails,
           subtotal: orderData.subtotal,
           discount: orderData.discount,
-          shipping: orderData.shipping,
+          shipping_fee: orderData.shippingFee,
           total: orderData.total,
+          status: orderData.status || 'Placed',
           payment_id: orderData.paymentId,
-          status: orderData.status,
-          tracking_number: orderData.trackingNumber,
           notes: orderData.notes || '',
-          timestamp: orderData.timestamp
+          timestamp: new Date().toISOString()
         };
-        const { error } = await supabase.from('orders').insert(dbOrder);
-        if (error) {
-          console.error('Supabase orders table insert failed:', error.message, error.details || '');
-        } else {
-          console.log('Order successfully synced with Supabase database!');
-        }
+        await supabase.from('orders').upsert(dbOrder);
       } catch (err) {
         console.error('Supabase write error during checkout:', err);
       }
@@ -950,16 +954,31 @@ export default function App() {
     }
   };
   const handleUpdateOrderStatus = async (orderId, nextStatus, trackingNum = '') => {
+    let targetOrder = null;
     setOrdersList(prev => prev.map(order => {
       if (order.id === orderId) {
-        return {
+        targetOrder = {
           ...order,
           status: nextStatus,
           trackingNumber: trackingNum || order.trackingNumber || ''
         };
+        return targetOrder;
       }
       return order;
     }));
+
+    // Trigger automated Resend email notifications based on status
+    if (targetOrder) {
+      if (nextStatus === 'Shipped') {
+        sendOrderShippedEmail(targetOrder, trackingNum).catch(err => console.warn('Resend Shipped Email notice:', err));
+      } else if (nextStatus === 'Delivered') {
+        sendOrderDeliveredEmail(targetOrder).catch(err => console.warn('Resend Delivered Email notice:', err));
+      } else if (nextStatus === 'Cancelled' || nextStatus === 'Cancelled by Customer') {
+        sendOrderCancelledEmail(targetOrder).catch(err => console.warn('Resend Cancelled Email notice:', err));
+      } else if (nextStatus === 'Pattern Drafting' || nextStatus === 'Stitching in Progress') {
+        sendStitchingProgressEmail(targetOrder, nextStatus).catch(err => console.warn('Resend Atelier Email notice:', err));
+      }
+    }
 
     if (supabase) {
       const { error } = await supabase.from('orders')

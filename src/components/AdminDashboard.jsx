@@ -506,12 +506,8 @@ export default function AdminDashboard({
           return [...filtered, imageUrl];
         });
       } catch (err) {
-        console.warn('GitHub upload failed, falling back to local compression:', err);
-        const compressedData = await compressImage(file);
-        setPrimaryImages(prev => {
-          const filtered = prev.filter(x => x && x.trim() !== '');
-          return [...filtered, compressedData];
-        });
+        console.error('❌ [GitHub Upload Error]:', err.message || err);
+        alert(`❌ Upload Failed: ${err.message || 'Error uploading file to GitHub'}`);
       }
     }
   };
@@ -528,9 +524,8 @@ export default function AdminDashboard({
       }
       setHoverImage(imageUrl);
     } catch (err) {
-      console.warn('GitHub upload failed, falling back to local compression:', err);
-      const compressedData = await compressImage(file);
-      setHoverImage(compressedData);
+      console.error('❌ [GitHub Upload Error]:', err.message || err);
+      alert(`❌ Upload Failed: ${err.message || 'Error uploading file to GitHub'}`);
     }
   };
 
@@ -620,10 +615,8 @@ export default function AdminDashboard({
         reader.readAsDataURL(file);
       }
     } catch (err) {
-      console.warn('GitHub video upload fallback:', err);
-      const reader = new FileReader();
-      reader.onload = () => setReelVideoFile(reader.result);
-      reader.readAsDataURL(file);
+      console.error('❌ [GitHub Video Upload Error]:', err.message || err);
+      alert(`❌ Video Upload Failed: ${err.message || 'Error uploading video to GitHub'}`);
     }
   };
 
@@ -643,13 +636,8 @@ export default function AdminDashboard({
         handleUpdateBannerSlide(bannerId, field, imageUrl);
       }
     } catch (err) {
-      console.warn('GitHub upload failed, fallback to compression:', err);
-      const compressedData = await compressImage(file);
-      if (isOffer) {
-        handleUpdateOfferBannerSlide(bannerId, field, compressedData);
-      } else {
-        handleUpdateBannerSlide(bannerId, field, compressedData);
-      }
+      console.error('❌ [GitHub Banner Upload Error]:', err.message || err);
+      alert(`❌ Banner Upload Failed: ${err.message || 'Error uploading banner to GitHub'}`);
     }
   };
 
@@ -888,7 +876,7 @@ export default function AdminDashboard({
     const newReel = {
       id: `reel-${Date.now()}`,
       title: reelTitle,
-      videoUrl: reelVideoFile,
+      videoUrl: formatGithubUrl(reelVideoFile),
       productId: reelProductId || '',
       productTitle: matchedProd ? matchedProd.title : '',
       productPrice: matchedProd ? matchedProd.price : 0,
@@ -2409,87 +2397,6 @@ alter table public.settings disable row level security;`}</pre>
                           </div>
                         )}
                       </div>
-                    </div>
-
-                    <div className="form-grid-2col" style={{ marginBottom: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
-                          Top Tagline / Badge
-                        </label>
-                        <input
-                          type="text"
-                          className="admin-input"
-                          placeholder="e.g. AUTUMN / WINTER 2026 COUTURE"
-                          value={activeBanner.tagline || ''}
-                          onChange={(e) => handleUpdateBannerSlide(activeBanner.id, 'tagline', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
-                          Main Heading Line 1
-                        </label>
-                        <input
-                          type="text"
-                          className="admin-input"
-                          placeholder="e.g. Where Heritage Meets"
-                          value={activeBanner.titleLine1 || ''}
-                          onChange={(e) => handleUpdateBannerSlide(activeBanner.id, 'titleLine1', e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-grid-2col" style={{ marginBottom: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
-                          Main Heading Line 2 (Highlighted)
-                        </label>
-                        <input
-                          type="text"
-                          className="admin-input"
-                          placeholder="e.g. Modern Couture"
-                          value={activeBanner.titleLine2 || ''}
-                          onChange={(e) => handleUpdateBannerSlide(activeBanner.id, 'titleLine2', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
-                          Primary Button Text
-                        </label>
-                        <input
-                          type="text"
-                          className="admin-input"
-                          placeholder="e.g. Explore the Collection"
-                          value={activeBanner.primaryBtnText || ''}
-                          onChange={(e) => handleUpdateBannerSlide(activeBanner.id, 'primaryBtnText', e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div style={{ marginBottom: '16px' }}>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
-                        Secondary Button Text
-                      </label>
-                      <input
-                        type="text"
-                        className="admin-input"
-                        placeholder="e.g. Custom Fitting Guide"
-                        value={activeBanner.secondaryBtnText || ''}
-                        onChange={(e) => handleUpdateBannerSlide(activeBanner.id, 'secondaryBtnText', e.target.value)}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--color-text-primary)' }}>
-                        Banner Subtitle / Description
-                      </label>
-                      <textarea
-                        className="admin-textarea"
-                        rows={2}
-                        placeholder="Describe your boutique heritage and craftsmanship..."
-                        value={activeBanner.subtitle || ''}
-                        onChange={(e) => handleUpdateBannerSlide(activeBanner.id, 'subtitle', e.target.value)}
-                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit', fontSize: '13px' }}
-                      />
                     </div>
                   </div>
                 );

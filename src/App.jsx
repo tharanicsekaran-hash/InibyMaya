@@ -80,7 +80,7 @@ const mapClientReelToDb = (clientReel) => {
     id: clientReel.id,
     title: clientReel.title,
     video_url: clientReel.videoUrl,
-    product_id: clientReel.productId || null,
+    product_id: (clientReel.productId && clientReel.productId !== 'none' && String(clientReel.productId).trim() !== '') ? clientReel.productId : null,
     product_title: clientReel.productTitle || '',
     product_price: clientReel.productPrice || 0,
     product_image: clientReel.productImage || ''
@@ -230,7 +230,7 @@ export default function App() {
       {
         id: 'reel-1',
         title: 'Indigo Chikankari Motion Showcase',
-        videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-beautiful-woman-in-traditional-indian-dress-standing-outdoors-48866-large.mp4',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
         productId: 'im-kurtaset-1',
         productTitle: 'Indigo Chikankari Cotton Long Kurta',
         productPrice: 2499,
@@ -239,7 +239,7 @@ export default function App() {
       {
         id: 'reel-2',
         title: 'Ivory Georgette Anarkali Elegance',
-        videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-woman-in-traditional-indian-clothing-dancing-48873-large.mp4',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
         productId: 'im-anarkali-1',
         productTitle: 'Ivory Georgette Anarkali Suit',
         productPrice: 3899,
@@ -248,7 +248,7 @@ export default function App() {
       {
         id: 'reel-3',
         title: 'Sage Green Organza Motion Line',
-        videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-young-woman-in-traditional-clothing-outdoors-48871-large.mp4',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
         productId: 'im-kurtaset-2',
         productTitle: 'Sage Green Organza Straight Kurta',
         productPrice: 2299,
@@ -383,8 +383,56 @@ export default function App() {
           mediaClient.from('testimonials').select('id, name, image_url, quote, rating, tag').order('created_at', { ascending: true }).catch(() => ({ data: null }))
         ]);
 
-        if (pRes?.data && pRes.data.length > 0) setProductsList(pRes.data.map(mapDbProductToClient));
-        if (rRes?.data && rRes.data.length > 0) setReelsList(rRes.data.map(mapDbReelToClient));
+        if (pRes?.data && pRes.data.length > 0) {
+          const remoteProds = pRes.data.map(mapDbProductToClient);
+          setProductsList(prev => {
+            const localMap = new Map(prev.map(p => [p.id, p]));
+            const merged = remoteProds.map(remoteP => {
+              const localP = localMap.get(remoteP.id);
+              if (!localP) return remoteP;
+
+              // Preserve local updated images if local has GitHub CDN or custom media links
+              const hasCustomImg = localP.images?.some(img => img && (img.includes('githubusercontent') || img.includes('/media/')));
+              if (hasCustomImg) {
+                return { ...remoteP, ...localP };
+              }
+              return remoteP;
+            });
+
+            const remoteIds = new Set(remoteProds.map(p => p.id));
+            prev.forEach(localP => {
+              if (!remoteIds.has(localP.id)) merged.push(localP);
+            });
+
+            safeSetItem('im_catalog', JSON.stringify(merged));
+            return merged;
+          });
+        }
+        if (rRes?.data && rRes.data.length > 0) {
+          const remoteReels = rRes.data.map(mapDbReelToClient);
+          setReelsList(prev => {
+            const localMap = new Map(prev.map(r => [r.id, r]));
+            const merged = remoteReels.map(remoteR => {
+              const localR = localMap.get(remoteR.id);
+              if (!localR) return remoteR;
+
+              // Preserve local updated videoUrl if local has GitHub CDN or custom media links
+              const hasCustomVideo = localR.videoUrl && (localR.videoUrl.includes('githubusercontent') || localR.videoUrl.includes('/media/'));
+              if (hasCustomVideo) {
+                return { ...remoteR, ...localR };
+              }
+              return remoteR;
+            });
+
+            const remoteIds = new Set(remoteReels.map(r => r.id));
+            prev.forEach(localR => {
+              if (!remoteIds.has(localR.id)) merged.push(localR);
+            });
+
+            safeSetItem('im_reels', JSON.stringify(merged));
+            return merged;
+          });
+        }
         if (promoRes?.data && promoRes.data.length > 0) setPromosList(promoRes.data.map(mapDbPromoToClient));
         if (oRes?.data && oRes.data.length > 0) {
           const remoteOrders = oRes.data.map(mapDbOrderToClient);
@@ -583,7 +631,7 @@ export default function App() {
     // Strip large base64 video blobs and data URLs from reels before storing - videos can be 10MB+ encoded
     const reelsForStorage = reelsList.map(r => ({
       ...r,
-      videoUrl: (r.videoUrl && r.videoUrl.startsWith('data:')) ? 'https://assets.mixkit.co/videos/preview/mixkit-beautiful-woman-in-traditional-indian-dress-standing-outdoors-48866-large.mp4' : r.videoUrl,
+      videoUrl: (r.videoUrl && r.videoUrl.startsWith('data:')) ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' : r.videoUrl,
       videoFile: (r.videoFile && r.videoFile.startsWith('data:')) ? null : r.videoFile,
       thumbnailFile: (r.thumbnailFile && r.thumbnailFile.startsWith('data:')) ? null : r.thumbnailFile,
     }));
@@ -861,10 +909,9 @@ export default function App() {
   // Admin adjustments
   const handleAddProduct = async (newProd) => {
     setProductsList(prev => {
-      if (prev.some(p => p.id === newProd.id)) {
-        return prev.map(p => p.id === newProd.id ? newProd : p);
-      }
-      return [newProd, ...prev];
+      const updated = prev.some(p => p.id === newProd.id) ? prev.map(p => p.id === newProd.id ? newProd : p) : [newProd, ...prev];
+      safeSetItem('im_catalog', JSON.stringify(updated));
+      return updated;
     });
     if (supabase) {
       try {
@@ -878,13 +925,21 @@ export default function App() {
     }
   };
   const handleDeleteProduct = async (id) => {
-    setProductsList(prev => prev.filter(p => p.id !== id));
+    setProductsList(prev => {
+      const updated = prev.filter(p => p.id !== id);
+      safeSetItem('im_catalog', JSON.stringify(updated));
+      return updated;
+    });
     if (supabase) {
       await supabase.from('products').delete().eq('id', id);
     }
   };
   const handleUpdateProduct = async (updatedProd) => {
-    setProductsList(prev => prev.map(p => p.id === updatedProd.id ? updatedProd : p));
+    setProductsList(prev => {
+      const updated = prev.map(p => p.id === updatedProd.id ? updatedProd : p);
+      safeSetItem('im_catalog', JSON.stringify(updated));
+      return updated;
+    });
     if (supabase) {
       await supabase.from('products').update(mapClientProductToDb(updatedProd)).eq('id', updatedProd.id);
     }
@@ -931,10 +986,9 @@ export default function App() {
   // Reels Configuration sync helpers
   const handleAddReel = async (newReel) => {
     setReelsList(prev => {
-      if (prev.some(r => r.id === newReel.id)) {
-        return prev.map(r => r.id === newReel.id ? newReel : r);
-      }
-      return [...prev, newReel];
+      const updated = prev.some(r => r.id === newReel.id) ? prev.map(r => r.id === newReel.id ? newReel : r) : [...prev, newReel];
+      safeSetItem('im_reels', JSON.stringify(updated));
+      return updated;
     });
 
     const client = supabaseMedia || supabase;
@@ -950,7 +1004,11 @@ export default function App() {
     }
   };
   const handleDeleteReel = async (id) => {
-    setReelsList(prev => prev.filter(r => r.id !== id));
+    setReelsList(prev => {
+      const updated = prev.filter(r => r.id !== id);
+      safeSetItem('im_reels', JSON.stringify(updated));
+      return updated;
+    });
     const client = supabaseMedia || supabase;
     if (client) {
       await client.from('reels').delete().eq('id', id);

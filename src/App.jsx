@@ -681,10 +681,11 @@ export default function App() {
     }
   }, [currentUser]);
 
-  // Autoscroll reels video carousel
+  // Autoscroll reels video carousel (Desktop only — disabled on mobile to prevent viewport height thrashing)
   useEffect(() => {
-    if (reelsList.length <= 1 || !isAutoScrolling) return;
-    
+    const isMobile = typeof window !== 'undefined' && (window.innerWidth <= 768 || 'ontouchstart' in window);
+    if (isMobile || reelsList.length <= 1 || !isAutoScrolling) return;
+
     const container = document.querySelector('.reels-carousel-container');
     if (!container) return;
 
@@ -701,23 +702,14 @@ export default function App() {
         if (container.scrollLeft >= container.scrollWidth - container.clientWidth - 1) {
           container.scrollLeft = 0;
         }
-      }, 30);
+      }, 40);
     };
 
-    const handleMouseEnter = () => {
-      isHovered = true;
-    };
-    const handleMouseLeave = () => {
-      isHovered = false;
-    };
-    const handleTouchStart = () => {
-      // Pause autoscrolling on user manual swipe or tap
-      setIsAutoScrolling(false);
-    };
+    const handleMouseEnter = () => { isHovered = true; };
+    const handleMouseLeave = () => { isHovered = false; };
 
     container.addEventListener('mouseenter', handleMouseEnter);
     container.addEventListener('mouseleave', handleMouseLeave);
-    container.addEventListener('touchstart', handleTouchStart, { passive: true });
     
     startScrolling();
 
@@ -726,10 +718,9 @@ export default function App() {
       if (container) {
         container.removeEventListener('mouseenter', handleMouseEnter);
         container.removeEventListener('mouseleave', handleMouseLeave);
-        container.removeEventListener('touchstart', handleTouchStart);
       }
     };
-  }, [reelsList, activePage, isAutoScrolling]);
+  }, [reelsList, isAutoScrolling]);
 
   // Phone / Email verification handler
   const handleSubscribeSubmit = (e) => {

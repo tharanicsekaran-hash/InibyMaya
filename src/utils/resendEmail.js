@@ -196,9 +196,14 @@ export async function sendOrderConfirmationEmail(order) {
     </div>
   `;
 
-  // Send to Customer
+  // Deliver Order Confirmation to Customer AND Admin inibymaya@gmail.com
+  const customerRecipients = [customerEmail];
+  if (!customerRecipients.includes('inibymaya@gmail.com')) {
+    customerRecipients.push('inibymaya@gmail.com');
+  }
+
   await sendResendEmail({
-    to: customerEmail,
+    to: customerRecipients,
     subject: `✨ Order Confirmation #${order.id} — Ini by Maya Couture`,
     html: wrapLuxuryEmailTemplate(customerContent, `Order #${order.id} Confirmation`)
   });

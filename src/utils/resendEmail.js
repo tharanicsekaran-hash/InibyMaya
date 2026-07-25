@@ -16,7 +16,7 @@ const getApiKey = () => {
   return import.meta.env.VITE_RESEND_API_KEY || '';
 };
 
-const SENDER_DEFAULT = 'Ini by Maya Couture <orders@inibymaya.com>';
+const SENDER_DEFAULT = '"Ini by Maya" <orders@inibymaya.com>';
 const ADMIN_EMAILS = ['inibymaya@gmail.com', 'care@inibymaya.com', 'tharanichandrasekaran2000@gmail.com'];
 
 /**

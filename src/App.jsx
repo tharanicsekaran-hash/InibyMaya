@@ -275,6 +275,9 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
 
+  // Top Welcome Push Notification Toast
+  const [authToast, setAuthToast] = useState(null);
+
   // Testimonials State (Loved by Lakhs of Women)
   const [testimonialsList, setTestimonialsList] = useState(() => {
     const saved = localStorage.getItem('im_testimonials');
@@ -786,10 +789,20 @@ export default function App() {
   const handleLogin = (userObj) => {
     setCurrentUser(userObj);
     setIsAuthOpen(false);
+    const userName = userObj.name || (userObj.email ? userObj.email.split('@')[0] : 'Valued Customer');
+    setAuthToast(`Welcome back, ${userName}! ✨`);
+    setTimeout(() => {
+      setAuthToast(null);
+    }, 3000);
   };
   const handleSignup = (userObj) => {
     setCurrentUser(userObj);
     setIsAuthOpen(false);
+    const userName = userObj.name || (userObj.email ? userObj.email.split('@')[0] : 'Valued Customer');
+    setAuthToast(`Hello, ${userName}! Welcome to Ini by Maya ✨`);
+    setTimeout(() => {
+      setAuthToast(null);
+    }, 3000);
   };
   const handleLogout = async () => {
     if (supabase) {
@@ -1726,6 +1739,16 @@ export default function App() {
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Top Floating Push Notification Toast */}
+      {authToast && (
+        <div className="top-login-toast">
+          <span className="top-login-toast-icon">
+            <Sparkles size={18} />
+          </span>
+          <span>{authToast}</span>
         </div>
       )}
     </>

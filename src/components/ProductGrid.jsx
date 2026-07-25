@@ -46,7 +46,7 @@ export default function ProductGrid({
 
   // Extract all categories dynamically from the loaded products catalog
   const categories = useMemo(() => {
-    const set = new Set(products.map(p => p.category));
+    const set = new Set(['New Arrivals', ...products.map(p => p.category)]);
     return Array.from(set).filter(Boolean);
   }, [products]);
 
@@ -108,7 +108,13 @@ export default function ProductGrid({
 
     // 1. Categories Filter (Multiple Select)
     if (selectedCategories.length > 0) {
-      result = result.filter(p => selectedCategories.includes(p.category));
+      result = result.filter(p => {
+        const matchesCategory = selectedCategories.includes(p.category);
+        const matchesNewArrival = selectedCategories.some(c => 
+          (c.toLowerCase().includes('new arrival') || c.toLowerCase().includes('new arrivals')) && Boolean(p.newArrival)
+        );
+        return matchesCategory || matchesNewArrival;
+      });
     }
 
     // 2. Colors Filter (Multiple Select)

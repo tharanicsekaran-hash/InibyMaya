@@ -482,7 +482,6 @@
   padding: 4px 20px 6px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  scroll-snap-type: x mandatory;
 }
 
 .category-strip-scroll::-webkit-scrollbar {
@@ -500,7 +499,6 @@
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 12px;
-  scroll-snap-align: start;
   transition: transform 0.2s ease, background-color 0.2s ease;
   min-width: 76px;
 }
@@ -4134,7 +4132,6 @@
 
 .reels-carousel-container.scroll-layout .reel-card-wrapper {
   flex: 0 0 280px;
-  scroll-snap-align: start;
 }
 
 /* Base card styling */
@@ -4938,7 +4935,6 @@
   }
   .occasion-card {
     flex: 0 0 240px !important;
-    scroll-snap-align: start;
   }
   .occasion-image-wrapper {
     height: 280px;
@@ -4960,7 +4956,6 @@
   }
   .occasion-card {
     flex: 0 0 210px !important;
-    scroll-snap-align: start;
   }
   .occasion-image-wrapper {
     height: 260px;

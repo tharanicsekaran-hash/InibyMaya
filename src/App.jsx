@@ -33,6 +33,7 @@ const mapDbProductToClient = (dbProd) => {
     variants: dbProd.variants,
     customizable: dbProd.customizable,
     bestSeller: Boolean(dbProd.best_seller),
+    newArrival: dbProd.new_arrival !== undefined ? Boolean(dbProd.new_arrival) : (dbProd.newArrival !== undefined ? Boolean(dbProd.newArrival) : true),
     occasion: dbProd.occasion || 'Daily Elegance',
     highlights: dbProd.highlights || {}
   };
@@ -52,6 +53,7 @@ const mapClientProductToDb = (clientProd) => {
     variants: clientProd.variants,
     customizable: clientProd.customizable,
     best_seller: Boolean(clientProd.bestSeller),
+    new_arrival: Boolean(clientProd.newArrival),
     occasion: clientProd.occasion || 'Daily Elegance',
     highlights: clientProd.highlights || {}
   };

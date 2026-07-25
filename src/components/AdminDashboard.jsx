@@ -455,6 +455,7 @@ export default function AdminDashboard({
   const [hoverImage, setHoverImage] = useState('');
   const [customizable, setCustomizable] = useState(true);
   const [bestSeller, setBestSeller] = useState(false);
+  const [newArrival, setNewArrival] = useState(false);
   const [rating, setRating] = useState(5.0);
   const [reviewsCount, setReviewsCount] = useState(1);
   const [successMsg, setSuccessMsg] = useState('');
@@ -712,6 +713,7 @@ export default function AdminDashboard({
         },
         customizable,
         bestSeller,
+        newArrival,
         rating: parseFloat(rating || 5.0),
         reviewsCount: parseInt(reviewsCount || 1),
         occasion,
@@ -744,6 +746,7 @@ export default function AdminDashboard({
         },
         customizable,
         bestSeller,
+        newArrival,
         occasion,
         highlights: {
           fit: hFit,
@@ -766,6 +769,7 @@ export default function AdminDashboard({
     setHoverImage('');
     setCustomizable(true);
     setBestSeller(false);
+    setNewArrival(false);
     setRating(5.0);
     setReviewsCount(1);
     setOccasion('Daily Elegance');
@@ -797,6 +801,7 @@ export default function AdminDashboard({
     
     setCustomizable(Boolean(prod.customizable));
     setBestSeller(Boolean(prod.bestSeller));
+    setNewArrival(Boolean(prod.newArrival));
     setRating(prod.rating || 5.0);
     setReviewsCount(prod.reviewsCount || 1);
     
@@ -820,6 +825,7 @@ export default function AdminDashboard({
     setHoverImage('');
     setCustomizable(true);
     setBestSeller(false);
+    setNewArrival(false);
     setRating(5.0);
     setReviewsCount(1);
     setOccasion('Daily Elegance');
@@ -1573,6 +1579,16 @@ alter table public.settings disable row level security;`}</pre>
                     onChange={() => setBestSeller(!bestSeller)} 
                   />
                   <label htmlFor="best-seller" style={{ fontWeight: '600', cursor: 'pointer' }}>Mark as Best Seller</label>
+                </div>
+
+                <div className="form-group-checkbox" style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
+                  <input 
+                    type="checkbox" 
+                    id="new-arrival-check" 
+                    checked={newArrival} 
+                    onChange={() => setNewArrival(!newArrival)} 
+                  />
+                  <label htmlFor="new-arrival-check" style={{ fontWeight: '600', cursor: 'pointer' }}>New Arrival 🔥</label>
                 </div>
 
                 <div className="form-group" style={{ margin: 0 }}>

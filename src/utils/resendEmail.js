@@ -210,10 +210,10 @@ export async function sendOrderConfirmationEmail(order) {
     <div style="margin-top:24px; font-size:13.5px; color:#444;">
       <h4 style="margin:0 0 6px 0; font-size:14px; text-transform:uppercase; letter-spacing:1px;">Shipping Destination:</h4>
       <p style="margin:0; line-height:1.5;">
-        ${order.shippingDetails.name}<br>
-        ${order.shippingDetails.address}<br>
-        ${order.shippingDetails.city}, ${order.shippingDetails.state || ''} - ${order.shippingDetails.pinCode}<br>
-        Phone: ${order.shippingDetails.phone}
+        ${order.shippingDetails?.name || customerName}<br>
+        ${order.shippingDetails?.address || ''}<br>
+        ${order.shippingDetails?.city || ''} ${order.shippingDetails?.pincode ? `- ${order.shippingDetails.pincode}` : (order.shippingDetails?.pinCode ? `- ${order.shippingDetails.pinCode}` : '')}<br>
+        Phone: ${order.shippingDetails?.phone || 'N/A'}
       </p>
     </div>
 
@@ -259,9 +259,10 @@ export async function sendOrderConfirmationEmail(order) {
  * 2. ORDER SHIPPED EMAIL WITH DELHIVERY TRACKING (Customer)
  */
 export async function sendOrderShippedEmail(order, trackingNum = '') {
-  if (!order || !order.shippingDetails?.email) return;
+  if (!order) return;
 
-  const customerName = order.shippingDetails.name || 'Valued Patron';
+  const customerName = order.shippingDetails?.name || 'Valued Patron';
+  const customerEmail = order.shippingDetails?.email || order.customerEmail || 'inibymaya@gmail.com';
   const trackingNumber = trackingNum || order.trackingNumber || 'DELHIVERY-PENDING';
   const trackingUrl = `https://www.delhivery.com/track/package/${trackingNumber}`;
 
@@ -282,8 +283,11 @@ export async function sendOrderShippedEmail(order, trackingNum = '') {
     <p style="font-size:13px; color:#666; text-align:center;">Estimated Delivery: 3 to 5 business days.</p>
   `;
 
+  const recipientsList = [customerEmail];
+  if (!recipientsList.includes('inibymaya@gmail.com')) recipientsList.push('inibymaya@gmail.com');
+
   await sendResendEmail({
-    to: order.shippingDetails.email,
+    to: recipientsList,
     subject: `🚚 Your Order #${order.id} Has Been Shipped! — Ini by Maya`,
     html: wrapLuxuryEmailTemplate(shippedContent, `Order #${order.id} Shipped`)
   });
@@ -293,9 +297,10 @@ export async function sendOrderShippedEmail(order, trackingNum = '') {
  * 3. ORDER DELIVERED & FEEDBACK / TESTIMONIAL EMAIL (Customer)
  */
 export async function sendOrderDeliveredEmail(order) {
-  if (!order || !order.shippingDetails?.email) return;
+  if (!order) return;
 
-  const customerName = order.shippingDetails.name || 'Valued Patron';
+  const customerName = order.shippingDetails?.name || 'Valued Patron';
+  const customerEmail = order.shippingDetails?.email || order.customerEmail || 'inibymaya@gmail.com';
 
   const deliveredContent = `
     <h2 style="font-family:'Georgia',serif; color:#8b0000; margin-top:0;">Your Package Has Been Delivered! ✨</h2>
@@ -312,8 +317,11 @@ export async function sendOrderDeliveredEmail(order) {
     <p style="font-size:13px; color:#666; text-align:center; margin-top:20px;">If you require any size adjustments or fit guidance, our team is always at your service.</p>
   `;
 
+  const recipientsList = [customerEmail];
+  if (!recipientsList.includes('inibymaya@gmail.com')) recipientsList.push('inibymaya@gmail.com');
+
   await sendResendEmail({
-    to: order.shippingDetails.email,
+    to: recipientsList,
     subject: `✨ Order Delivered! How was your experience with Order #${order.id}? — Ini by Maya`,
     html: wrapLuxuryEmailTemplate(deliveredContent, `Order #${order.id} Delivered`)
   });
@@ -323,9 +331,10 @@ export async function sendOrderDeliveredEmail(order) {
  * 4. ORDER CANCELLED EMAIL (Customer & Admin)
  */
 export async function sendOrderCancelledEmail(order) {
-  if (!order || !order.shippingDetails?.email) return;
+  if (!order) return;
 
-  const customerName = order.shippingDetails.name || 'Valued Patron';
+  const customerName = order.shippingDetails?.name || 'Valued Patron';
+  const customerEmail = order.shippingDetails?.email || order.customerEmail || 'inibymaya@gmail.com';
 
   const cancelledContent = `
     <h2 style="font-family:'Georgia',serif; color:#dc2626; margin-top:0;">Order Cancellation Notice — #${order.id}</h2>
@@ -333,9 +342,12 @@ export async function sendOrderCancelledEmail(order) {
     <p style="font-size:13.5px; color:#666;">If you have any questions or wish to replace your order, please reach out to Couture Care at <a href="mailto:care@inibymaya.com" style="color:#8b0000; font-weight:bold;">care@inibymaya.com</a>.</p>
   `;
 
-  // Send to Customer
+  const recipientsList = [customerEmail];
+  if (!recipientsList.includes('inibymaya@gmail.com')) recipientsList.push('inibymaya@gmail.com');
+
+  // Send to Customer & Admin
   await sendResendEmail({
-    to: order.shippingDetails.email,
+    to: recipientsList,
     subject: `Order Cancellation Notice #${order.id} — Ini by Maya`,
     html: wrapLuxuryEmailTemplate(cancelledContent, `Order #${order.id} Cancelled`)
   });

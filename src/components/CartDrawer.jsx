@@ -166,7 +166,7 @@ export default function CartDrawer({
                 <Tag size={16} />
                 <input 
                   type="text" 
-                  placeholder="Enter promo code (e.g. WELCOME10)" 
+                  placeholder="e.g. WELCOME10" 
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value)}
                 />

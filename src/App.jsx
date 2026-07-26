@@ -34,11 +34,14 @@ const mapDbProductToClient = (dbProd) => {
     ? Boolean(dbProd.new_arrival) 
     : (hNewArrival !== undefined ? Boolean(hNewArrival) : Boolean(dbProd.newArrival));
 
+  const origPrice = dbProd.original_price || dbProd.originalPrice || dbProd.highlights?.originalPrice;
+
   return {
     id: dbProd.id,
     title: dbProd.title,
     category: dbProd.category,
     price: Number(dbProd.price),
+    originalPrice: (origPrice && Number(origPrice) > Number(dbProd.price)) ? Number(origPrice) : null,
     rating: Number(dbProd.rating || 5.0),
     reviewsCount: Number(dbProd.reviews_count || 0),
     description: dbProd.description,
@@ -59,6 +62,7 @@ const mapClientProductToDb = (clientProd) => {
     title: clientProd.title,
     category: clientProd.category,
     price: clientProd.price,
+    original_price: clientProd.originalPrice || null,
     rating: clientProd.rating || 5.0,
     reviews_count: clientProd.reviewsCount || 0,
     description: clientProd.description,
@@ -71,6 +75,7 @@ const mapClientProductToDb = (clientProd) => {
     occasion: clientProd.occasion || 'Daily Elegance',
     highlights: {
       ...(clientProd.highlights || {}),
+      originalPrice: clientProd.originalPrice || null,
       newArrival: Boolean(clientProd.newArrival)
     }
   };

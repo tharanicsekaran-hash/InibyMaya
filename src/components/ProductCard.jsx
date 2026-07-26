@@ -103,10 +103,30 @@ export default function ProductCard({
           <span className="reviews-count">({reviewsCount})</span>
         </div>
 
-        {/* Price */}
-        <div className="product-card-price" style={{ marginBottom: '8px' }}>
-          <span className="currency">₹</span>{price.toLocaleString('en-IN')}
-        </div>
+        {/* Price & Discount */}
+        {(() => {
+          const origP = product.originalPrice || product.highlights?.originalPrice;
+          const hasDiscount = origP && Number(origP) > Number(price);
+          const discountPercent = hasDiscount ? Math.round(((Number(origP) - Number(price)) / Number(origP)) * 100) : 0;
+          
+          return (
+            <div className="product-card-price-row" style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              {hasDiscount && (
+                <span className="strikethrough-mrp" style={{ textDecoration: 'line-through', color: '#999999', fontSize: '13px', fontWeight: '400' }}>
+                  ₹{Number(origP).toLocaleString('en-IN')}
+                </span>
+              )}
+              <span className="product-card-price" style={{ fontSize: '15px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                <span className="currency">₹</span>{price.toLocaleString('en-IN')}
+              </span>
+              {hasDiscount && (
+                <span className="discount-off-badge" style={{ color: '#d90429', fontWeight: '700', fontSize: '11.5px', letterSpacing: '0.02em' }}>
+                  ({discountPercent}% OFF)
+                </span>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Clickable Size Swatches directly under price */}
         {variants?.sizes && variants.sizes.length > 0 && (

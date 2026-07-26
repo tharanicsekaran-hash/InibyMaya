@@ -529,6 +529,7 @@ export default function AdminDashboard({
   const [category, setCategory] = useState('Long Kurtas');
   const [occasion, setOccasion] = useState('Daily Elegance');
   const [price, setPrice] = useState('');
+  const [originalPrice, setOriginalPrice] = useState('');
   const [description, setDescription] = useState('');
   const [primaryImages, setPrimaryImages] = useState(['']);
   const [hoverImage, setHoverImage] = useState('');
@@ -818,12 +819,17 @@ export default function AdminDashboard({
       return;
     }
 
+    const parsedPrice = parseFloat(price);
+    const parsedOrigPrice = originalPrice ? parseFloat(originalPrice) : null;
+    const validOrigPrice = (parsedOrigPrice && parsedOrigPrice > parsedPrice) ? parsedOrigPrice : null;
+
     if (editingProduct) {
       const updatedProduct = {
         ...editingProduct,
         title,
         category,
-        price: parseFloat(price),
+        price: parsedPrice,
+        originalPrice: validOrigPrice,
         description,
         images: finalImages,
         variants: {
@@ -842,7 +848,8 @@ export default function AdminDashboard({
           neck: hNeck,
           sleeve: hSleeve,
           length: hLength,
-          technique: hTechnique
+          technique: hTechnique,
+          originalPrice: validOrigPrice
         }
       };
       onUpdateProduct(updatedProduct);
@@ -853,7 +860,8 @@ export default function AdminDashboard({
         id: `im-added-${Date.now()}`,
         title,
         category,
-        price: parseFloat(price),
+        price: parsedPrice,
+        originalPrice: validOrigPrice,
         rating: parseFloat(rating || 5.0),
         reviewsCount: parseInt(reviewsCount || 1),
         description,
@@ -873,7 +881,8 @@ export default function AdminDashboard({
           neck: hNeck,
           sleeve: hSleeve,
           length: hLength,
-          technique: hTechnique
+          technique: hTechnique,
+          originalPrice: validOrigPrice
         }
       };
       onAddProduct(newProduct);
@@ -883,6 +892,7 @@ export default function AdminDashboard({
     // Reset Form
     setTitle('');
     setPrice('');
+    setOriginalPrice('');
     setDescription('');
     setPrimaryImages(['']);
     setHoverImage('');
@@ -910,6 +920,7 @@ export default function AdminDashboard({
     setCategory(prod.category);
     setOccasion(prod.occasion || 'Daily Elegance');
     setPrice(prod.price);
+    setOriginalPrice(prod.originalPrice || prod.highlights?.originalPrice || '');
     setDescription(prod.description);
     
     // Separate hover swap image from primary images array
@@ -1433,16 +1444,33 @@ alter table public.settings disable row level security;`}</pre>
                   </select>
                 </div>
               </div>
-              <div className="form-group">
-                <label>Price (INR) *</label>
-                <input 
-                  type="number" 
-                  value={price} 
-                  onChange={(e) => setPrice(e.target.value)} 
-                  placeholder="e.g. 2999" 
-                  required 
-                />
+              <div className="form-group-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div className="form-group">
+                  <label>Original MRP Price (₹) (e.g. 4999)</label>
+                  <input 
+                    type="number" 
+                    value={originalPrice} 
+                    onChange={(e) => setOriginalPrice(e.target.value)} 
+                    placeholder="e.g. 4999 (Strikethrough MRP)" 
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Offer / Sale Price (₹) *</label>
+                  <input 
+                    type="number" 
+                    value={price} 
+                    onChange={(e) => setPrice(e.target.value)} 
+                    placeholder="e.g. 2999 (Final customer price)" 
+                    required 
+                  />
+                </div>
               </div>
+
+              {originalPrice && price && parseFloat(originalPrice) > parseFloat(price) && (
+                <div style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', marginBottom: '16px' }}>
+                  ✨ Automatic Discount: {Math.round(((parseFloat(originalPrice) - parseFloat(price)) / parseFloat(originalPrice)) * 100)}% OFF (Customer saves ₹{(parseFloat(originalPrice) - parseFloat(price)).toLocaleString('en-IN')})
+                </div>
+              )}
               <div className="form-group">
                 <label>Description Details *</label>
                 <textarea 

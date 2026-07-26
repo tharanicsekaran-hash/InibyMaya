@@ -77,9 +77,29 @@ export default function QuickViewModal({
           <img src={primaryImgSrc} alt={title} className="quickview-thumb-img" />
           <div className="quickview-meta-info">
             <h3 className="quickview-title">{title}</h3>
-            <div className="quickview-price-tag">
-              Rs. {price.toLocaleString('en-IN')}.00
-            </div>
+            {(() => {
+              const origP = product.originalPrice || product.highlights?.originalPrice;
+              const hasDiscount = origP && Number(origP) > Number(price);
+              const discountPercent = hasDiscount ? Math.round(((Number(origP) - Number(price)) / Number(origP)) * 100) : 0;
+              
+              return (
+                <div className="quickview-price-tag" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  {hasDiscount && (
+                    <span style={{ textDecoration: 'line-through', color: '#888888', fontSize: '14px', fontWeight: '400' }}>
+                      Rs. {Number(origP).toLocaleString('en-IN')}.00
+                    </span>
+                  )}
+                  <span style={{ fontSize: '17px', fontWeight: '700', color: '#111111' }}>
+                    Rs. {price.toLocaleString('en-IN')}.00
+                  </span>
+                  {hasDiscount && (
+                    <span style={{ background: '#fef2f2', color: '#d90429', padding: '2px 8px', borderRadius: '4px', fontSize: '11.5px', fontWeight: '700' }}>
+                      {discountPercent}% OFF
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
 

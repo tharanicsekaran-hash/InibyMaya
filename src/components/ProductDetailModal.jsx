@@ -143,10 +143,30 @@ export default function ProductDetailModal({ product, onClose, onAddToCart, pres
               <span className="reviews-count">{reviewsCount} reviews</span>
             </div>
 
-            <div className="detail-price">
-              ₹{unitPrice.toLocaleString('en-IN')}
-              {wantsCustomStitching && <span className="stitching-badge">Includes Custom Stitching</span>}
-            </div>
+            {(() => {
+              const origP = product.originalPrice || product.highlights?.originalPrice;
+              const hasDiscount = origP && Number(origP) > Number(price);
+              const discountPercent = hasDiscount ? Math.round(((Number(origP) - Number(price)) / Number(origP)) * 100) : 0;
+
+              return (
+                <div className="detail-price-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', margin: '14px 0 18px' }}>
+                  {hasDiscount && (
+                    <span style={{ textDecoration: 'line-through', color: '#999999', fontSize: '18px', fontWeight: '400' }}>
+                      ₹{(Number(origP) + (wantsCustomStitching ? stitchingFee : 0)).toLocaleString('en-IN')}
+                    </span>
+                  )}
+                  <span className="detail-price" style={{ fontSize: '26px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                    ₹{unitPrice.toLocaleString('en-IN')}
+                  </span>
+                  {hasDiscount && (
+                    <span style={{ background: '#fef2f2', color: '#d90429', border: '1px solid #fecaca', padding: '4px 10px', borderRadius: '6px', fontSize: '13px', fontWeight: '700' }}>
+                      {discountPercent}% OFF
+                    </span>
+                  )}
+                  {wantsCustomStitching && <span className="stitching-badge">Includes Custom Stitching</span>}
+                </div>
+              );
+            })()}
 
             <p className="detail-description">{description}</p>
 

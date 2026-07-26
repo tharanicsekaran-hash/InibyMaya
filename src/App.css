@@ -6667,23 +6667,85 @@
     height: 44px !important;
   }
   
-  /* Mobile Product Quick View Optimization - Fuller image & compact top spacing */
+  /* Mobile Product Quick View Optimization - Crisp top spacing, full image fit & smooth thumbnails */
   .product-detail-page {
-    padding-top: 76px !important;
-    padding-bottom: 40px !important;
+    padding-top: 68px !important;
+    padding-bottom: 30px !important;
   }
+
   .back-to-shop-link {
-    margin-top: 2px !important;
+    margin-top: 4px !important;
     margin-bottom: 10px !important;
-    font-size: 12px !important;
+    font-size: 11.5px !important;
+    letter-spacing: 0.06em !important;
+    color: var(--color-text-secondary) !important;
   }
+
   .gallery-column {
-    padding: 0 0 16px 0 !important;
-    gap: 12px !important;
+    padding: 0 !important;
+    margin-bottom: 16px !important;
+    border-bottom: none !important;
+    gap: 10px !important;
   }
+
   .primary-preview-wrapper {
-    border-radius: 12px !important;
     width: 100% !important;
+    aspect-ratio: 3/4 !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06) !important;
+    background-color: #f8f8f8 !important;
+  }
+
+  .primary-preview {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+  }
+
+  .prev-btn {
+    left: 10px !important;
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .next-btn {
+    right: 10px !important;
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .thumbnails-row {
+    display: flex !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding: 4px 0 !important;
+    margin-top: 2px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .thumbnails-row::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .thumbnail-btn {
+    width: 60px !important;
+    min-width: 60px !important;
+    aspect-ratio: 3/4 !important;
+    border-radius: 8px !important;
+    flex-shrink: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .thumbnail-btn img {
+    border-radius: 6px !important;
+    object-fit: cover !important;
   }
 }
 

@@ -34,14 +34,16 @@ const mapDbProductToClient = (dbProd) => {
     ? Boolean(dbProd.new_arrival) 
     : (hNewArrival !== undefined ? Boolean(hNewArrival) : Boolean(dbProd.newArrival));
 
-  const origPrice = dbProd.original_price || dbProd.originalPrice || dbProd.highlights?.originalPrice;
+  const numPrice = Number(dbProd.price || 0);
+  const rawOrigPrice = dbProd.originalPrice || dbProd.original_price || dbProd.highlights?.originalPrice;
+  const validOrigPrice = (rawOrigPrice && Number(rawOrigPrice) > numPrice) ? Number(rawOrigPrice) : null;
 
   return {
     id: dbProd.id,
     title: dbProd.title,
     category: dbProd.category,
-    price: Number(dbProd.price),
-    originalPrice: (origPrice && Number(origPrice) > Number(dbProd.price)) ? Number(origPrice) : null,
+    price: numPrice,
+    originalPrice: validOrigPrice,
     rating: Number(dbProd.rating || 5.0),
     reviewsCount: Number(dbProd.reviews_count || 0),
     description: dbProd.description,
@@ -52,17 +54,24 @@ const mapDbProductToClient = (dbProd) => {
     bestSeller: Boolean(dbProd.best_seller),
     newArrival: isNewArrival,
     occasion: dbProd.occasion || 'Daily Elegance',
-    highlights: dbProd.highlights || {}
+    highlights: {
+      ...(dbProd.highlights || {}),
+      originalPrice: validOrigPrice
+    }
   };
 };
 
 const mapClientProductToDb = (clientProd) => {
+  const numPrice = Number(clientProd.price || 0);
+  const rawOrigPrice = clientProd.originalPrice || clientProd.highlights?.originalPrice;
+  const validOrigPrice = (rawOrigPrice && Number(rawOrigPrice) > numPrice) ? Number(rawOrigPrice) : null;
+
   return {
     id: clientProd.id,
     title: clientProd.title,
     category: clientProd.category,
-    price: clientProd.price,
-    original_price: clientProd.originalPrice || null,
+    price: numPrice,
+    original_price: validOrigPrice,
     rating: clientProd.rating || 5.0,
     reviews_count: clientProd.reviewsCount || 0,
     description: clientProd.description,
@@ -75,7 +84,7 @@ const mapClientProductToDb = (clientProd) => {
     occasion: clientProd.occasion || 'Daily Elegance',
     highlights: {
       ...(clientProd.highlights || {}),
-      originalPrice: clientProd.originalPrice || null,
+      originalPrice: validOrigPrice,
       newArrival: Boolean(clientProd.newArrival)
     }
   };

@@ -106,7 +106,7 @@ export default function ProductCard({
         {/* Price & Discount */}
         {(() => {
           const rawOrig = product.originalPrice || product.highlights?.originalPrice;
-          const origP = (rawOrig && Number(rawOrig) > Number(price)) ? Number(rawOrig) : (Number(price) > 0 ? Number(price) * 2 : null);
+          const origP = (rawOrig && Number(rawOrig) > Number(price)) ? Number(rawOrig) : null;
           const hasDiscount = origP && Number(origP) > Number(price);
           const discountPercent = hasDiscount ? Math.round(((Number(origP) - Number(price)) / Number(origP)) * 100) : 0;
           

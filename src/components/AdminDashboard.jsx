@@ -920,7 +920,7 @@ export default function AdminDashboard({
     setCategory(prod.category);
     setOccasion(prod.occasion || 'Daily Elegance');
     setPrice(prod.price);
-    setOriginalPrice(prod.originalPrice || prod.highlights?.originalPrice || '');
+    setOriginalPrice(prod.originalPrice || prod.highlights?.originalPrice || prod.original_price || '');
     setDescription(prod.description);
     
     // Separate hover swap image from primary images array
@@ -1860,7 +1860,27 @@ alter table public.settings disable row level security;`}</pre>
                   <img src={prod.images[0]} alt={prod.title} />
                   <div className="inventory-details">
                     <h5>{prod.title}</h5>
-                    <p>{prod.category} | <strong>₹{prod.price}</strong></p>
+                    {(() => {
+                      const origP = prod.originalPrice || prod.highlights?.originalPrice;
+                      const hasDiscount = origP && Number(origP) > Number(prod.price);
+                      const discountPercent = hasDiscount ? Math.round(((Number(origP) - Number(prod.price)) / Number(origP)) * 100) : 0;
+                      return (
+                        <p style={{ margin: '2px 0 4px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                          {prod.category} | 
+                          {hasDiscount && (
+                            <span style={{ textDecoration: 'line-through', color: '#888888', margin: '0 4px', fontSize: '12px' }}>
+                              ₹{Number(origP).toLocaleString('en-IN')}
+                            </span>
+                          )}
+                          <strong style={{ color: 'var(--color-text-primary)' }}>₹{Number(prod.price).toLocaleString('en-IN')}</strong>
+                          {hasDiscount && (
+                            <span style={{ color: '#d90429', fontWeight: '700', marginLeft: '6px', fontSize: '12px' }}>
+                              ({discountPercent}% OFF)
+                            </span>
+                          )}
+                        </p>
+                      );
+                    })()}
                     <span className="customize-tag">{prod.customizable ? 'Tailoring Available' : 'Standard Sizing'}</span>
                   </div>
                   <div className="inventory-card-actions">

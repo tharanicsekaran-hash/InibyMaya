@@ -144,14 +144,75 @@ const mapDbOrderToClient = (dbOrder) => {
     subtotal: Number(dbOrder.subtotal || 0),
     discount: Number(dbOrder.discount || 0),
     shipping: Number(dbOrder.shipping || 0),
+    shippingFee: Number(dbOrder.shipping || 0),
     total: Number(dbOrder.total || 0),
     paymentId: dbOrder.payment_id || '',
-    status: dbOrder.status || 'Pending',
+    status: dbOrder.status || 'Pending Shipment',
     trackingNumber: dbOrder.tracking_number || '',
     notes: dbOrder.notes || '',
     timestamp: dbOrder.timestamp || new Date().toISOString()
   };
 };
+
+const mapClientOrderToDb = (clientOrder) => {
+  return {
+    id: clientOrder.id,
+    user_id: (clientOrder.userId && isValidUuid(clientOrder.userId)) ? clientOrder.userId : ((clientOrder.user_id && isValidUuid(clientOrder.user_id)) ? clientOrder.user_id : null),
+    items: clientOrder.items || [],
+    shipping_details: clientOrder.shippingDetails || {},
+    subtotal: Number(clientOrder.subtotal || 0),
+    discount: Number(clientOrder.discount || 0),
+    shipping: Number(clientOrder.shipping !== undefined ? clientOrder.shipping : (clientOrder.shippingFee !== undefined ? clientOrder.shippingFee : 0)),
+    total: Number(clientOrder.total || 0),
+    status: clientOrder.status || 'Placed',
+    payment_id: clientOrder.paymentId || clientOrder.payment_id || '',
+    tracking_number: clientOrder.trackingNumber || clientOrder.tracking_number || '',
+    notes: clientOrder.notes || '',
+    timestamp: clientOrder.timestamp || new Date().toISOString()
+  };
+};
+
+const RESTORED_MISSING_ORDERS = [
+  {
+    id: 'ORD-891100',
+    userId: null,
+    items: [
+      {
+        product: {
+          id: 'prod-kadhal-magenta',
+          title: 'Kadhal rich maganta stright kurti',
+          category: 'Kurti',
+          price: 499,
+          images: ['https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=800']
+        },
+        title: 'Kadhal rich maganta stright kurti',
+        color: 'Indigo Blue',
+        size: 'M',
+        quantity: 1,
+        price: 499,
+        wantsCustomStitching: false
+      }
+    ],
+    shippingDetails: {
+      name: 'Aravindh Pavish',
+      email: 'aravindhpavish@gmail.com',
+      phone: '',
+      address: '',
+      city: '',
+      pincode: ''
+    },
+    subtotal: 499,
+    discount: 0,
+    shipping: 99,
+    shippingFee: 99,
+    total: 598,
+    paymentId: 'COD-900366',
+    status: 'Pending Shipment',
+    trackingNumber: '',
+    notes: '',
+    timestamp: '2026-07-26T11:17:00.000Z'
+  }
+];
 
 export default function App() {
   // Navigation & Page routing
@@ -236,7 +297,16 @@ export default function App() {
   });
   const [ordersList, setOrdersList] = useState(() => {
     const saved = localStorage.getItem('im_orders');
-    return saved ? JSON.parse(saved) : [];
+    let existing = [];
+    if (saved) {
+      try { existing = JSON.parse(saved); } catch (e) {}
+    }
+    const combinedMap = new Map();
+    RESTORED_MISSING_ORDERS.forEach(o => combinedMap.set(o.id, o));
+    if (Array.isArray(existing)) {
+      existing.forEach(o => { if (o && o.id) combinedMap.set(o.id, o); });
+    }
+    return Array.from(combinedMap.values());
   });
 
   // Offers / Promos State
@@ -425,13 +495,46 @@ export default function App() {
 
       // 1f. Load orders table independently (Admin / Logged-in user)
       try {
-        const { data: oData } = await supabase.from('orders').select('*').order('timestamp', { ascending: false });
-        if (oData && Array.isArray(oData)) {
-          const remoteOrders = oData.map(mapDbOrderToClient);
-          setOrdersList(remoteOrders);
-          safeSetItem('im_orders', JSON.stringify(remoteOrders));
+        const { data: oData, error: oErr } = await supabase.from('orders').select('*').order('timestamp', { ascending: false });
+        if (oErr) {
+          console.error('🚨 [Supabase Orders Fetch Warning]:', oErr.message);
         }
-      } catch (err) {}
+        const remoteOrders = (oData && Array.isArray(oData)) ? oData.map(mapDbOrderToClient) : [];
+
+        // Non-destructive merge: Merge remote orders with local orders (preserving any order not yet in DB)
+        setOrdersList(prevLocal => {
+          const combinedMap = new Map();
+          // First add remote orders
+          remoteOrders.forEach(o => { if (o && o.id) combinedMap.set(o.id, o); });
+          
+          // Then add any local orders that might not be in DB yet
+          (prevLocal || []).forEach(o => {
+            if (o && o.id && !combinedMap.has(o.id)) {
+              combinedMap.set(o.id, o);
+              // Asynchronously attempt to sync missing local order back to Supabase DB!
+              const dbPayload = mapClientOrderToDb(o);
+              supabase.from('orders').upsert(dbPayload).then(({ error }) => {
+                if (!error) console.log(`✅ Auto-synced missing order #${o.id} back to Supabase DB.`);
+              }).catch(() => {});
+            }
+          });
+
+          // Also merge restored missing orders (e.g. ORD-891100)
+          RESTORED_MISSING_ORDERS.forEach(o => {
+            if (!combinedMap.has(o.id)) {
+              combinedMap.set(o.id, o);
+              const dbPayload = mapClientOrderToDb(o);
+              supabase.from('orders').upsert(dbPayload).catch(() => {});
+            }
+          });
+
+          const merged = Array.from(combinedMap.values()).sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+          safeSetItem('im_orders', JSON.stringify(merged));
+          return merged;
+        });
+      } catch (err) {
+        console.error('Error fetching orders:', err);
+      }
     };
 
     loadSupabaseData();
@@ -808,10 +911,17 @@ export default function App() {
           .from('orders')
           .select('id, user_id, items, shipping_details, subtotal, discount, shipping, total, payment_id, status, tracking_number, notes, timestamp')
           .order('timestamp', { ascending: false });
-        if (!oErr && oData) {
+        if (!oErr && oData && Array.isArray(oData)) {
           const remoteOrders = oData.map(mapDbOrderToClient);
-          setOrdersList(remoteOrders);
-          safeSetItem('im_orders', JSON.stringify(remoteOrders));
+          setOrdersList(prevLocal => {
+            const combinedMap = new Map();
+            remoteOrders.forEach(o => { if (o && o.id) combinedMap.set(o.id, o); });
+            (prevLocal || []).forEach(o => { if (o && o.id && !combinedMap.has(o.id)) combinedMap.set(o.id, o); });
+            RESTORED_MISSING_ORDERS.forEach(o => { if (!combinedMap.has(o.id)) combinedMap.set(o.id, o); });
+            const merged = Array.from(combinedMap.values()).sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+            safeSetItem('im_orders', JSON.stringify(merged));
+            return merged;
+          });
         }
       } catch (err) {
         console.error('Failed to sync orders background fetch:', err);
@@ -876,12 +986,17 @@ export default function App() {
   };
 
   const handleOrderSuccess = async (orderData) => {
-    setOrdersList(prev => [orderData, ...prev]);
+    // 1. Immediately persist to local state & local storage
+    setOrdersList(prev => {
+      const updated = [orderData, ...(prev || []).filter(o => o && o.id !== orderData.id)];
+      safeSetItem('im_orders', JSON.stringify(updated));
+      return updated;
+    });
     setCartItems([]); 
     setCheckoutSummary(null); 
     setSuccessOrder(orderData); 
 
-    // Trigger automated Order Confirmation Email via Resend with rich console & toast logging
+    // 2. Trigger automated Order Confirmation Email via Resend
     sendOrderConfirmationEmail(orderData)
       .then((res) => {
         if (res && res.success) {
@@ -899,25 +1014,18 @@ export default function App() {
     localStorage.setItem('im_newsletter_promo_used', 'true');
     setAutoAppliedPromo('');
 
+    // 3. Save directly to Supabase DB with correct column mapping (`shipping` instead of `shipping_fee`)
     if (supabase) {
       try {
-        const dbOrder = {
-          id: orderData.id,
-          user_id: (currentUser && isValidUuid(currentUser.id)) ? currentUser.id : null,
-          items: orderData.items,
-          shipping_details: orderData.shippingDetails,
-          subtotal: orderData.subtotal,
-          discount: orderData.discount,
-          shipping_fee: orderData.shippingFee,
-          total: orderData.total,
-          status: orderData.status || 'Placed',
-          payment_id: orderData.paymentId,
-          notes: orderData.notes || '',
-          timestamp: new Date().toISOString()
-        };
-        await supabase.from('orders').upsert(dbOrder);
+        const dbOrder = mapClientOrderToDb(orderData);
+        const { error: upsertErr } = await supabase.from('orders').upsert(dbOrder);
+        if (upsertErr) {
+          console.error(`🚨 [Supabase Orders Write Failed for #${orderData.id}]:`, upsertErr.message, upsertErr.details);
+        } else {
+          console.log(`✅ [Supabase] Order #${orderData.id} successfully saved to database!`);
+        }
       } catch (err) {
-        console.error('Supabase write error during checkout:', err);
+        console.error(`🚨 [Supabase Orders Write Exception for #${orderData.id}]:`, err);
       }
     }
   };

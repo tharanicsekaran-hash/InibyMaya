@@ -9,6 +9,7 @@ import ProductDetailModal from './components/ProductDetailModal';
 import CartDrawer from './components/CartDrawer';
 import AuthModal from './components/AuthModal';
 import CheckoutModal from './components/CheckoutModal';
+import QuickViewModal from './components/QuickViewModal';
 import AdminDashboard from './components/AdminDashboard';
 import ConfettiEffect from './components/ConfettiEffect';
 import InfoPage from './components/InfoPage';
@@ -397,6 +398,7 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [quickViewProduct, setQuickViewProduct] = useState(null);
   const [checkoutSummary, setCheckoutSummary] = useState(null); 
   const [successOrder, setSuccessOrder] = useState(null); 
   const [isDbRlsActive, setIsDbRlsActive] = useState(false);
@@ -1425,7 +1427,7 @@ export default function App() {
                     onToggleFavorite={handleToggleFavorite}
                     onProductClick={(prod, size) => {
                       setPreselectedSize(size);
-                      setSelectedProduct(prod);
+                      setQuickViewProduct(prod);
                     }}
                   />
                 ))}
@@ -1497,7 +1499,7 @@ export default function App() {
                       onToggleFavorite={handleToggleFavorite}
                       onProductClick={(prod, size) => {
                         setPreselectedSize(size);
-                        setSelectedProduct(prod);
+                        setQuickViewProduct(prod);
                       }}
                     />
                   ))}
@@ -1606,7 +1608,10 @@ export default function App() {
           // Catalog Page
           <ProductGrid 
             products={productsList} 
-            onProductClick={(prod) => setSelectedProduct(prod)} 
+            onProductClick={(prod, size) => {
+              setPreselectedSize(size);
+              setQuickViewProduct(prod);
+            }} 
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             selectedSize={preselectedSize}
@@ -1633,7 +1638,7 @@ export default function App() {
                       onToggleFavorite={handleToggleFavorite}
                       onProductClick={(prod, size) => {
                         setPreselectedSize(size);
-                        setSelectedProduct(prod);
+                        setQuickViewProduct(prod);
                       }}
                     />
                   ))
@@ -1894,6 +1899,36 @@ export default function App() {
           </span>
           <span>{authToast}</span>
         </div>
+      )}
+
+      {/* Quick View Modal Popup */}
+      {quickViewProduct && (
+        <QuickViewModal
+          product={quickViewProduct}
+          onClose={() => setQuickViewProduct(null)}
+          onAddToCart={(cartItem) => {
+            handleAddToCart(cartItem);
+            setAuthToast(`✨ ${cartItem.product?.title || 'Item'} added to cart!`);
+            setTimeout(() => setAuthToast(null), 3000);
+          }}
+          onBuyNow={(cartItem) => {
+            handleAddToCart(cartItem);
+            handleCheckoutTrigger({
+              subtotal: cartItem.price * cartItem.quantity,
+              appliedDiscount: 0,
+              shipping: 99,
+              finalTotal: (cartItem.price * cartItem.quantity) + 99
+            });
+          }}
+          onOpenFullDetail={(prod) => {
+            setSelectedProduct(prod);
+            setQuickViewProduct(null);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          cartItems={cartItems}
+          onToggleFavorite={handleToggleFavorite}
+          isFavorite={favorites.includes(quickViewProduct.id)}
+        />
       )}
     </>
   );

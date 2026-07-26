@@ -2014,6 +2014,14 @@
   box-sizing: border-box !important;
 }
 
+.promo-input-row input::placeholder {
+  font-size: 11px !important;
+  color: #888888 !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.02em !important;
+  opacity: 0.85 !important;
+}
+
 .promo-input-row button {
   flex-shrink: 0 !important;
   height: 100% !important;

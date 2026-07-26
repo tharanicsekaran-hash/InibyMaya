@@ -148,9 +148,9 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
     setStatusMsg('Connecting to Google OAuth...');
     try {
       if (supabase) {
-        const redirectTarget = typeof window !== 'undefined' && window.location.hostname === 'localhost' 
+        const redirectTarget = typeof window !== 'undefined' 
           ? window.location.origin 
-          : 'https://iniby-maya.vercel.app';
+          : 'https://inibymaya.com';
 
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',

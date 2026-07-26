@@ -254,7 +254,7 @@ export async function sendOrderConfirmationEmail(order) {
     </div>
 
     <div style="text-align:center; margin-top:30px;">
-      <a href="https://iniby-maya.vercel.app" class="btn-gold">View Order Status on Customer Portal</a>
+      <a href="https://inibymaya.com" class="btn-gold">View Order Status on Customer Portal</a>
     </div>
   `;
 
@@ -281,7 +281,7 @@ export async function sendOrderConfirmationEmail(order) {
       <tbody>${itemsHtml}</tbody>
     </table>
     <p><strong>Total Value:</strong> ₹${(order.total || 0).toLocaleString('en-IN')} (${order.paymentId || 'COD'})</p>
-    <a href="https://iniby-maya.vercel.app" class="btn-gold">Open Admin Console</a>
+    <a href="https://inibymaya.com" class="btn-gold">Open Admin Console</a>
   `;
 
   await sendResendEmail({
@@ -347,7 +347,7 @@ export async function sendOrderDeliveredEmail(order) {
       <p style="font-size:13.5px; color:#555; line-height:1.6; margin:0 0 16px 0;">
         We hope you fall in love with the weight, silhouette, and detailing of your new piece. We would be honored to feature your story and photograph in <em>"What Our Patrons Say"</em>!
       </p>
-      <a href="https://iniby-maya.vercel.app" class="btn-gold">Share Review & Story</a>
+      <a href="https://inibymaya.com" class="btn-gold">Share Review & Story</a>
     </div>
 
     <p style="font-size:13px; color:#666; text-align:center; margin-top:20px;">If you require any size adjustments or fit guidance, our team is always at your service.</p>
@@ -414,7 +414,7 @@ export async function sendStitchingProgressEmail(order, statusName) {
     </div>
 
     <div style="text-align:center; margin-top:20px;">
-      <a href="https://iniby-maya.vercel.app" class="btn-gold">Track Atelier Progress</a>
+      <a href="https://inibymaya.com" class="btn-gold">Track Atelier Progress</a>
     </div>
   `;
 

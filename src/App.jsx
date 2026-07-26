@@ -575,11 +575,15 @@ export default function App() {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
         if (session && session.user) {
           // Find customer profile metadata
-          const { data: customerProfile } = await supabase
-            .from('customers')
-            .select('id, name, email, phone')
-            .eq('id', session.user.id)
-            .maybeSingle();
+          let customerProfile = null;
+          try {
+            const { data: cData } = await supabase
+              .from('customers')
+              .select('id, name, email, phone')
+              .eq('id', session.user.id)
+              .maybeSingle();
+            customerProfile = cData;
+          } catch (err) {}
 
           const userName = customerProfile 
             ? customerProfile.name 

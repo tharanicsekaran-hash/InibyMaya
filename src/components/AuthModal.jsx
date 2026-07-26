@@ -62,11 +62,15 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
             setStatusMsg('');
           } else if (data.user) {
             // Fetch profile name
-            const { data: customerProfile } = await supabase
-              .from('customers')
-              .select('*')
-              .eq('id', data.user.id)
-              .single();
+            let customerProfile = null;
+            try {
+              const { data: cData } = await supabase
+                .from('customers')
+                .select('*')
+                .eq('id', data.user.id)
+                .maybeSingle();
+              customerProfile = cData;
+            } catch (e) {}
 
             login({
               id: data.user.id,

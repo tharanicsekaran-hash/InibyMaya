@@ -1446,12 +1446,12 @@ alter table public.settings disable row level security;`}</pre>
               </div>
               <div className="form-group-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="form-group">
-                  <label>Original MRP Price (₹) (e.g. 4999)</label>
+                  <label>Original MRP Price (₹)</label>
                   <input 
                     type="number" 
                     value={originalPrice} 
                     onChange={(e) => setOriginalPrice(e.target.value)} 
-                    placeholder="e.g. 4999 (Strikethrough MRP)" 
+                    placeholder="e.g. 4999" 
                   />
                 </div>
                 <div className="form-group">
@@ -1460,7 +1460,7 @@ alter table public.settings disable row level security;`}</pre>
                     type="number" 
                     value={price} 
                     onChange={(e) => setPrice(e.target.value)} 
-                    placeholder="e.g. 2999 (Final customer price)" 
+                    placeholder="e.g. 2999" 
                     required 
                   />
                 </div>

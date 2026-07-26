@@ -1972,32 +1972,70 @@
 }
 
 .promo-code-container {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .promo-input-row {
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--color-border);
-  padding: 2px 2px 2px 12px;
-  border-radius: 4px;
-  color: var(--color-text-secondary);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border: 1.5px solid var(--color-border) !important;
+  border-radius: 8px !important;
+  padding: 3px 3px 3px 12px !important;
+  background-color: var(--color-bg-primary) !important;
+  color: var(--color-text-secondary) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  gap: 8px !important;
+  height: 48px !important;
+}
+
+.promo-input-row svg {
+  flex-shrink: 0 !important;
+  color: var(--color-text-secondary) !important;
 }
 
 .promo-input-row input {
-  flex-grow: 1;
-  border: none;
-  padding: 8px;
-  outline: none;
-  font-size: 12px;
+  flex: 1 1 auto !important;
+  min-width: 0 !important; /* Prevents flex input child from overflowing when text is typed */
+  width: 100% !important;
+  border: none !important;
+  background: transparent !important;
+  padding: 8px 4px !important;
+  outline: none !important;
+  font-family: var(--font-body) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--color-text-primary) !important;
+  box-sizing: border-box !important;
 }
 
 .promo-input-row button {
-  background-color: var(--color-text-primary);
-  color: var(--color-white);
-  padding: 8px 16px;
-  font-size: 12px;
-  border-radius: 2px;
+  flex-shrink: 0 !important;
+  height: 100% !important;
+  background-color: var(--color-text-primary) !important;
+  color: var(--color-white) !important;
+  padding: 0 18px !important;
+  font-family: var(--font-body) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  border-radius: 6px !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+}
+
+.promo-input-row button:hover {
+  background-color: var(--color-accent) !important;
 }
 
 .promo-success-msg {

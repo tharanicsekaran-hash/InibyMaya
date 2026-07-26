@@ -473,11 +473,8 @@ export default function App() {
                 const existing = combinedMap.get(p.id);
                 if (!existing) {
                   combinedMap.set(p.id, p);
-                  if (supabase) supabase.from('products').upsert(mapClientProductToDb(p)).catch(() => {});
                 } else if (p.originalPrice && !existing.originalPrice) {
-                  const merged = { ...existing, originalPrice: p.originalPrice };
-                  combinedMap.set(p.id, merged);
-                  if (supabase) supabase.from('products').upsert(mapClientProductToDb(merged)).catch(() => {});
+                  combinedMap.set(p.id, { ...existing, originalPrice: p.originalPrice });
                 }
               }
             });

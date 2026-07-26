@@ -1913,11 +1913,13 @@ export default function App() {
           }}
           onBuyNow={(cartItem) => {
             handleAddToCart(cartItem);
+            const currentSubtotal = cartItems.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+            const totalSubtotal = currentSubtotal + ((cartItem.price || 0) * (cartItem.quantity || 1));
             handleCheckoutTrigger({
-              subtotal: cartItem.price * cartItem.quantity,
+              subtotal: totalSubtotal,
               appliedDiscount: 0,
               shipping: 99,
-              finalTotal: (cartItem.price * cartItem.quantity) + 99
+              finalTotal: totalSubtotal + 99
             });
           }}
           onOpenFullDetail={(prod) => {

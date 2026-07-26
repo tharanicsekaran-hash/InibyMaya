@@ -16,6 +16,12 @@ export default function CheckoutModal({
   const [validationError, setValidationError] = useState('');
   const [isPlacing, setIsPlacing] = useState(false);
 
+  // Dynamic calculations to guarantee 100% mathematical alignment with cartItems
+  const computedSubtotal = cartItems.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+  const computedDiscount = priceSummary?.appliedDiscount || 0;
+  const computedShipping = priceSummary?.shipping !== undefined ? priceSummary.shipping : 99;
+  const computedFinalTotal = Math.max(0, computedSubtotal - computedDiscount + computedShipping);
+
   const handleConfirmOrder = (e) => {
     e.preventDefault();
     
@@ -43,16 +49,16 @@ export default function CheckoutModal({
         id: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
         items: cartItems,
         shippingDetails: { name, address, city, pincode, phone, email: user?.email || 'inibymaya@gmail.com' },
-        subtotal: priceSummary.subtotal,
-        discount: priceSummary.appliedDiscount,
-        shipping: priceSummary.shipping,
-        shippingFee: priceSummary.shipping,
-        total: priceSummary.finalTotal,
+        subtotal: computedSubtotal,
+        discount: computedDiscount,
+        shipping: computedShipping,
+        shippingFee: computedShipping,
+        total: computedFinalTotal,
         paymentId: payId,
         timestamp: new Date().toISOString(),
         status: hasCustom ? 'Pending Stitching' : 'Pending Shipment',
         trackingNumber: '',
-        notes: priceSummary.orderNote || ''
+        notes: priceSummary?.orderNote || ''
       };
       onOrderSuccess(orderData);
     }, 1500);
@@ -172,22 +178,22 @@ export default function CheckoutModal({
             <div className="receipt-calculations">
               <div className="receipt-row">
                 <span>Subtotal</span>
-                <span>₹{priceSummary.subtotal.toLocaleString('en-IN')}</span>
+                <span>₹{computedSubtotal.toLocaleString('en-IN')}</span>
               </div>
-              {priceSummary.appliedDiscount > 0 && (
+              {computedDiscount > 0 && (
                 <div className="receipt-row discount">
                   <span>Coupons Discount</span>
-                  <span>- ₹{priceSummary.appliedDiscount.toLocaleString('en-IN')}</span>
+                  <span>- ₹{computedDiscount.toLocaleString('en-IN')}</span>
                 </div>
               )}
               <div className="receipt-row">
                 <span>Cash on Delivery Shipping</span>
-                <span>{priceSummary.shipping === 0 ? 'FREE' : `₹${priceSummary.shipping}`}</span>
+                <span>{computedShipping === 0 ? 'FREE' : `₹${computedShipping}`}</span>
               </div>
               <hr />
               <div className="receipt-row grand-total-row red-totals">
                 <span className="total-label-red">Grand Total (COD)</span>
-                <span className="total-amount-red">₹{priceSummary.finalTotal.toLocaleString('en-IN')}</span>
+                <span className="total-amount-red">₹{computedFinalTotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="cod-notice-footer">
                 <span>ℹ️ Pay cash/UPI to courier at the time of delivery.</span>

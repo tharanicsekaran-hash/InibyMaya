@@ -1,13 +1,28 @@
 import React from 'react';
 import { Star, Eye, Heart } from 'lucide-react';
 
-export default function ProductCard({ product, onProductClick, isFavorite = false, onToggleFavorite }) {
+export default function ProductCard({ 
+  product, 
+  onProductClick, 
+  onQuickViewClick, 
+  isFavorite = false, 
+  onToggleFavorite 
+}) {
   if (!product) return null;
   const { title, price, images = [], category, rating, reviewsCount, bestSeller, customizable, variants = { sizes: [], colors: [] } } = product;
 
   const defaultFallback = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800';
   const primaryImgSrc = (images && images[0] && images[0].trim() !== '') ? images[0] : defaultFallback;
   const secondaryImgSrc = (images && images[1] && images[1].trim() !== '') ? images[1] : null;
+
+  const handleQuickShop = (e, size = null) => {
+    e.stopPropagation();
+    if (onQuickViewClick) {
+      onQuickViewClick(product, size);
+    } else {
+      onProductClick(product, size);
+    }
+  };
 
   return (
     <div className="product-card" onClick={() => onProductClick(product, null)}>
@@ -62,10 +77,7 @@ export default function ProductCard({ product, onProductClick, isFavorite = fals
 
         {/* Quick View Button Overlay */}
         <div className="quick-view-overlay">
-          <button className="quick-view-btn" onClick={(e) => {
-            e.stopPropagation();
-            onProductClick(product, null);
-          }}>
+          <button className="quick-view-btn" onClick={(e) => handleQuickShop(e, null)}>
             <Eye size={13} />
             <span>Quick Shop</span>
           </button>
@@ -103,10 +115,7 @@ export default function ProductCard({ product, onProductClick, isFavorite = fals
               <span 
                 key={size} 
                 className="product-card-size-box"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onProductClick(product, size);
-                }}
+                onClick={(e) => handleQuickShop(e, size)}
               >
                 {size}
               </span>

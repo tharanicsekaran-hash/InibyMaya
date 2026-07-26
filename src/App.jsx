@@ -1426,7 +1426,12 @@ export default function App() {
                     isFavorite={favorites.includes(product.id)}
                     onToggleFavorite={handleToggleFavorite}
                     onProductClick={(prod, size) => {
-                      setPreselectedSize(size);
+                      if (size) setPreselectedSize(size);
+                      setSelectedProduct(prod);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onQuickViewClick={(prod, size) => {
+                      if (size) setPreselectedSize(size);
                       setQuickViewProduct(prod);
                     }}
                   />
@@ -1498,7 +1503,12 @@ export default function App() {
                       isFavorite={favorites.includes(product.id)}
                       onToggleFavorite={handleToggleFavorite}
                       onProductClick={(prod, size) => {
-                        setPreselectedSize(size);
+                        if (size) setPreselectedSize(size);
+                        setSelectedProduct(prod);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      onQuickViewClick={(prod, size) => {
+                        if (size) setPreselectedSize(size);
                         setQuickViewProduct(prod);
                       }}
                     />
@@ -1608,8 +1618,12 @@ export default function App() {
           // Catalog Page
           <ProductGrid 
             products={productsList} 
-            onProductClick={(prod, size) => {
-              setPreselectedSize(size);
+            onProductClick={(prod) => {
+              setSelectedProduct(prod);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onQuickViewClick={(prod, size) => {
+              if (size) setPreselectedSize(size);
               setQuickViewProduct(prod);
             }} 
             searchQuery={searchQuery}
@@ -1637,7 +1651,12 @@ export default function App() {
                       isFavorite={true}
                       onToggleFavorite={handleToggleFavorite}
                       onProductClick={(prod, size) => {
-                        setPreselectedSize(size);
+                        if (size) setPreselectedSize(size);
+                        setSelectedProduct(prod);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      onQuickViewClick={(prod, size) => {
+                        if (size) setPreselectedSize(size);
                         setQuickViewProduct(prod);
                       }}
                     />

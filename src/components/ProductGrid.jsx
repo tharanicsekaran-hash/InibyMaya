@@ -5,6 +5,7 @@ import { SlidersHorizontal, Search, X, Check } from 'lucide-react';
 export default function ProductGrid({ 
   products, 
   onProductClick, 
+  onQuickViewClick,
   searchQuery, 
   setSearchQuery, 
   selectedSize, 
@@ -434,11 +435,14 @@ export default function ProductGrid({
                   product={product} 
                   isFavorite={favorites.includes(product.id)}
                   onToggleFavorite={onToggleFavorite}
-                  onProductClick={(prod, size) => {
-                    if (setSelectedSize) {
+                  onProductClick={(prod) => onProductClick(prod)}
+                  onQuickViewClick={(prod, size) => {
+                    if (setSelectedSize && size) {
                       setSelectedSize(size);
                     }
-                    onProductClick(prod);
+                    if (onQuickViewClick) {
+                      onQuickViewClick(prod, size);
+                    }
                   }}
                 />
               ))}

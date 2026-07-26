@@ -463,10 +463,28 @@ export default function App() {
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (prodData && Array.isArray(prodData)) {
+        if (prodData && Array.isArray(prodData) && prodData.length > 0) {
           const remoteProds = prodData.map(mapDbProductToClient);
-          setProductsList(remoteProds);
-          safeSetItem('im_catalog', JSON.stringify(remoteProds));
+          setProductsList(prevLocal => {
+            const combinedMap = new Map();
+            remoteProds.forEach(p => { if (p && p.id) combinedMap.set(p.id, p); });
+            (prevLocal || []).forEach(p => {
+              if (p && p.id) {
+                const existing = combinedMap.get(p.id);
+                if (!existing) {
+                  combinedMap.set(p.id, p);
+                  if (supabase) supabase.from('products').upsert(mapClientProductToDb(p)).catch(() => {});
+                } else if (p.originalPrice && !existing.originalPrice) {
+                  const merged = { ...existing, originalPrice: p.originalPrice };
+                  combinedMap.set(p.id, merged);
+                  if (supabase) supabase.from('products').upsert(mapClientProductToDb(merged)).catch(() => {});
+                }
+              }
+            });
+            const mergedList = Array.from(combinedMap.values());
+            safeSetItem('im_catalog', JSON.stringify(mergedList));
+            return mergedList;
+          });
         }
       } catch (err) {
         console.warn('Products query notice:', err);
@@ -1058,9 +1076,18 @@ export default function App() {
         const payload = mapClientProductToDb(newProd);
         const { error } = await supabase.from('products').upsert(payload);
         if (error) {
-          console.warn('Supabase product upsert initial attempt error, retrying fallback:', error.message);
-          delete payload.new_arrival;
-          await supabase.from('products').upsert(payload);
+          console.warn('⚠️ Supabase product upsert initial attempt notice:', error.message);
+          const fallbackPayload = { ...payload };
+          delete fallbackPayload.original_price;
+          delete fallbackPayload.new_arrival;
+          const { error: retryErr } = await supabase.from('products').upsert(fallbackPayload);
+          if (retryErr) {
+            console.error('🚨 Supabase product upsert fallback retry error:', retryErr.message);
+          } else {
+            console.log(`✅ [Supabase] Product ${newProd.id} saved to DB via fallback payload.`);
+          }
+        } else {
+          console.log(`✅ [Supabase] Product ${newProd.id} successfully written to database.`);
         }
       } catch (err) {
         console.error('Product save error:', err);

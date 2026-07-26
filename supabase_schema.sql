@@ -24,8 +24,8 @@ create table public.products (
   customizable boolean default true,
   best_seller boolean default false,
   new_arrival boolean default true,
-  occasion text default 'Daily Elegance',
   highlights jsonb default '{}'::jsonb,
+  original_price numeric,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

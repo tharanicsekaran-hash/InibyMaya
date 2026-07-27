@@ -858,19 +858,27 @@
   color: var(--color-white);
 }
 
-/* Hover triggers */
-.product-card:hover .primary-image {
-  opacity: 0;
-  transform: scale(1.03);
+/* Desktop-only Image Hover Swap Effect */
+@media (hover: hover) and (pointer: fine) {
+  .product-card:hover .primary-image {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+
+  .product-card:hover .secondary-image {
+    opacity: 1;
+    transform: scale(1.03);
+  }
 }
 
-.product-card:hover .secondary-image {
-  opacity: 1;
-  transform: scale(1.03);
-}
-
-.product-card:hover .quick-view-overlay {
-  transform: translateY(0);
+/* On mobile / touch devices, disable secondary image hover swap completely so 1st tap opens product page immediately */
+@media (hover: none), (pointer: coarse) {
+  .secondary-image {
+    display: none !important;
+  }
+  .product-card-image {
+    pointer-events: none;
+  }
 }
 
 .product-card-info {
@@ -7145,40 +7153,51 @@
   border: 1px solid var(--color-bg-primary);
 }
 
-.favorite-btn-overlay {
+.product-action-stack {
   position: absolute;
   top: 8px;
   right: 8px;
   z-index: 10;
-  background: rgba(255, 255, 255, 0.92);
-  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.favorite-btn-overlay,
+.quick-shop-icon-btn {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s, box-shadow 0.2s;
   padding: 0;
   color: var(--color-text-primary);
 }
 
-.favorite-btn-overlay:hover {
+.favorite-btn-overlay:hover,
+.quick-shop-icon-btn:hover {
   background-color: #ffffff;
   transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
 
 .favorite-btn-overlay.is-favorite {
   color: #ef4444;
 }
 
-.favorite-btn-overlay svg {
+.favorite-btn-overlay svg,
+.quick-shop-icon-btn svg {
   transition: transform 0.15s ease;
 }
 
-.favorite-btn-overlay:active svg {
+.favorite-btn-overlay:active svg,
+.quick-shop-icon-btn:active svg {
   transform: scale(0.85);
 }
 

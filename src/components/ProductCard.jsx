@@ -33,23 +33,36 @@ export default function ProductCard({
           {customizable && <span className="badge badge-customizable">Custom Tailorable</span>}
         </div>
 
-        {/* Heart / Favorite Button */}
-        {onToggleFavorite && (
+        {/* Action Stack (Heart + Eye) - Always Visible */}
+        <div className="product-action-stack">
+          {onToggleFavorite && (
+            <button 
+              type="button"
+              className={`favorite-btn-overlay ${isFavorite ? 'is-favorite' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite(product.id);
+              }}
+              aria-label={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+              title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+            >
+              <Heart 
+                size={13} 
+                fill={isFavorite ? "#ef4444" : "none"} 
+                stroke={isFavorite ? "#ef4444" : "var(--color-text-primary, #111827)"} 
+              />
+            </button>
+          )}
           <button 
-            className={`favorite-btn-overlay ${isFavorite ? 'is-favorite' : ''}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleFavorite(product.id);
-            }}
-            aria-label={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+            type="button"
+            className="quick-shop-icon-btn"
+            onClick={(e) => handleQuickShop(e, null)}
+            aria-label="Quick Shop"
+            title="Quick Shop"
           >
-            <Heart 
-              size={12} 
-              fill={isFavorite ? "#ef4444" : "none"} 
-              stroke={isFavorite ? "#ef4444" : "var(--color-text-primary, #111827)"} 
-            />
+            <Eye size={13} stroke="var(--color-text-primary, #111827)" />
           </button>
-        )}
+        </div>
 
         {/* Primary Image */}
         <img 
@@ -62,7 +75,7 @@ export default function ProductCard({
           }}
         />
 
-        {/* Secondary Image (Hover Effect) */}
+        {/* Secondary Image (Hover Effect on Desktop Pointer only) */}
         {secondaryImgSrc && (
           <img 
             src={secondaryImgSrc} 
@@ -74,14 +87,6 @@ export default function ProductCard({
             }}
           />
         )}
-
-        {/* Quick View Button Overlay */}
-        <div className="quick-view-overlay">
-          <button className="quick-view-btn" onClick={(e) => handleQuickShop(e, null)}>
-            <Eye size={13} />
-            <span>Quick Shop</span>
-          </button>
-        </div>
       </div>
 
       <div className="product-card-info">

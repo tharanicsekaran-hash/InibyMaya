@@ -1417,6 +1417,18 @@ export default function App() {
             onClose={() => setSelectedProduct(null)}
             onAddToCart={handleAddToCart}
             preselectedSize={preselectedSize}
+            allProducts={productsList}
+            onProductClick={(prod, size) => {
+              if (size) setPreselectedSize(size);
+              setSelectedProduct(prod);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onQuickViewClick={(prod, size) => {
+              if (size) setPreselectedSize(size);
+              setQuickViewProduct(prod);
+            }}
+            favorites={favorites}
+            onToggleFavorite={handleToggleFavorite}
           />
         ) : activePage === 'home' ? (
           // Home Page

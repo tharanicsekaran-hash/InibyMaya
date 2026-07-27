@@ -1,8 +1,19 @@
 import React, { useState } from 'react';
 import { X, Star, Ruler, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import OutfitCustomizer from './OutfitCustomizer';
+import ProductCard from './ProductCard';
 
-export default function ProductDetailModal({ product, onClose, onAddToCart, preselectedSize }) {
+export default function ProductDetailModal({ 
+  product, 
+  onClose, 
+  onAddToCart, 
+  preselectedSize,
+  allProducts = [],
+  onProductClick,
+  onQuickViewClick,
+  favorites = [],
+  onToggleFavorite
+}) {
   const { title, price, images, category, rating, reviewsCount, description, details, variants, customizable, highlights } = product;
 
   const [activeImageIdx, setActiveImageIdx] = useState(0);
@@ -41,6 +52,15 @@ export default function ProductDetailModal({ product, onClose, onAddToCart, pres
     shipping: false,
     customercare: false
   });
+
+  // Related products logic (same category first, excluding current product)
+  const sameCategoryProducts = (allProducts || []).filter(
+    p => p && p.id !== product.id && p.category === category
+  );
+  const otherCategoryProducts = (allProducts || []).filter(
+    p => p && p.id !== product.id && p.category !== category
+  );
+  const relatedProducts = [...sameCategoryProducts, ...otherCategoryProducts].slice(0, 8);
 
   const toggleAccordion = (tab) => {
     setActiveAccordions(prev => ({
@@ -122,6 +142,32 @@ export default function ProductDetailModal({ product, onClose, onAddToCart, pres
                 </button>
               ))}
             </div>
+
+            {/* Desktop Left Column: Related Products underneath thumbnails */}
+            {relatedProducts.length > 0 && (
+              <div className="desktop-left-related-section">
+                <div className="related-section-header">
+                  <h4 className="related-section-title">Similar Creations</h4>
+                  <span className="related-category-badge">{category}</span>
+                </div>
+                <div className="related-products-scroll-row">
+                  {relatedProducts.map(relProd => (
+                    <div key={relProd.id} className="related-card-wrapper">
+                      <ProductCard 
+                        product={relProd}
+                        isFavorite={favorites.includes(relProd.id)}
+                        onToggleFavorite={onToggleFavorite}
+                        onProductClick={(prod, size) => {
+                          if (onProductClick) onProductClick(prod, size);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        onQuickViewClick={onQuickViewClick}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Column 2: Details and Selector Form */}
@@ -401,6 +447,34 @@ export default function ProductDetailModal({ product, onClose, onAddToCart, pres
                 )}
               </div>
             </div>
+
+            {/* Mobile-only Related Products Section under Customer Care accordion */}
+            {relatedProducts.length > 0 && (
+              <div className="mobile-under-care-related-section">
+                <div className="related-section-header">
+                  <div>
+                    <h4 className="related-section-title">You May Also Like</h4>
+                    <p className="related-section-sub">More handcrafted creations in {category}</p>
+                  </div>
+                </div>
+                <div className="related-products-scroll-row">
+                  {relatedProducts.map(relProd => (
+                    <div key={relProd.id} className="related-card-wrapper">
+                      <ProductCard 
+                        product={relProd}
+                        isFavorite={favorites.includes(relProd.id)}
+                        onToggleFavorite={onToggleFavorite}
+                        onProductClick={(prod, size) => {
+                          if (onProductClick) onProductClick(prod, size);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        onQuickViewClick={onQuickViewClick}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -147,7 +147,7 @@ export default function ProductDetailModal({
             {relatedProducts.length > 0 && (
               <div className="desktop-left-related-section">
                 <div className="related-section-header">
-                  <h4 className="related-section-title">Similar Creations</h4>
+                  <h4 className="related-section-title">You May Also Like</h4>
                   <span className="related-category-badge">{category}</span>
                 </div>
                 <div className="related-products-scroll-row">

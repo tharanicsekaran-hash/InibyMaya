@@ -7462,27 +7462,12 @@
 }
 
 /* Related Products Section in Product Detail View */
-.desktop-left-related-section {
+.product-detail-related-section {
   display: block;
-  margin-top: 36px;
-  padding-top: 24px;
+  margin-top: 48px;
+  padding-top: 36px;
   border-top: 1px solid var(--color-border-subtle, #e5e7eb);
-}
-
-.mobile-under-care-related-section {
-  display: none;
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 1px solid var(--color-border-subtle, #e5e7eb);
-}
-
-@media (max-width: 991px) {
-  .desktop-left-related-section {
-    display: none !important;
-  }
-  .mobile-under-care-related-section {
-    display: block !important;
-  }
+  width: 100%;
 }
 
 .related-section-header {

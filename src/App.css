@@ -934,7 +934,7 @@ html, body, #root {
 }
 
 .product-detail-page {
-  padding-top: 96px; /* Clear 76px sticky header + 20px breathing room */
+  padding-top: 46px !important;
   padding-bottom: 60px;
   animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -6970,7 +6970,7 @@ html, body, #root {
   
   /* Mobile Product Quick View Optimization - Crisp top spacing, full image fit & smooth thumbnails */
   .product-detail-page {
-    padding-top: 86px !important; /* Clear 76px sticky header + 10px breathing room */
+    padding-top: 46px !important;
     padding-bottom: 24px !important;
   }
 

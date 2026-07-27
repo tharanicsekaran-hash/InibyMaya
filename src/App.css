@@ -956,6 +956,7 @@
 .modal-content-grid {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
+  align-items: start;
   min-height: 600px;
 }
 
@@ -965,6 +966,8 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .primary-preview-wrapper {
@@ -7462,24 +7465,44 @@
 }
 
 /* Related Products Section in Product Detail View */
-.product-detail-related-section {
+.desktop-left-related-section {
   display: block;
-  margin-top: 48px;
-  padding-top: 36px;
+  margin-top: 28px;
+  padding-top: 20px;
   border-top: 1px solid var(--color-border-subtle, #e5e7eb);
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.mobile-under-care-related-section {
+  display: none;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border-subtle, #e5e7eb);
+  width: 100%;
+}
+
+@media (max-width: 991px) {
+  .desktop-left-related-section {
+    display: none !important;
+  }
+  .mobile-under-care-related-section {
+    display: block !important;
+  }
 }
 
 .related-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .related-section-title {
   font-family: var(--font-primary, serif);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--color-text-primary, #111827);
   margin: 0;
@@ -7499,23 +7522,25 @@
 }
 
 .related-section-sub {
-  font-size: 13px;
+  font-size: 12.5px;
   color: #6b7280;
-  margin: 4px 0 0 0;
+  margin: 3px 0 0 0;
 }
 
 .related-products-scroll-row {
   display: flex;
-  gap: 16px;
-  overflow-x: auto;
+  gap: 14px;
+  overflow-x: auto !important;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 14px;
+  padding-bottom: 12px;
   scrollbar-width: thin;
+  width: 100%;
+  max-width: 100%;
 }
 
 .related-products-scroll-row::-webkit-scrollbar {
-  height: 6px;
+  height: 5px;
 }
 
 .related-products-scroll-row::-webkit-scrollbar-thumb {
@@ -7524,15 +7549,17 @@
 }
 
 .related-card-wrapper {
-  flex: 0 0 210px;
-  width: 210px;
+  flex: 0 0 175px;
+  width: 175px;
+  min-width: 175px;
   scroll-snap-align: start;
 }
 
 @media (max-width: 768px) {
   .related-card-wrapper {
-    flex: 0 0 165px;
-    width: 165px;
+    flex: 0 0 160px;
+    width: 160px;
+    min-width: 160px;
   }
 }
 

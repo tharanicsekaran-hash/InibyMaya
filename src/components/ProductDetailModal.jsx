@@ -142,6 +142,34 @@ export default function ProductDetailModal({
                 </button>
               ))}
             </div>
+
+            {/* Desktop Left Column: Related Products strictly inside left space under thumbnails */}
+            {relatedProducts.length > 0 && (
+              <div className="desktop-left-related-section">
+                <div className="related-section-header">
+                  <div>
+                    <h4 className="related-section-title">YOU MAY ALSO LIKE</h4>
+                    <p className="related-section-sub">More handcrafted creations in {category}</p>
+                  </div>
+                </div>
+                <div className="related-products-scroll-row">
+                  {relatedProducts.map(relProd => (
+                    <div key={relProd.id} className="related-card-wrapper">
+                      <ProductCard 
+                        product={relProd}
+                        isFavorite={favorites.includes(relProd.id)}
+                        onToggleFavorite={onToggleFavorite}
+                        onProductClick={(prod, size) => {
+                          if (onProductClick) onProductClick(prod, size);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        onQuickViewClick={onQuickViewClick}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Column 2: Details and Selector Form */}
@@ -421,36 +449,36 @@ export default function ProductDetailModal({
                 )}
               </div>
             </div>
-          </div>
-        </div>
 
-      {/* Full-width "YOU MAY ALSO LIKE" Related Products Section under Customer Care */}
-      {relatedProducts.length > 0 && (
-        <div className="product-detail-related-section">
-          <div className="related-section-header">
-            <div>
-              <h3 className="related-section-title">YOU MAY ALSO LIKE</h3>
-              <p className="related-section-sub">More handcrafted creations in {category}</p>
-            </div>
-          </div>
-          <div className="related-products-scroll-row">
-            {relatedProducts.map(relProd => (
-              <div key={relProd.id} className="related-card-wrapper">
-                <ProductCard 
-                  product={relProd}
-                  isFavorite={favorites.includes(relProd.id)}
-                  onToggleFavorite={onToggleFavorite}
-                  onProductClick={(prod, size) => {
-                    if (onProductClick) onProductClick(prod, size);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  onQuickViewClick={onQuickViewClick}
-                />
+            {/* Mobile-only: Related Products under Customer Care Accordion */}
+            {relatedProducts.length > 0 && (
+              <div className="mobile-under-care-related-section">
+                <div className="related-section-header">
+                  <div>
+                    <h4 className="related-section-title">YOU MAY ALSO LIKE</h4>
+                    <p className="related-section-sub">More handcrafted creations in {category}</p>
+                  </div>
+                </div>
+                <div className="related-products-scroll-row">
+                  {relatedProducts.map(relProd => (
+                    <div key={relProd.id} className="related-card-wrapper">
+                      <ProductCard 
+                        product={relProd}
+                        isFavorite={favorites.includes(relProd.id)}
+                        onToggleFavorite={onToggleFavorite}
+                        onProductClick={(prod, size) => {
+                          if (onProductClick) onProductClick(prod, size);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        onQuickViewClick={onQuickViewClick}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
-      )}
 
       {/* Embedded Size Chart Guide Modal */}
       {showSizeChart && (

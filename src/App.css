@@ -7043,6 +7043,21 @@
     border-radius: 6px !important;
     object-fit: cover !important;
   }
+
+  .details-column {
+    padding: 16px 0 0 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .add-to-cart-large-btn,
+  .custom-stitching-toggle-card,
+  .key-highlights-container,
+  .details-accordions-group,
+  .mobile-under-care-related-section {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
 }
 
 /* Landing Page Section Spacing & dividers */

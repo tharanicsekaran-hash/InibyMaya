@@ -929,7 +929,7 @@
 }
 
 .product-detail-page {
-  padding-top: 20px; /* clear sticky header with minimal tight padding */
+  padding-top: 96px; /* Clear 76px sticky header + 20px breathing room */
   padding-bottom: 50px;
   animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -6965,8 +6965,8 @@
   
   /* Mobile Product Quick View Optimization - Crisp top spacing, full image fit & smooth thumbnails */
   .product-detail-page {
-    padding-top: 10px !important;
-    padding-bottom: 24px !important;
+    padding-top: 86px !important; /* Clear 76px sticky header + 10px breathing room */
+    padding-bottom: 30px !important;
   }
 
   .back-to-shop-link {

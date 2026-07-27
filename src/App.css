@@ -1,5 +1,10 @@
 /* InibyMaya E-commerce Layout & Component Styles */
 
+html, body, #root {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 /* Bounded Container System */
 .container {
   width: 100%;
@@ -929,7 +934,7 @@
 }
 
 .product-detail-page {
-  padding-top: 76px; /* sleek spacing below sticky header */
+  padding-top: 96px; /* Clear 76px sticky header + 20px breathing room */
   padding-bottom: 60px;
   animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -6965,13 +6970,13 @@
   
   /* Mobile Product Quick View Optimization - Crisp top spacing, full image fit & smooth thumbnails */
   .product-detail-page {
-    padding-top: 56px !important;
+    padding-top: 86px !important; /* Clear 76px sticky header + 10px breathing room */
     padding-bottom: 24px !important;
   }
 
   .back-to-shop-link {
-    margin-top: 2px !important;
-    margin-bottom: 6px !important;
+    margin-top: 0 !important;
+    margin-bottom: 10px !important;
     font-size: 11.5px !important;
     letter-spacing: 0.06em !important;
     color: var(--color-text-secondary) !important;
@@ -6982,6 +6987,9 @@
     margin-bottom: 16px !important;
     border-bottom: none !important;
     gap: 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .primary-preview-wrapper {
@@ -7045,9 +7053,11 @@
   }
 
   .details-column {
-    padding: 16px 0 0 0 !important;
+    padding: 0 !important;
     width: 100% !important;
+    max-width: 100% !important;
     box-sizing: border-box !important;
+    overflow: hidden !important;
   }
 
   .add-to-cart-large-btn,
@@ -7056,6 +7066,7 @@
   .details-accordions-group,
   .mobile-under-care-related-section {
     width: 100% !important;
+    max-width: 100% !important;
     box-sizing: border-box !important;
   }
 }

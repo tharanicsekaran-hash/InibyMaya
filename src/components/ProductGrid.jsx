@@ -11,7 +11,10 @@ export default function ProductGrid({
   selectedSize, 
   setSelectedSize,
   favorites = [],
-  onToggleFavorite
+  onToggleFavorite,
+  initialCategory,
+  onClearInitialCategory,
+  boutiqueSettings
 }) {
   // Dynamic price range calculation from catalog
   const catalogMaxPrice = useMemo(() => {
@@ -45,11 +48,34 @@ export default function ProductGrid({
     }
   }, [selectedSize]);
 
-  // Extract all categories dynamically from the loaded products catalog
+  // Sync initialCategory prop from parent (e.g. clicking category card from homepage)
+  useEffect(() => {
+    if (initialCategory) {
+      setSelectedCategories([initialCategory]);
+    }
+  }, [initialCategory]);
+
+  // Extract all categories dynamically from Admin panel settings + active products catalog
   const categories = useMemo(() => {
-    const set = new Set(['New Arrivals', ...products.map(p => p.category)]);
-    return Array.from(set).filter(Boolean);
-  }, [products]);
+    let adminCats = [];
+    if (boutiqueSettings && boutiqueSettings.categories) {
+      try {
+        const parsed = typeof boutiqueSettings.categories === 'string' 
+          ? JSON.parse(boutiqueSettings.categories) 
+          : boutiqueSettings.categories;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          adminCats = parsed.map(c => (typeof c === 'string' ? c : (c.name || c.filter))).filter(Boolean);
+        }
+      } catch (e) {}
+    }
+
+    const rawList = adminCats.length > 0
+      ? ['New Arrivals', ...adminCats]
+      : ['New Arrivals', ...new Set(products.map(p => p.category))];
+
+    const set = new Set(rawList.filter(Boolean));
+    return Array.from(set);
+  }, [products, boutiqueSettings]);
 
   // Extract all unique color swatches and values dynamically
   const allColors = useMemo(() => {
@@ -101,20 +127,34 @@ export default function ProductGrid({
     setMaxPrice(catalogMaxPrice);
     setSearchQuery('');
     setSelectedSize(null);
+    if (onClearInitialCategory) onClearInitialCategory();
   };
 
   // Filtered and Sorted products computed cache
   const filteredProducts = useMemo(() => {
     let result = [...products];
 
-    // 1. Categories Filter (Multiple Select)
+    // 1. Categories & Occasions Filter (Exact Category Match)
     if (selectedCategories.length > 0) {
       result = result.filter(p => {
-        const matchesCategory = selectedCategories.includes(p.category);
+        const pCat = (p.category || '').toLowerCase().trim();
+        const pOcc = (p.occasion || '').toLowerCase().trim();
+
+        const matchesCategory = selectedCategories.some(sc => {
+          const scLower = sc.toLowerCase().trim();
+          return pCat === scLower || (pCat.includes(scLower) && scLower.length > 4 && pCat.length > 4);
+        });
+
+        const matchesOccasion = selectedCategories.some(sc => {
+          const scLower = sc.toLowerCase().trim();
+          return pOcc === scLower;
+        });
+
         const matchesNewArrival = selectedCategories.some(c => 
           (c.toLowerCase().includes('new arrival') || c.toLowerCase().includes('new arrivals')) && Boolean(p.newArrival)
         );
-        return matchesCategory || matchesNewArrival;
+
+        return matchesCategory || matchesOccasion || matchesNewArrival;
       });
     }
 

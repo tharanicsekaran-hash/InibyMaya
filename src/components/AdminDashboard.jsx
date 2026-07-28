@@ -317,7 +317,7 @@ export default function AdminDashboard({
     }
     
     if (list.length === 0) {
-      list = ['Long Kurtas', 'Straight Kurtas', 'Anarkali Suits', 'Co-ord Sets', 'A-Line Kurtas', 'Custom Tailoring'];
+      list = ['Short kurti', 'Long Kurtas', 'Crop top', 'Anarkali Suits', 'Co-ord Sets', 'Straight Kurtas', 'Custom Tailoring'];
     }
 
     products.forEach(p => {

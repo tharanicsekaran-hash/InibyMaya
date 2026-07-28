@@ -233,6 +233,7 @@ export default function App() {
   // Navigation & Page routing
   const [activePage, setActivePage] = useState('home'); 
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('');
   const [preselectedSize, setPreselectedSize] = useState(null);
   const [infoPageTab, setInfoPageTab] = useState('about-us');
   const [boutiqueSettings, setBoutiqueSettings] = useState(() => {
@@ -1450,13 +1451,14 @@ export default function App() {
               })()}
               products={productsList}
               onCategoryClick={(filter) => {
+                setSearchQuery('');
                 if (filter === 'custom') {
-                  setActivePage('shop');
-                  setSearchQuery('custom tailoring');
+                  setSelectedCategoryFilter('Custom Tailoring');
                 } else {
-                  setSearchQuery(filter);
-                  setActivePage('shop');
+                  setSelectedCategoryFilter(filter);
                 }
+                setActivePage('shop');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
             />
 
@@ -1492,7 +1494,7 @@ export default function App() {
                 ))}
               </div>
               <div className="view-all-row">
-                <button className="btn-primary" onClick={() => { setSearchQuery('New Arrivals'); setActivePage('shop'); }}>
+                <button className="btn-primary" onClick={() => { setSearchQuery(''); setSelectedCategoryFilter('New Arrivals'); setActivePage('shop'); }}>
                   Explore All New Arrivals
                 </button>
               </div>
@@ -1522,7 +1524,8 @@ export default function App() {
                       key={occ.filter || idx}
                       className="occasion-card" 
                       onClick={() => {
-                        setSearchQuery(occ.filter || occ.name);
+                        setSearchQuery('');
+                        setSelectedCategoryFilter(occ.name || occ.filter);
                         setActivePage('shop');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
@@ -1686,6 +1689,9 @@ export default function App() {
             setSelectedSize={setPreselectedSize}
             favorites={favorites}
             onToggleFavorite={handleToggleFavorite}
+            initialCategory={selectedCategoryFilter}
+            onClearInitialCategory={() => setSelectedCategoryFilter('')}
+            boutiqueSettings={boutiqueSettings}
           />
         ) : activePage === 'favorites' ? (
           // Favorites Page

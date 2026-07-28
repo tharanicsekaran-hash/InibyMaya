@@ -48,13 +48,6 @@ export default function ProductGrid({
     }
   }, [selectedSize]);
 
-  // Sync initialCategory prop from parent (e.g. clicking category card from homepage)
-  useEffect(() => {
-    if (initialCategory) {
-      setSelectedCategories([initialCategory]);
-    }
-  }, [initialCategory]);
-
   // Extract all categories dynamically from Admin panel settings + active products catalog
   const categories = useMemo(() => {
     let adminCats = [];
@@ -64,18 +57,40 @@ export default function ProductGrid({
           ? JSON.parse(boutiqueSettings.categories) 
           : boutiqueSettings.categories;
         if (Array.isArray(parsed) && parsed.length > 0) {
-          adminCats = parsed.map(c => (typeof c === 'string' ? c : (c.name || c.filter))).filter(Boolean);
+          adminCats = parsed.map(c => {
+            const val = typeof c === 'string' ? c : (c.name || c.filter);
+            if (val && (val.toLowerCase() === 'kurti' || val.toLowerCase() === 'kurtas')) return 'Long Kurti';
+            return val;
+          }).filter(Boolean);
         }
       } catch (e) {}
     }
 
     const rawList = adminCats.length > 0
       ? ['New Arrivals', ...adminCats]
-      : ['New Arrivals', ...new Set(products.map(p => p.category))];
+      : ['New Arrivals', ...new Set(products.map(p => {
+          const val = p.category;
+          if (val && (val.toLowerCase() === 'kurti' || val.toLowerCase() === 'kurtas')) return 'Long Kurti';
+          return val;
+        }))];
 
     const set = new Set(rawList.filter(Boolean));
     return Array.from(set);
   }, [products, boutiqueSettings]);
+
+  // Sync initialCategory prop from parent (e.g. clicking category card from homepage)
+  useEffect(() => {
+    if (initialCategory) {
+      let target = initialCategory.trim();
+      if (target.toLowerCase() === 'kurti' || target.toLowerCase() === 'kurtas') {
+        target = 'Long Kurti';
+      }
+
+      // Match exact case from categories list if available
+      const match = categories.find(c => c.toLowerCase().trim() === target.toLowerCase());
+      setSelectedCategories([match || target]);
+    }
+  }, [initialCategory, categories]);
 
   // Extract all unique color swatches and values dynamically
   const allColors = useMemo(() => {

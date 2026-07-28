@@ -38,10 +38,15 @@ const mapDbProductToClient = (dbProd) => {
   const rawOrigPrice = dbProd.originalPrice || dbProd.original_price || dbProd.highlights?.originalPrice;
   const validOrigPrice = (rawOrigPrice && Number(rawOrigPrice) > numPrice) ? Number(rawOrigPrice) : null;
 
+  let normCategory = dbProd.category || 'Long Kurti';
+  if (normCategory.toLowerCase().trim() === 'kurti' || normCategory.toLowerCase().trim() === 'kurtas') {
+    normCategory = 'Long Kurti';
+  }
+
   return {
     id: dbProd.id,
     title: dbProd.title,
-    category: dbProd.category,
+    category: normCategory,
     price: numPrice,
     originalPrice: validOrigPrice,
     rating: Number(dbProd.rating || 5.0),
@@ -196,7 +201,7 @@ const RESTORED_MISSING_ORDERS = [
         product: {
           id: 'prod-kadhal-magenta',
           title: 'Kadhal rich maganta stright kurti',
-          category: 'Kurti',
+          category: 'Long Kurti',
           price: 499,
           images: ['https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=800']
         },

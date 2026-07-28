@@ -28,10 +28,11 @@ export default function ProductCard({
     <div className="product-card" onClick={() => onProductClick(product, null)}>
       <div className="product-card-image-wrapper" style={{ borderRadius: '12px' }}>
         {/* Badges */}
-        <div className="product-badges">
-          {bestSeller && <span className="badge badge-bestseller">Best Seller</span>}
-          {customizable && <span className="badge badge-customizable">Custom Tailorable</span>}
-        </div>
+        {customizable && (
+          <div className="product-badges">
+            <span className="badge badge-customizable">Custom Tailorable</span>
+          </div>
+        )}
 
         {/* Action Stack (Heart + Eye) - Always Visible */}
         <div className="product-action-stack">

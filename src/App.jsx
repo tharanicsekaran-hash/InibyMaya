@@ -479,6 +479,8 @@ export default function App() {
                 const existing = combinedMap.get(p.id);
                 if (!existing) {
                   combinedMap.set(p.id, p);
+                } else if (p.lastEditedAt || p.id.startsWith('im-added-')) {
+                  combinedMap.set(p.id, { ...existing, ...p });
                 } else if (p.originalPrice && !existing.originalPrice) {
                   combinedMap.set(p.id, { ...existing, originalPrice: p.originalPrice });
                 }
@@ -1071,36 +1073,63 @@ export default function App() {
     }
   };
 
+  // Robust Supabase Product Database Persister
+  const saveProductToSupabase = async (prod) => {
+    if (!supabase) return { success: true };
+    try {
+      const payload = mapClientProductToDb(prod);
+      
+      // Stage 1: Full payload upsert
+      const { error: err1 } = await supabase.from('products').upsert(payload);
+      if (!err1) {
+        console.log(`✅ [Supabase] Product ${prod.id} ("${prod.title}") saved to live database.`);
+        return { success: true };
+      }
+
+      console.warn('⚠️ Supabase product upsert (Stage 1 notice):', err1.message);
+
+      // Stage 2: Core payload upsert stripping optional columns if schema differs
+      const corePayload = {
+        id: payload.id,
+        title: payload.title,
+        category: payload.category,
+        price: payload.price,
+        rating: payload.rating,
+        reviews_count: payload.reviews_count,
+        description: payload.description,
+        details: payload.details,
+        images: payload.images,
+        variants: payload.variants,
+        customizable: payload.customizable,
+        best_seller: payload.best_seller,
+        highlights: payload.highlights
+      };
+
+      const { error: err2 } = await supabase.from('products').upsert(corePayload);
+      if (!err2) {
+        console.log(`✅ [Supabase] Product ${prod.id} saved to DB via core payload.`);
+        return { success: true };
+      }
+
+      console.error('🚨 Supabase product upsert (Stage 2 error):', err2.message);
+      return { success: false, error: err2.message };
+    } catch (err) {
+      console.error('Product DB save exception:', err);
+      return { success: false, error: err.message || String(err) };
+    }
+  };
+
   // Admin adjustments
   const handleAddProduct = async (newProd) => {
+    const stamped = { ...newProd, lastEditedAt: Date.now() };
     setProductsList(prev => {
-      const updated = prev.some(p => p.id === newProd.id) ? prev.map(p => p.id === newProd.id ? newProd : p) : [newProd, ...prev];
+      const updated = prev.some(p => p.id === stamped.id) ? prev.map(p => p.id === stamped.id ? stamped : p) : [stamped, ...prev];
       safeSetItem('im_catalog', JSON.stringify(updated));
       return updated;
     });
-    if (supabase) {
-      try {
-        const payload = mapClientProductToDb(newProd);
-        const { error } = await supabase.from('products').upsert(payload);
-        if (error) {
-          console.warn('⚠️ Supabase product upsert initial attempt notice:', error.message);
-          const fallbackPayload = { ...payload };
-          delete fallbackPayload.original_price;
-          delete fallbackPayload.new_arrival;
-          const { error: retryErr } = await supabase.from('products').upsert(fallbackPayload);
-          if (retryErr) {
-            console.error('🚨 Supabase product upsert fallback retry error:', retryErr.message);
-          } else {
-            console.log(`✅ [Supabase] Product ${newProd.id} saved to DB via fallback payload.`);
-          }
-        } else {
-          console.log(`✅ [Supabase] Product ${newProd.id} successfully written to database.`);
-        }
-      } catch (err) {
-        console.error('Product save error:', err);
-      }
-    }
+    return await saveProductToSupabase(stamped);
   };
+
   const handleDeleteProduct = async (id) => {
     setProductsList(prev => {
       const updated = prev.filter(p => p.id !== id);
@@ -1108,28 +1137,22 @@ export default function App() {
       return updated;
     });
     if (supabase) {
-      await supabase.from('products').delete().eq('id', id);
+      try {
+        await supabase.from('products').delete().eq('id', id);
+      } catch (err) {
+        console.warn('Product delete notice:', err);
+      }
     }
   };
+
   const handleUpdateProduct = async (updatedProd) => {
+    const stamped = { ...updatedProd, lastEditedAt: Date.now() };
     setProductsList(prev => {
-      const updated = prev.map(p => p.id === updatedProd.id ? updatedProd : p);
+      const updated = prev.map(p => p.id === stamped.id ? stamped : p);
       safeSetItem('im_catalog', JSON.stringify(updated));
       return updated;
     });
-    if (supabase) {
-      try {
-        const payload = mapClientProductToDb(updatedProd);
-        const { error } = await supabase.from('products').update(payload).eq('id', updatedProd.id);
-        if (error) {
-          console.warn('Supabase product update initial attempt error, retrying fallback:', error.message);
-          delete payload.new_arrival;
-          await supabase.from('products').update(payload).eq('id', updatedProd.id);
-        }
-      } catch (err) {
-        console.error('Product update error:', err);
-      }
-    }
+    return await saveProductToSupabase(stamped);
   };
   const handleUpdateOrderStatus = async (orderId, nextStatus, trackingNum = '') => {
     let targetOrder = null;

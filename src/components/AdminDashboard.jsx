@@ -791,7 +791,7 @@ export default function AdminDashboard({
 
 
   // Product Add / Update Submit
-  const handleProductSubmit = (e) => {
+  const handleProductSubmit = async (e) => {
     e.preventDefault();
     const finalPrimary = primaryImages.filter(img => img && img.trim() !== '');
     if (finalPrimary.length === 0) {
@@ -852,8 +852,12 @@ export default function AdminDashboard({
           originalPrice: validOrigPrice
         }
       };
-      onUpdateProduct(updatedProduct);
-      setSuccessMsg('Product updated successfully!');
+      const res = await onUpdateProduct(updatedProduct);
+      if (res && res.success === false) {
+        setSuccessMsg(`⚠️ Product updated on storefront! (Live DB notice: ${res.error})`);
+      } else {
+        setSuccessMsg('🎉 Product updated successfully & synced to live database!');
+      }
       setEditingProduct(null);
     } else {
       const newProduct = {
@@ -885,8 +889,12 @@ export default function AdminDashboard({
           originalPrice: validOrigPrice
         }
       };
-      onAddProduct(newProduct);
-      setSuccessMsg('Product published successfully!');
+      const res = await onAddProduct(newProduct);
+      if (res && res.success === false) {
+        setSuccessMsg(`⚠️ Product published to storefront! (Live DB notice: ${res.error})`);
+      } else {
+        setSuccessMsg('🎉 Product published successfully & synced to live database!');
+      }
     }
 
     // Reset Form

@@ -311,22 +311,26 @@ export default function AdminDashboard({
       list = storefrontCategories.map(c => (typeof c === 'string' ? c : c.name)).filter(Boolean);
     } else if (boutiqueSettings && boutiqueSettings.categories) {
       try {
-        const parsed = JSON.parse(boutiqueSettings.categories);
-        list = parsed.map(c => (typeof c === 'string' ? c : c.name)).filter(Boolean);
-      } catch {}
-    }
-    
-    if (list.length === 0) {
-      list = ['Short kurti', 'Long Kurtas', 'Crop top', 'Anarkali Suits', 'Co-ord Sets', 'Straight Kurtas', 'Custom Tailoring'];
+        const parsed = typeof boutiqueSettings.categories === 'string' 
+          ? JSON.parse(boutiqueSettings.categories) 
+          : boutiqueSettings.categories;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          list = parsed.map(c => (typeof c === 'string' ? c : c.name)).filter(Boolean);
+        }
+      } catch (e) {}
     }
 
-    products.forEach(p => {
-      if (p.category && !list.includes(p.category)) {
-        list.push(p.category);
+    const defaultCats = ['Short kurti', 'Long Kurti', 'Crop top', 'Co-ord Sets', 'Anarkali Suits', 'Custom Tailoring'];
+    const combined = [...list, ...defaultCats];
+    
+    (products || []).forEach(p => {
+      if (p && p.category && !combined.includes(p.category)) {
+        combined.push(p.category);
       }
     });
 
-    return list;
+    const set = new Set(combined.filter(Boolean));
+    return Array.from(set);
   }, [storefrontCategories, boutiqueSettings, products]);
 
   const availableOccasions = React.useMemo(() => {
@@ -335,22 +339,26 @@ export default function AdminDashboard({
       list = storefrontOccasions.map(o => (typeof o === 'string' ? o : o.name)).filter(Boolean);
     } else if (boutiqueSettings && boutiqueSettings.occasions) {
       try {
-        const parsed = JSON.parse(boutiqueSettings.occasions);
-        list = parsed.map(o => (typeof o === 'string' ? o : o.name)).filter(Boolean);
-      } catch {}
+        const parsed = typeof boutiqueSettings.occasions === 'string' 
+          ? JSON.parse(boutiqueSettings.occasions) 
+          : boutiqueSettings.occasions;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          list = parsed.map(o => (typeof o === 'string' ? o : o.name)).filter(Boolean);
+        }
+      } catch (e) {}
     }
 
-    if (list.length === 0) {
-      list = ['Daily Elegance', 'Formal Grace', 'Festive Couture', 'Celebrations'];
-    }
+    const defaultOccasions = ['Daily Elegance', 'Festive Couture', 'Formal Grace', 'Celebrations'];
+    const combined = [...list, ...defaultOccasions];
 
-    products.forEach(p => {
-      if (p.occasion && !list.includes(p.occasion)) {
-        list.push(p.occasion);
+    (products || []).forEach(p => {
+      if (p && p.occasion && !combined.includes(p.occasion)) {
+        combined.push(p.occasion);
       }
     });
 
-    return list;
+    const set = new Set(combined.filter(Boolean));
+    return Array.from(set);
   }, [storefrontOccasions, boutiqueSettings, products]);
 
   const handleAddBannerSlide = () => {

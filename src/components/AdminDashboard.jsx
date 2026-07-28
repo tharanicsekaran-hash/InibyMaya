@@ -304,7 +304,7 @@ export default function AdminDashboard({
     }
   }, [boutiqueSettings]);
 
-  // Dynamic categories and occasions derived from Storefront settings & existing products
+  // Dynamic categories and occasions derived directly from Storefront settings & existing products
   const availableCategories = React.useMemo(() => {
     let list = [];
     if (storefrontCategories && storefrontCategories.length > 0) {
@@ -320,8 +320,12 @@ export default function AdminDashboard({
       } catch (e) {}
     }
 
-    const defaultCats = ['Short kurti', 'Long Kurti', 'Crop top', 'Co-ord Sets', 'Anarkali Suits', 'Custom Tailoring'];
-    const combined = [...list, ...defaultCats];
+    // Fallback defaults ONLY if zero storefront categories configured
+    if (list.length === 0) {
+      list = ['Short kurti', 'Long Kurti', 'Crop top', 'Co-ord Sets', 'Anarkali Suits', 'Custom Tailoring'];
+    }
+
+    const combined = [...list];
     
     (products || []).forEach(p => {
       if (p && p.category && !combined.includes(p.category)) {
@@ -348,8 +352,12 @@ export default function AdminDashboard({
       } catch (e) {}
     }
 
-    const defaultOccasions = ['Daily Elegance', 'Festive Couture', 'Formal Grace', 'Celebrations'];
-    const combined = [...list, ...defaultOccasions];
+    // Fallback defaults ONLY if zero storefront occasions configured
+    if (list.length === 0) {
+      list = ['Daily Elegance', 'Festive Couture', 'Formal Grace', 'Celebrations'];
+    }
+
+    const combined = [...list];
 
     (products || []).forEach(p => {
       if (p && p.occasion && !combined.includes(p.occasion)) {

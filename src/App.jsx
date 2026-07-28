@@ -307,7 +307,9 @@ export default function App() {
 
   // Catalog State (allows admin modification)
   const [productsList, setProductsList] = useState(() => {
-    const saved = localStorage.getItem('im_catalog');
+    // Purge legacy im_catalog cache if present
+    try { localStorage.removeItem('im_catalog'); } catch (e) {}
+    const saved = localStorage.getItem('im_catalog_v2');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -484,7 +486,7 @@ export default function App() {
             const newlyAddedLocal = (prevLocal || []).filter(p => p && p.id && p.id.startsWith('im-added-') && !remoteIds.has(p.id));
             
             const syncedList = [...newlyAddedLocal, ...remoteProds];
-            safeSetItem('im_catalog', JSON.stringify(syncedList));
+            safeSetItem('im_catalog_v2', JSON.stringify(syncedList));
             return syncedList;
           });
         }

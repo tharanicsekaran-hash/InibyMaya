@@ -93,7 +93,7 @@ export default function Header({
                 <User size={20} />
                 <span className="user-name-label">{user.name || user.email.split('@')[0]}</span>
               </button>
-              {user.email === 'tharanichandrasekaran2000@gmail.com' && (
+              {user?.email && ['inibymaya@gmail.com', 'inibymaya2026@gmail.com', 'tharanichandrasekaran2000@gmail.com', 'care@inibymaya.com'].includes(user.email.toLowerCase().trim()) && (
                 <button 
                   className={`action-btn admin-btn ${activePage === 'admin' ? 'active' : ''}`} 
                   onClick={() => setActivePage('admin')} 
@@ -170,7 +170,7 @@ export default function Header({
               >
                 Our Story
               </button>
-              {user && user.email === 'tharanichandrasekaran2000@gmail.com' && (
+              {user?.email && ['inibymaya@gmail.com', 'inibymaya2026@gmail.com', 'tharanichandrasekaran2000@gmail.com', 'care@inibymaya.com'].includes(user.email.toLowerCase().trim()) && (
                 <button 
                   onClick={() => { setActivePage('admin'); setMobileMenuOpen(false); }}
                   className={activePage === 'admin' ? 'active' : ''}

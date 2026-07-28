@@ -17,7 +17,7 @@ const getApiKey = () => {
 };
 
 const SENDER_DEFAULT = '"Ini by Maya" <orders@inibymaya.com>';
-const ADMIN_EMAILS = ['inibymaya@gmail.com', 'care@inibymaya.com', 'tharanichandrasekaran2000@gmail.com'];
+const ADMIN_EMAILS = ['inibymaya@gmail.com', 'inibymaya2026@gmail.com', 'care@inibymaya.com', 'tharanichandrasekaran2000@gmail.com'];
 
 // Initialize global in-memory log store for instant browser console inspection
 if (typeof window !== 'undefined' && !window.__IM_EMAIL_LOGS__) {

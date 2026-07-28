@@ -217,10 +217,6 @@ export default function ProductDetailModal({
               );
             })()}
 
-            <p className="detail-description">{description}</p>
-
-            <hr className="detail-divider" />
-
             {/* Colors */}
             <div className="option-section">
               <span className="option-label">Color: <strong>{selectedColor.name}</strong></span>

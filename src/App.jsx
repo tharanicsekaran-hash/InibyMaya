@@ -308,7 +308,13 @@ export default function App() {
   // Catalog State (allows admin modification)
   const [productsList, setProductsList] = useState(() => {
     const saved = localStorage.getItem('im_catalog');
-    return saved ? JSON.parse(saved) : initialProducts;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return initialProducts;
   });
 
   // Cart & Orders State
@@ -472,23 +478,14 @@ export default function App() {
         if (prodData && Array.isArray(prodData) && prodData.length > 0) {
           const remoteProds = prodData.map(mapDbProductToClient);
           setProductsList(prevLocal => {
-            const combinedMap = new Map();
-            remoteProds.forEach(p => { if (p && p.id) combinedMap.set(p.id, p); });
-            (prevLocal || []).forEach(p => {
-              if (p && p.id) {
-                const existing = combinedMap.get(p.id);
-                if (!existing) {
-                  combinedMap.set(p.id, p);
-                } else if (p.lastEditedAt || p.id.startsWith('im-added-')) {
-                  combinedMap.set(p.id, { ...existing, ...p });
-                } else if (p.originalPrice && !existing.originalPrice) {
-                  combinedMap.set(p.id, { ...existing, originalPrice: p.originalPrice });
-                }
-              }
-            });
-            const mergedList = Array.from(combinedMap.values());
-            safeSetItem('im_catalog', JSON.stringify(mergedList));
-            return mergedList;
+            const remoteIds = new Set(remoteProds.map(p => p.id));
+            
+            // Retain newly added local products created during the active session that are not in DB yet
+            const newlyAddedLocal = (prevLocal || []).filter(p => p && p.id && p.id.startsWith('im-added-') && !remoteIds.has(p.id));
+            
+            const syncedList = [...newlyAddedLocal, ...remoteProds];
+            safeSetItem('im_catalog', JSON.stringify(syncedList));
+            return syncedList;
           });
         }
       } catch (err) {

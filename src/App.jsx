@@ -255,18 +255,18 @@ export default function App() {
       newsletterPromoCode: 'WELCOME10',
       newsletterEnabled: true,
       categories: JSON.stringify([
-        { name: 'Long Kurtas', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=200&auto=format&fit=crop', filter: 'Long Kurtas' },
-        { name: 'Straight Kurtas', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=200&auto=format&fit=crop', filter: 'Straight Kurtas' },
-        { name: 'Anarkali Suits', image: 'https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=200&auto=format&fit=crop', filter: 'Anarkali Suits' },
+        { name: 'Short kurti', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=200&auto=format&fit=crop', filter: 'Short kurti' },
+        { name: 'Long Kurti', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=200&auto=format&fit=crop', filter: 'Long Kurti' },
+        { name: 'Crop top', image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=200&auto=format&fit=crop', filter: 'Crop top' },
         { name: 'Co-ord Sets', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=200&auto=format&fit=crop', filter: 'Co-ord Sets' },
-        { name: 'A-Line Kurtas', image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=200&auto=format&fit=crop', filter: 'A-Line Kurtas' },
-        { name: 'Custom Tailoring', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=200&auto=format&fit=crop', filter: 'custom' }
+        { name: 'Anarkali Suits', image: 'https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=200&auto=format&fit=crop', filter: 'Anarkali Suits' },
+        { name: 'Custom Tailoring', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=200&auto=format&fit=crop', filter: 'Custom Tailoring' }
       ]),
       occasions: JSON.stringify([
-        { name: 'Festive Couture', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800', filter: 'anarkali' },
-        { name: 'Daily Elegance', image: 'https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=800', filter: 'cotton' },
-        { name: 'Formal Grace', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800', filter: 'straight' },
-        { name: 'Celebrations', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800', filter: 'set' }
+        { name: 'Festive Couture', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800', filter: 'Festive Couture' },
+        { name: 'Daily Elegance', image: 'https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=800', filter: 'Daily Elegance' },
+        { name: 'Formal Grace', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800', filter: 'Formal Grace' },
+        { name: 'Celebrations', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800', filter: 'Celebrations' }
       ]),
       offerBanners: JSON.stringify([
         {

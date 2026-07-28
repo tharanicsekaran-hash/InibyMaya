@@ -43,9 +43,9 @@ export default function CategoryStrip({ categories = [], products = [], onCatego
       <div className="category-strip-scroll">
         {items.map((cat, idx) => (
           <button
-            key={cat.filter || cat.name || idx}
+            key={cat.name || cat.filter || idx}
             className="category-icon-item"
-            onClick={() => onCategoryClick(cat.filter || cat.name)}
+            onClick={() => onCategoryClick(cat.name || cat.filter)}
             aria-label={`Browse ${cat.name}`}
           >
             <div className="category-circle">

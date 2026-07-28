@@ -1353,7 +1353,7 @@ export default function App() {
                   <h3>
                     {successOrder.items.some(i => i.wantsCustomStitching) 
                       ? '7 to 10 Business Days (Custom Tailored)' 
-                      : '3 to 5 Business Days'
+                      : '5 to 10 Business Days'
                     }
                   </h3>
                 </div>

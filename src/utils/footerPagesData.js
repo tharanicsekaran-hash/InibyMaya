@@ -22,7 +22,7 @@ export const DEFAULT_FOOTER_PAGES = {
     title: 'Shipping & Delivery Policy',
     subtitle: 'Complimentary Express Shipping & Secure Transit Worldwide',
     section1Heading: 'Dispatch Timeline & Delivery Standard',
-    section1Content: 'All ready-to-wear orders are inspected for quality and dispatched within 24 to 48 hours. Orders featuring Bespoke Custom Tailoring require 3 to 5 business days for precision stitching before dispatch.',
+    section1Content: 'All ready-to-wear orders are inspected for quality and dispatched within 24 to 48 hours. Orders featuring Bespoke Custom Tailoring require 5 to 10 business days for precision stitching before dispatch.',
     section2Heading: 'Delhivery Express Courier Tracking',
     section2Content: 'Once shipped, you will receive an automated email with your live Delhivery Express Tracking AWB ID. Standard domestic delivery takes 2 to 4 business days across India.',
     calloutTitle: 'Free Shipping Across India',

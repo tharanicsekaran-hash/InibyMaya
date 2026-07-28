@@ -414,7 +414,7 @@ export default function ProductDetailModal({
                 {activeAccordions.shipping && (
                   <div className="accordion-body-content animate-slideDown">
                     <p className="accordion-desc-text">
-                      <strong>Dispatch Timeline:</strong> Standard creations ship within 3–5 boutique business days. Orders with custom stitching configurations require an additional 2 working days for tailor drafting and pattern layout checks.
+                      <strong>Dispatch Timeline:</strong> Standard creations ship within 5–10 boutique business days. Orders with custom stitching configurations require an additional 2 working days for tailor drafting and pattern layout checks.
                     </p>
                     <p className="accordion-desc-text">
                       <strong>Returns & Exchanges:</strong> We accept free exchanges or store credit returns within 7 days of package delivery. Outfits must be returned unworn, unwashed, and in their original packaging with tags attached.

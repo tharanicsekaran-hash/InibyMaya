@@ -316,7 +316,7 @@ export async function sendOrderShippedEmail(order, trackingNum = '') {
       <a href="${trackingUrl}" target="_blank" class="btn-gold">Track Live Shipment on Delhivery</a>
     </div>
 
-    <p style="font-size:13px; color:#666; text-align:center;">Estimated Delivery: 3 to 5 business days.</p>
+    <p style="font-size:13px; color:#666; text-align:center;">Estimated Delivery: 5 to 10 business days.</p>
   `;
 
   const recipientsList = [customerEmail];

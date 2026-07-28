@@ -305,19 +305,8 @@ export default function App() {
     }
   };
 
-  // Catalog State (allows admin modification)
-  const [productsList, setProductsList] = useState(() => {
-    // Purge legacy im_catalog cache if present
-    try { localStorage.removeItem('im_catalog'); } catch (e) {}
-    const saved = localStorage.getItem('im_catalog_v2');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch (e) {}
-    }
-    return initialProducts;
-  });
+  // Catalog State (100% Direct Database Synchronized)
+  const [productsList, setProductsList] = useState([]);
 
   // Cart & Orders State
   const [cartItems, setCartItems] = useState(() => {
@@ -472,6 +461,12 @@ export default function App() {
 
       // 1b. Load products table immediately with top priority
       try {
+        // Purge legacy local storage product caches to eliminate device drift
+        try {
+          localStorage.removeItem('im_catalog');
+          localStorage.removeItem('im_catalog_v2');
+        } catch (e) {}
+
         const { data: prodData } = await supabase
           .from('products')
           .select('*')
@@ -479,16 +474,7 @@ export default function App() {
 
         if (prodData && Array.isArray(prodData) && prodData.length > 0) {
           const remoteProds = prodData.map(mapDbProductToClient);
-          setProductsList(prevLocal => {
-            const remoteIds = new Set(remoteProds.map(p => p.id));
-            
-            // Retain newly added local products created during the active session that are not in DB yet
-            const newlyAddedLocal = (prevLocal || []).filter(p => p && p.id && p.id.startsWith('im-added-') && !remoteIds.has(p.id));
-            
-            const syncedList = [...newlyAddedLocal, ...remoteProds];
-            safeSetItem('im_catalog_v2', JSON.stringify(syncedList));
-            return syncedList;
-          });
+          setProductsList(remoteProds);
         }
       } catch (err) {
         console.warn('Products query notice:', err);
@@ -1120,24 +1106,29 @@ export default function App() {
 
   // Admin adjustments
   const handleAddProduct = async (newProd) => {
-    const stamped = { ...newProd, lastEditedAt: Date.now() };
     setProductsList(prev => {
-      const updated = prev.some(p => p.id === stamped.id) ? prev.map(p => p.id === stamped.id ? stamped : p) : [stamped, ...prev];
-      safeSetItem('im_catalog', JSON.stringify(updated));
-      return updated;
+      return prev.some(p => p.id === newProd.id) ? prev.map(p => p.id === newProd.id ? newProd : p) : [newProd, ...prev];
     });
-    return await saveProductToSupabase(stamped);
+    const res = await saveProductToSupabase(newProd);
+    // Refresh live products from DB
+    try {
+      const { data: prodData } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+      if (prodData && Array.isArray(prodData) && prodData.length > 0) {
+        setProductsList(prodData.map(mapDbProductToClient));
+      }
+    } catch (e) {}
+    return res;
   };
 
   const handleDeleteProduct = async (id) => {
-    setProductsList(prev => {
-      const updated = prev.filter(p => p.id !== id);
-      safeSetItem('im_catalog', JSON.stringify(updated));
-      return updated;
-    });
+    setProductsList(prev => prev.filter(p => p.id !== id));
     if (supabase) {
       try {
         await supabase.from('products').delete().eq('id', id);
+        const { data: prodData } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+        if (prodData && Array.isArray(prodData)) {
+          setProductsList(prodData.map(mapDbProductToClient));
+        }
       } catch (err) {
         console.warn('Product delete notice:', err);
       }
@@ -1145,13 +1136,15 @@ export default function App() {
   };
 
   const handleUpdateProduct = async (updatedProd) => {
-    const stamped = { ...updatedProd, lastEditedAt: Date.now() };
-    setProductsList(prev => {
-      const updated = prev.map(p => p.id === stamped.id ? stamped : p);
-      safeSetItem('im_catalog', JSON.stringify(updated));
-      return updated;
-    });
-    return await saveProductToSupabase(stamped);
+    setProductsList(prev => prev.map(p => p.id === updatedProd.id ? updatedProd : p));
+    const res = await saveProductToSupabase(updatedProd);
+    try {
+      const { data: prodData } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+      if (prodData && Array.isArray(prodData) && prodData.length > 0) {
+        setProductsList(prodData.map(mapDbProductToClient));
+      }
+    } catch (e) {}
+    return res;
   };
   const handleUpdateOrderStatus = async (orderId, nextStatus, trackingNum = '') => {
     let targetOrder = null;

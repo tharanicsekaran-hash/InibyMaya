@@ -1642,8 +1642,8 @@ export default function App() {
             {/* 4. Patron Testimonials */}
             <section className="testimonials-section container">
               <div className="section-header-centered">
-                <h2>What Our Patrons Say</h2>
-                <p>Real stories from women who wear their confidence in every thread.</p>
+                <h2>Hear from our customers</h2>
+                <p>Real stories from patrons who wear their confidence in every thread.</p>
               </div>
 
               <div className="testimonials-carousel-wrapper">

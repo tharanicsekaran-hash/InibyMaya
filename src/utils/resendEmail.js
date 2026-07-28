@@ -345,7 +345,7 @@ export async function sendOrderDeliveredEmail(order) {
     <div class="box-callout" style="text-align:center; background-color:#fffdfa; border-color:#d4af37;">
       <h3 style="font-family:'Georgia',serif; color:#8b0000; margin:0 0 10px 0;">Share Your Experience & Win Couture Rewards</h3>
       <p style="font-size:13.5px; color:#555; line-height:1.6; margin:0 0 16px 0;">
-        We hope you fall in love with the weight, silhouette, and detailing of your new piece. We would be honored to feature your story and photograph in <em>"What Our Patrons Say"</em>!
+        We hope you fall in love with the weight, silhouette, and detailing of your new piece. We would be honored to feature your story and photograph in <em>"Hear from our customers"</em>!
       </p>
       <a href="https://inibymaya.com" class="btn-gold">Share Review & Story</a>
     </div>

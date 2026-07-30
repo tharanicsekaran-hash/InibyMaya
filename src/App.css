@@ -3598,15 +3598,16 @@ html, body, #root {
 }
 
 .footer-logo-wrapper {
-  margin-bottom: 8px !important;
+  margin-bottom: 4px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
   padding: 0 !important;
+  margin-left: -10px !important;
 }
 
 .footer-logo-img {
-  height: 96px !important;
+  height: 84px !important;
   width: auto !important;
   max-width: 100% !important;
   object-fit: contain !important;

@@ -245,26 +245,59 @@ export default function InfoPage({ tab, setTab, orders = [], boutiqueSettings = 
             )}
 
             <div className="tab-legal-rich">
-              {activeCustomPage.section1Heading && (
-                <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--color-text-primary)', marginTop: '20px', marginBottom: '10px' }}>
-                  {activeCustomPage.section1Heading}
-                </h3>
-              )}
-              {activeCustomPage.section1Content && (
-                <div style={{ whiteSpace: 'pre-line', fontSize: '14px', lineHeight: '1.7', color: 'var(--color-text-secondary)', marginBottom: '24px' }}>
-                  {activeCustomPage.section1Content}
-                </div>
-              )}
+              {tab === 'about-us' ? (
+                <>
+                  {/* Single Unified About Us Description Passage */}
+                  {(activeCustomPage.fullDescription || activeCustomPage.section1Content || activeCustomPage.section2Content) && (
+                    <div style={{ whiteSpace: 'pre-wrap', fontSize: '14.5px', lineHeight: '1.85', color: 'var(--color-text-secondary)', marginBottom: '32px' }}>
+                      {activeCustomPage.fullDescription || [activeCustomPage.section1Content, activeCustomPage.section2Content].filter(Boolean).join('\n\n')}
+                    </div>
+                  )}
 
-              {activeCustomPage.section2Heading && (
-                <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--color-text-primary)', marginTop: '20px', marginBottom: '10px' }}>
-                  {activeCustomPage.section2Heading}
-                </h3>
-              )}
-              {activeCustomPage.section2Content && (
-                <div style={{ whiteSpace: 'pre-line', fontSize: '14px', lineHeight: '1.7', color: 'var(--color-text-secondary)', marginBottom: '24px' }}>
-                  {activeCustomPage.section2Content}
-                </div>
+                  {/* About Us Atelier & Craft Photos Showcase Gallery */}
+                  {activeCustomPage.aboutImages && activeCustomPage.aboutImages.filter(Boolean).length > 0 && (
+                    <div className="about-us-gallery-section" style={{ marginTop: '32px', marginBottom: '32px' }}>
+                      <h3 style={{ fontSize: '20px', fontFamily: 'var(--font-display)', marginBottom: '16px', color: 'var(--color-text-primary)' }}>
+                        Our Atelier & Craft Showcase
+                      </h3>
+                      <div className="about-gallery-grid" style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                        gap: '16px'
+                      }}>
+                        {activeCustomPage.aboutImages.filter(Boolean).map((imgUrl, i) => (
+                          <div key={i} className="about-gallery-card" style={{ borderRadius: '12px', overflow: 'hidden', height: '240px', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)' }}>
+                            <img src={imgUrl} alt={`About Us Atelier Photo ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {activeCustomPage.section1Heading && (
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--color-text-primary)', marginTop: '20px', marginBottom: '10px' }}>
+                      {activeCustomPage.section1Heading}
+                    </h3>
+                  )}
+                  {activeCustomPage.section1Content && (
+                    <div style={{ whiteSpace: 'pre-line', fontSize: '14px', lineHeight: '1.7', color: 'var(--color-text-secondary)', marginBottom: '24px' }}>
+                      {activeCustomPage.section1Content}
+                    </div>
+                  )}
+
+                  {activeCustomPage.section2Heading && (
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--color-text-primary)', marginTop: '20px', marginBottom: '10px' }}>
+                      {activeCustomPage.section2Heading}
+                    </h3>
+                  )}
+                  {activeCustomPage.section2Content && (
+                    <div style={{ whiteSpace: 'pre-line', fontSize: '14px', lineHeight: '1.7', color: 'var(--color-text-secondary)', marginBottom: '24px' }}>
+                      {activeCustomPage.section2Content}
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Highlight Callout Box Notice */}

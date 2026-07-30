@@ -2306,11 +2306,18 @@ alter table public.settings disable row level security;`}</pre>
 
         const pendingPaymentOrders = filteredAnalyticsOrders.filter(o => {
           if (o.status === 'Cancelled' || o.status === 'Delivered') return false;
-          const isCOD = o.paymentMethod?.toLowerCase().includes('cod') ||
-                        o.paymentMethod?.toLowerCase().includes('cash') ||
-                        o.paymentStatus === 'Pending' ||
-                        o.paymentStatus === 'Pending Payment' ||
-                        o.status === 'Pending Payment';
+          
+          const payId = (o.paymentId || o.payment_id || '').toString().toUpperCase();
+          const payMethod = (o.paymentMethod || '').toString().toUpperCase();
+          const payStatus = (o.paymentStatus || '').toString().toUpperCase();
+
+          const isCOD = payId.includes('COD') || 
+                        payId === '' || 
+                        payMethod.includes('COD') || 
+                        payMethod.includes('CASH') || 
+                        payMethod === '' ||
+                        payStatus !== 'PAID';
+          
           return isCOD;
         });
         const pendingPaymentCount = pendingPaymentOrders.length;
@@ -2421,7 +2428,7 @@ alter table public.settings disable row level security;`}</pre>
 
         return (
           <div className="admin-content-section animate-fadeIn">
-            <div className="admin-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+            <div className="admin-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '24px', paddingBottom: '14px', borderBottom: '1px solid var(--color-border)' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '20px', color: '#8b0000', fontFamily: 'var(--font-display)' }}>📊 Analytics & Revenue Hub</h3>
               </div>

@@ -1,8 +1,106 @@
 import React, { useState, useEffect } from 'react';
-import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings, Layout, ChevronUp, ChevronDown, Plus, Mail, FileText } from 'lucide-react';
+import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings, Layout, ChevronUp, ChevronDown, Plus, Mail, FileText, Download } from 'lucide-react';
 import { uploadFileToGithub } from '../utils/githubUploader';
 import { sendOrderConfirmationEmail } from '../utils/resendEmail';
 import { DEFAULT_FOOTER_PAGES } from '../utils/footerPagesData';
+
+function DonutChart({ data, centerTitle, centerSub }) {
+  const total = data.reduce((acc, d) => acc + d.value, 0);
+  if (total === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-secondary)', fontSize: '13px' }}>
+        No orders found for selected timeframe.
+      </div>
+    );
+  }
+
+  let accumulatedAngle = 0;
+  const radius = 70;
+  const strokeWidth = 24;
+  const circumference = 2 * Math.PI * radius;
+
+  const slices = data.map((item, idx) => {
+    const percentage = item.value / total;
+    const strokeDasharray = `${percentage * circumference} ${circumference}`;
+    const strokeDashoffset = -accumulatedAngle * circumference;
+    accumulatedAngle += percentage;
+
+    return (
+      <circle
+        key={idx}
+        cx="100"
+        cy="100"
+        r={radius}
+        fill="transparent"
+        stroke={item.color}
+        strokeWidth={strokeWidth}
+        strokeDasharray={strokeDasharray}
+        strokeDashoffset={strokeDashoffset}
+        style={{ transition: 'stroke-dashoffset 0.6s ease, stroke-dasharray 0.6s ease' }}
+      />
+    );
+  });
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+      <div style={{ position: 'relative', width: '190px', height: '190px' }}>
+        <svg viewBox="0 0 200 200" width="190" height="190" style={{ transform: 'rotate(-90deg)' }}>
+          {slices}
+        </svg>
+        <div style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          pointerEvents: 'none'
+        }}>
+          <span style={{ fontSize: '22px', fontWeight: '700', color: 'var(--color-text-primary)' }}>{centerTitle}</span>
+          <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{centerSub}</span>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', width: '100%' }}>
+        {data.map((item, idx) => {
+          const pct = Math.round((item.value / total) * 100);
+          return (
+            <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: item.color, display: 'inline-block' }}></span>
+                <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>{item.label}</span>
+              </div>
+              <span style={{ fontWeight: '600', color: 'var(--color-text-primary)' }}>{item.value} ({pct}%)</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function HorizontalBarList({ items }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+      {items.map((item, idx) => {
+        const pct = item.maxVal > 0 ? Math.min(100, Math.round((item.value / item.maxVal) * 100)) : 0;
+        return (
+          <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+              <span style={{ fontWeight: '500', color: 'var(--color-text-primary)' }}>{item.label}</span>
+              <span style={{ fontWeight: '600', color: 'var(--color-text-primary)' }}>
+                {item.subtext || `${item.value}`}
+              </span>
+            </div>
+            <div style={{ height: '8px', width: '100%', backgroundColor: 'rgba(0, 0, 0, 0.06)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${pct}%`, backgroundColor: item.color || '#8b0000', borderRadius: '4px', transition: 'width 0.5s ease' }}></div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 const getSleeveName = (id) => {
   const sleevesMap = {
@@ -555,6 +653,7 @@ export default function AdminDashboard({
   const [rating, setRating] = useState(5.0);
   const [reviewsCount, setReviewsCount] = useState(1);
   const [successMsg, setSuccessMsg] = useState('');
+  const [analyticsTimeFilter, setAnalyticsTimeFilter] = useState('all');
 
   // Lightweight canvas image compressor utility (cuts bandwidth & DB egress usage by 99%)
   const compressImage = (file, maxWidth = 1200, quality = 0.8) => {
@@ -1212,7 +1311,7 @@ alter table public.settings disable row level security;`}</pre>
             onClick={() => setActiveTab('stats')}
           >
             <BarChart3 size={15} />
-            <span>Sizing Insights</span>
+            <span>Analytics & Revenue</span>
           </button>
           <button 
             className={`tab-btn ${activeTab === 'testimonials' ? 'active' : ''}`}
@@ -2168,79 +2267,313 @@ alter table public.settings disable row level security;`}</pre>
         </div>
       )}
 
-      {/* Tab 5: Sizing Insights & Demands */}
-      {activeTab === 'stats' && (
-        <div className="admin-content-section animate-fadeIn">
-          <div className="admin-section-header">
-            <h3>Bespoke Sizing Analytics</h3>
-            <p>Review customer sizing patterns, standard vs. custom ratios, and revenue totals.</p>
-          </div>
+      {/* Tab 5: Analytics & Revenue Hub */}
+      {activeTab === 'stats' && (() => {
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-          <div className="insights-summary-grid">
-            <div className="stat-card">
-              <span className="stat-label">Boutique Revenue</span>
-              <h2 className="stat-value">₹{totalRevenue.toLocaleString('en-IN')}</h2>
-            </div>
-            <div className="stat-card">
-              <span className="stat-label">Orders Sewn</span>
-              <h2 className="stat-value">{totalOrders}</h2>
-            </div>
-            <div className="stat-card">
-              <span className="stat-label">Bespoke Fit Rate</span>
-              <h2 className="stat-value">{customOrdersCount}</h2>
-              <span className="stat-subtext">{totalOrders > 0 ? Math.round((customOrdersCount / totalOrders) * 100) : 0}% custom stitched</span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-label">Average Order Val</span>
-              <h2 className="stat-value">₹{avgOrderValue.toLocaleString('en-IN')}</h2>
-            </div>
-          </div>
+        const filteredAnalyticsOrders = orders.filter(order => {
+          if (analyticsTimeFilter === 'all') return true;
+          const orderDate = new Date(order.timestamp || order.date || order.createdAt);
+          if (isNaN(orderDate.getTime())) return true;
 
-          <div className="insights-flex-grid">
-            <div className="custom-sizing-analysis sizing-chart-card">
-              <h4>Standard vs. Custom Sizing Demand</h4>
-              <p>Breakdown of standard sizes select versus bespoke measurement fitting inputs.</p>
-              <table className="insights-table">
-                <thead>
-                  <tr>
-                    <th>Sizing Category</th>
-                    <th>Count of Items Ordered</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(sizeDemands).map(([size, count]) => (
-                    <tr key={size} className={size === 'Custom Tailored' ? 'highlight-custom-row' : ''}>
-                      <td><strong>{size}</strong></td>
-                      <td>{count}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          if (analyticsTimeFilter === 'today') {
+            return orderDate >= startOfToday;
+          }
+          if (analyticsTimeFilter === 'yesterday') {
+            const startOfYesterday = new Date(startOfToday);
+            startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+            return orderDate >= startOfYesterday && orderDate < startOfToday;
+          }
+          if (analyticsTimeFilter === '7days') {
+            const sevenDaysAgo = new Date(startOfToday);
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            return orderDate >= sevenDaysAgo;
+          }
+          if (analyticsTimeFilter === '30days') {
+            const thirtyDaysAgo = new Date(startOfToday);
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            return orderDate >= thirtyDaysAgo;
+          }
+          return true;
+        });
+
+        const filteredTotalOrders = filteredAnalyticsOrders.length;
+        
+        const validOrders = filteredAnalyticsOrders.filter(o => o.status !== 'Cancelled');
+        const filteredTotalRevenue = validOrders.reduce((sum, o) => sum + (o.total || o.totalAmount || 0), 0);
+        const filteredAvgOrderVal = filteredTotalOrders > 0 ? Math.round(filteredTotalRevenue / filteredTotalOrders) : 0;
+
+        const pendingPaymentOrders = filteredAnalyticsOrders.filter(o => 
+          o.status === 'Pending Payment' || o.paymentStatus === 'Pending' || o.paymentStatus === 'Failed'
+        );
+        const pendingPaymentCount = pendingPaymentOrders.length;
+        const pendingPaymentRev = pendingPaymentOrders.reduce((sum, o) => sum + (o.total || o.totalAmount || 0), 0);
+
+        const customFitOrders = filteredAnalyticsOrders.filter(o => 
+          o.items?.some(i => i.wantsCustomStitching || i.size === 'Custom Tailored')
+        ).length;
+        const customFitPct = filteredTotalOrders > 0 ? Math.round((customFitOrders / filteredTotalOrders) * 100) : 0;
+
+        const statusCounts = {
+          'Pending Payment': pendingPaymentCount,
+          'Pending Shipment': filteredAnalyticsOrders.filter(o => o.status === 'Pending Shipment' || o.status === 'Placed').length,
+          'Quality Check': filteredAnalyticsOrders.filter(o => o.status === 'Quality Check').length,
+          'Shipped': filteredAnalyticsOrders.filter(o => o.status === 'Shipped').length,
+          'Delivered': filteredAnalyticsOrders.filter(o => o.status === 'Delivered').length,
+          'Cancelled': filteredAnalyticsOrders.filter(o => o.status === 'Cancelled').length
+        };
+
+        const donutChartData = [
+          { label: 'Pending Payment', value: statusCounts['Pending Payment'], color: '#f59e0b' },
+          { label: 'Pending Shipment', value: statusCounts['Pending Shipment'], color: '#3b82f6' },
+          { label: 'Quality Check', value: statusCounts['Quality Check'], color: '#a855f7' },
+          { label: 'Shipped', value: statusCounts['Shipped'], color: '#6366f1' },
+          { label: 'Delivered', value: statusCounts['Delivered'], color: '#10b981' },
+          { label: 'Cancelled', value: statusCounts['Cancelled'], color: '#ef4444' }
+        ].filter(d => d.value > 0);
+
+        const sizingCounts = { XS: 0, S: 0, M: 0, L: 0, XL: 0, XXL: 0, 'Custom Tailored': 0 };
+        filteredAnalyticsOrders.forEach(o => {
+          o.items?.forEach(i => {
+            if (i.wantsCustomStitching || i.size === 'Custom Tailored') {
+              sizingCounts['Custom Tailored'] += (i.quantity || 1);
+            } else if (i.size && sizingCounts[i.size] !== undefined) {
+              sizingCounts[i.size] += (i.quantity || 1);
+            } else if (i.selectedSize && sizingCounts[i.selectedSize] !== undefined) {
+              sizingCounts[i.selectedSize] += (i.quantity || 1);
+            }
+          });
+        });
+
+        const totalItemsCount = Object.values(sizingCounts).reduce((a, b) => a + b, 0);
+
+        const sizingBarItems = Object.entries(sizingCounts).map(([sz, cnt]) => ({
+          label: sz,
+          value: cnt,
+          maxVal: Math.max(...Object.values(sizingCounts), 1),
+          subtext: `${cnt} units (${totalItemsCount > 0 ? Math.round((cnt / totalItemsCount) * 100) : 0}%)`,
+          color: sz === 'Custom Tailored' ? '#8b0000' : '#475569'
+        }));
+
+        const productSalesMap = {};
+        filteredAnalyticsOrders.forEach(o => {
+          if (o.status === 'Cancelled') return;
+          o.items?.forEach(i => {
+            const pId = i.product?.id || i.id || i.title;
+            const pTitle = i.product?.title || i.title || 'Outfit Item';
+            const qty = i.quantity || 1;
+            const itemRev = (i.price || i.product?.price || 0) * qty;
+
+            if (!productSalesMap[pId]) {
+              productSalesMap[pId] = { title: pTitle, qty: 0, revenue: 0, image: i.product?.images?.[0] || i.images?.[0] };
+            }
+            productSalesMap[pId].qty += qty;
+            productSalesMap[pId].revenue += itemRev;
+          });
+        });
+
+        const sortedBestSellers = Object.values(productSalesMap)
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 5);
+
+        const handleExportCSV = () => {
+          const filterLabels = { today: 'Today', yesterday: 'Yesterday', '7days': 'Last_7_Days', '30days': 'Last_30_Days', all: 'All_Time' };
+          const label = filterLabels[analyticsTimeFilter] || 'Report';
+          
+          if (filteredAnalyticsOrders.length === 0) {
+            alert('No orders found for the selected time filter to export.');
+            return;
+          }
+
+          const headers = ['Order ID', 'Date', 'Customer Name', 'Phone', 'Total (INR)', 'Payment Status', 'Fulfillment Status', 'Items Count', 'Custom Tailored'];
+          const rows = filteredAnalyticsOrders.map(o => {
+            const isCustom = o.items?.some(i => i.wantsCustomStitching || i.size === 'Custom Tailored') ? 'Yes' : 'No';
+            const dateStr = new Date(o.timestamp || o.date || o.createdAt).toLocaleDateString();
+            return [
+              `"${o.id}"`,
+              `"${dateStr}"`,
+              `"${o.shippingDetails?.name || 'N/A'}"`,
+              `"${o.shippingDetails?.phone || 'N/A'}"`,
+              o.total || o.totalAmount || 0,
+              `"${o.paymentStatus || 'Paid'}"`,
+              `"${o.status || 'Placed'}"`,
+              o.items?.length || 1,
+              `"${isCustom}"`
+            ].join(',');
+          });
+
+          const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows].join('\n');
+          const encodedUri = encodeURI(csvContent);
+          const link = document.createElement('a');
+          link.setAttribute('href', encodedUri);
+          link.setAttribute('download', `IniByMaya_Sales_Analytics_${label}_${new Date().toISOString().slice(0, 10)}.csv`);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        };
+
+        return (
+          <div className="admin-content-section animate-fadeIn">
+            <div className="admin-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '20px', color: '#8b0000', fontFamily: 'var(--font-display)' }}>📊 Analytics & Revenue Hub</h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                  Real-time sales figures, fulfillment pie chart breakdown, pending payment tracking, and sizing demands.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleExportCSV}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '13px', borderRadius: '6px' }}
+              >
+                <Download size={15} /> Export Sales CSV
+              </button>
             </div>
 
-            <div className="custom-sizing-analysis notes-log-card">
-              <h4>Patron Stitching Notes</h4>
-              <p>Special instructions submitted during tailor mapping configuration:</p>
-              <div className="notes-scroller-box">
-                {orders.some(o => o.items.some(item => item.measurements && item.measurements.notes)) ? (
-                  orders.map(order => 
-                    order.items.map((item, iIdx) => 
-                      item.measurements && item.measurements.notes && (
-                        <div key={`${order.id}-${iIdx}`} className="notes-log-item">
-                          <span><strong>{order.id}</strong> (Customer: {order.shippingDetails.name})</span>
-                          <p>"{item.measurements.notes}"</p>
-                        </div>
-                      )
-                    )
-                  )
-                ) : (
-                  <p className="no-notes-status">No specific tailoring notes submitted yet.</p>
-                )}
+            {/* Time Filter Bar */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              backgroundColor: 'var(--color-bg-secondary)',
+              padding: '8px',
+              borderRadius: '30px',
+              border: '1px solid var(--color-border)',
+              marginBottom: '28px',
+              overflowX: 'auto',
+              width: 'fit-content'
+            }}>
+              {[
+                { id: 'today', label: 'Today' },
+                { id: 'yesterday', label: 'Yesterday' },
+                { id: '7days', label: 'Last 7 Days' },
+                { id: '30days', label: 'Last 30 Days' },
+                { id: 'all', label: 'All Time' }
+              ].map(f => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setAnalyticsTimeFilter(f.id)}
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: '20px',
+                    border: 'none',
+                    backgroundColor: analyticsTimeFilter === f.id ? '#8b0000' : 'transparent',
+                    color: analyticsTimeFilter === f.id ? '#fff' : 'var(--color-text-primary)',
+                    fontWeight: analyticsTimeFilter === f.id ? '600' : '500',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: analyticsTimeFilter === f.id ? '0 2px 8px rgba(139,0,0,0.25)' : 'none'
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Summary KPI Cards Grid (4 Cards) */}
+            <div className="insights-summary-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
+              <div className="stat-card" style={{ borderLeft: '4px solid #10b981' }}>
+                <span className="stat-label">Total Revenue</span>
+                <h2 className="stat-value" style={{ color: '#047857' }}>₹{filteredTotalRevenue.toLocaleString('en-IN')}</h2>
+                <span className="stat-subtext">Net earnings ({analyticsTimeFilter})</span>
+              </div>
+              <div className="stat-card" style={{ borderLeft: '4px solid #3b82f6' }}>
+                <span className="stat-label">Total Orders Sold</span>
+                <h2 className="stat-value" style={{ color: '#1d4ed8' }}>{filteredTotalOrders}</h2>
+                <span className="stat-subtext">{customFitPct}% bespoke custom stitched</span>
+              </div>
+              <div className="stat-card" style={{ borderLeft: '4px solid #f59e0b' }}>
+                <span className="stat-label">Pending Payments</span>
+                <h2 className="stat-value" style={{ color: '#b45309' }}>₹{pendingPaymentRev.toLocaleString('en-IN')}</h2>
+                <span className="stat-subtext">{pendingPaymentCount} orders pending payment</span>
+              </div>
+              <div className="stat-card" style={{ borderLeft: '4px solid #8b0000' }}>
+                <span className="stat-label">Average Order Value</span>
+                <h2 className="stat-value" style={{ color: '#8b0000' }}>₹{filteredAvgOrderVal.toLocaleString('en-IN')}</h2>
+                <span className="stat-subtext">Revenue per order</span>
               </div>
             </div>
+
+            {/* Visual Analytics Grid: Donut Chart + Sizing Demands */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '28px' }}>
+              {/* Card 1: Dynamic Donut Chart for Fulfillment & Payments */}
+              <div className="admin-form-box" style={{ padding: '24px' }}>
+                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', color: 'var(--color-text-primary)' }}>
+                  🍩 Order Status & Payment Breakdown
+                </h4>
+                <p style={{ margin: '0 0 20px 0', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                  Interactive pie chart distribution across payment and shipping stages.
+                </p>
+
+                <DonutChart 
+                  data={donutChartData} 
+                  centerTitle={`${filteredTotalOrders}`} 
+                  centerSub="Total Orders" 
+                />
+              </div>
+
+              {/* Card 2: Sizing Demand Distribution Bar Chart */}
+              <div className="admin-form-box" style={{ padding: '24px' }}>
+                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', color: 'var(--color-text-primary)' }}>
+                  📏 Standard vs. Bespoke Sizing Demands
+                </h4>
+                <p style={{ margin: '0 0 20px 0', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                  Frequency distribution of patron measurements and fitting selections.
+                </p>
+
+                <HorizontalBarList items={sizingBarItems} />
+              </div>
+            </div>
+
+            {/* Card 3: Best Seller Garments Performance */}
+            <div className="admin-form-box" style={{ padding: '24px' }}>
+              <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', color: 'var(--color-text-primary)' }}>
+                🏆 Top Performing Outfits ({analyticsTimeFilter})
+              </h4>
+              <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                Highest revenue-generating garments sold during the selected timeframe.
+              </p>
+
+              {sortedBestSellers.length > 0 ? (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="insights-table" style={{ width: '100%' }}>
+                    <thead>
+                      <tr>
+                        <th>Outfit Title</th>
+                        <th>Units Sold</th>
+                        <th>Gross Revenue (₹)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedBestSellers.map((item, idx) => (
+                        <tr key={idx}>
+                          <td style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            {item.image && (
+                              <img src={item.image} alt={item.title} style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover' }} />
+                            )}
+                            <strong>{item.title}</strong>
+                          </td>
+                          <td><strong>{item.qty} pcs</strong></td>
+                          <td style={{ color: '#047857', fontWeight: '600' }}>₹{item.revenue.toLocaleString('en-IN')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', textAlign: 'center', padding: '20px 0' }}>
+                  No outfit sales recorded for this timeframe.
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Tab 6: Testimonials Configurator */}
       {activeTab === 'testimonials' && (

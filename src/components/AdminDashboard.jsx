@@ -2401,13 +2401,15 @@ alter table public.settings disable row level security;`}</pre>
           const rows = filteredAnalyticsOrders.map(o => {
             const isCustom = o.items?.some(i => i.wantsCustomStitching || i.size === 'Custom Tailored') ? 'Yes' : 'No';
             const dateStr = new Date(o.timestamp || o.date || o.createdAt).toLocaleDateString();
+            const st = (o.status || '').toLowerCase();
+            const calcPaymentStatus = st.includes('cancel') ? 'Cancelled' : (st === 'delivered' ? 'Paid' : 'Unpaid (COD Pending)');
             return [
               `"${o.id}"`,
               `"${dateStr}"`,
               `"${o.shippingDetails?.name || 'N/A'}"`,
               `"${o.shippingDetails?.phone || 'N/A'}"`,
               o.total || o.totalAmount || 0,
-              `"${o.paymentStatus || 'Paid'}"`,
+              `"${calcPaymentStatus}"`,
               `"${o.status || 'Placed'}"`,
               o.items?.length || 1,
               `"${isCustom}"`

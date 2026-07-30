@@ -2304,9 +2304,15 @@ alter table public.settings disable row level security;`}</pre>
         const filteredTotalRevenue = validOrders.reduce((sum, o) => sum + (o.total || o.totalAmount || 0), 0);
         const filteredAvgOrderVal = filteredTotalOrders > 0 ? Math.round(filteredTotalRevenue / filteredTotalOrders) : 0;
 
-        const pendingPaymentOrders = filteredAnalyticsOrders.filter(o => 
-          o.status === 'Pending Payment' || o.paymentStatus === 'Pending' || o.paymentStatus === 'Failed'
-        );
+        const pendingPaymentOrders = filteredAnalyticsOrders.filter(o => {
+          if (o.status === 'Cancelled' || o.status === 'Delivered') return false;
+          const isCOD = o.paymentMethod?.toLowerCase().includes('cod') ||
+                        o.paymentMethod?.toLowerCase().includes('cash') ||
+                        o.paymentStatus === 'Pending' ||
+                        o.paymentStatus === 'Pending Payment' ||
+                        o.status === 'Pending Payment';
+          return isCOD;
+        });
         const pendingPaymentCount = pendingPaymentOrders.length;
         const pendingPaymentRev = pendingPaymentOrders.reduce((sum, o) => sum + (o.total || o.totalAmount || 0), 0);
 
@@ -2418,9 +2424,6 @@ alter table public.settings disable row level security;`}</pre>
             <div className="admin-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '20px', color: '#8b0000', fontFamily: 'var(--font-display)' }}>📊 Analytics & Revenue Hub</h3>
-                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                  Real-time sales figures, fulfillment pie chart breakdown, pending payment tracking, and sizing demands.
-                </p>
               </div>
 
               <button

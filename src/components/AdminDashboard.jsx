@@ -2329,8 +2329,7 @@ alter table public.settings disable row level security;`}</pre>
         const customFitPct = filteredTotalOrders > 0 ? Math.round((customFitOrders / filteredTotalOrders) * 100) : 0;
 
         const statusCounts = {
-          'Pending Payment': pendingPaymentCount,
-          'Pending Shipment': filteredAnalyticsOrders.filter(o => o.status === 'Pending Shipment' || o.status === 'Placed').length,
+          'Pending Shipment': filteredAnalyticsOrders.filter(o => o.status === 'Pending Shipment' || o.status === 'Placed' || !o.status).length,
           'Quality Check': filteredAnalyticsOrders.filter(o => o.status === 'Quality Check').length,
           'Shipped': filteredAnalyticsOrders.filter(o => o.status === 'Shipped').length,
           'Delivered': filteredAnalyticsOrders.filter(o => o.status === 'Delivered').length,
@@ -2338,7 +2337,6 @@ alter table public.settings disable row level security;`}</pre>
         };
 
         const donutChartData = [
-          { label: 'Pending Payment', value: statusCounts['Pending Payment'], color: '#f59e0b' },
           { label: 'Pending Shipment', value: statusCounts['Pending Shipment'], color: '#3b82f6' },
           { label: 'Quality Check', value: statusCounts['Quality Check'], color: '#a855f7' },
           { label: 'Shipped', value: statusCounts['Shipped'], color: '#6366f1' },
@@ -2449,12 +2447,14 @@ alter table public.settings disable row level security;`}</pre>
               alignItems: 'center',
               gap: '8px',
               backgroundColor: 'var(--color-bg-secondary)',
-              padding: '8px',
+              padding: '6px 12px',
               borderRadius: '30px',
               border: '1px solid var(--color-border)',
               marginBottom: '28px',
               overflowX: 'auto',
-              width: 'fit-content'
+              maxWidth: '100%',
+              whiteSpace: 'nowrap',
+              WebkitOverflowScrolling: 'touch'
             }}>
               {[
                 { id: 'today', label: 'Today' },
@@ -2476,6 +2476,8 @@ alter table public.settings disable row level security;`}</pre>
                     fontWeight: analyticsTimeFilter === f.id ? '600' : '500',
                     fontSize: '13px',
                     cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
                     transition: 'all 0.2s ease',
                     boxShadow: analyticsTimeFilter === f.id ? '0 2px 8px rgba(139,0,0,0.25)' : 'none'
                   }}

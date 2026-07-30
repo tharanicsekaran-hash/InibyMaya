@@ -3597,6 +3597,24 @@ html, body, #root {
   margin-top: auto;
 }
 
+.footer-logo-img {
+  height: 72px !important;
+  width: auto !important;
+  max-width: 100% !important;
+  object-fit: contain !important;
+  transition: transform 0.3s ease;
+}
+
+.footer-logo-img:hover {
+  transform: scale(1.03);
+}
+
+@media (max-width: 768px) {
+  .footer-logo-img {
+    height: 58px !important;
+  }
+}
+
 .footer-container {
   display: grid;
   grid-template-columns: 1.5fr 1fr 1fr 1fr;

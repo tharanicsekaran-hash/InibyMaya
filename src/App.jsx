@@ -1794,8 +1794,8 @@ export default function App() {
       <footer className="footer-section">
         <div className="footer-container container">
           <div className="footer-column brand-col">
-            <div className="footer-logo-wrapper" style={{ marginBottom: '16px' }}>
-              <img src="/footer-logo.png" alt="INI By Maya" className="footer-logo-img" style={{ height: '48px', width: 'auto' }} />
+            <div className="footer-logo-wrapper" style={{ marginBottom: '20px' }}>
+              <img src="/footer-logo.png" alt="INI By Maya" className="footer-logo-img" style={{ height: '72px', width: 'auto', maxWidth: '100%', objectFit: 'contain' }} />
             </div>
             <p className="footer-desc">{boutiqueSettings.description}</p>
             <div className="footer-contact">

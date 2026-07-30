@@ -3597,11 +3597,22 @@ html, body, #root {
   margin-top: auto;
 }
 
+.footer-logo-wrapper {
+  margin-bottom: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  padding: 0 !important;
+}
+
 .footer-logo-img {
-  height: 72px !important;
+  height: 96px !important;
   width: auto !important;
   max-width: 100% !important;
   object-fit: contain !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
   transition: transform 0.3s ease;
 }
 
@@ -3611,7 +3622,7 @@ html, body, #root {
 
 @media (max-width: 768px) {
   .footer-logo-img {
-    height: 58px !important;
+    height: 80px !important;
   }
 }
 

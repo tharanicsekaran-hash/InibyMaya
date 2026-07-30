@@ -783,6 +783,31 @@ export default function AdminDashboard({
     }
   };
 
+  const [isAboutImageUploading, setIsAboutImageUploading] = useState(false);
+
+  const handleUploadAboutUsImage = async (file) => {
+    if (!file) return;
+    setIsAboutImageUploading(true);
+    try {
+      let imageUrl;
+      if (import.meta.env.VITE_GITHUB_TOKEN) {
+        imageUrl = await uploadFileToGithub(file, 'media/storefront');
+      } else {
+        imageUrl = await compressImage(file);
+      }
+      if (imageUrl) {
+        const currentPage = footerPagesConfig[selectedFooterPageId] || {};
+        const currentList = currentPage.aboutImages || [];
+        handleUpdateCurrentFooterPage('aboutImages', [...currentList, imageUrl]);
+      }
+    } catch (err) {
+      console.error('❌ [About Image Upload Error]:', err);
+      alert(`❌ Photo Upload Failed: ${err.message || 'Error uploading image to GitHub'}`);
+    } finally {
+      setIsAboutImageUploading(false);
+    }
+  };
+
   const handleAddColor = (e) => {
     e.preventDefault();
     if (!newColorName.trim()) return;
@@ -3175,20 +3200,39 @@ alter table public.settings disable row level security;`}</pre>
                         ))}
                       </div>
 
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={() => {
-                          const url = prompt('Enter image URL for About Us photo (or upload via GitHub media manager):');
-                          if (url && url.trim()) {
-                            const currentList = currentPage.aboutImages || [];
-                            handleUpdateCurrentFooterPage('aboutImages', [...currentList, url.trim()]);
-                          }
-                        }}
-                        style={{ padding: '8px 16px', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                      >
-                        ➕ Add Photo URL to About Us Showcase
-                      </button>
+                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <label className="custom-file-upload" style={{ cursor: 'pointer', margin: 0, padding: '10px 16px', fontSize: '13px', border: '1px solid var(--color-border)', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#8b0000', color: '#fff', fontWeight: '500' }}>
+                          <Upload size={16} />
+                          {isAboutImageUploading ? 'Uploading to GitHub...' : 'Choose File & Upload to GitHub'}
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            disabled={isAboutImageUploading} 
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) {
+                                handleUploadAboutUsImage(e.target.files[0]);
+                                e.target.value = '';
+                              }
+                            }} 
+                            style={{ display: 'none' }} 
+                          />
+                        </label>
+
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => {
+                            const url = prompt('Enter direct image URL:');
+                            if (url && url.trim()) {
+                              const currentList = currentPage.aboutImages || [];
+                              handleUpdateCurrentFooterPage('aboutImages', [...currentList, url.trim()]);
+                            }
+                          }}
+                          style={{ padding: '9px 16px', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          ➕ Add Photo URL
+                        </button>
+                      </div>
                     </div>
                   </>
                 ) : (
@@ -3247,31 +3291,33 @@ alter table public.settings disable row level security;`}</pre>
                   </>
                 )}
 
-                {/* Highlight Callout Box Notice */}
-                <div style={{ backgroundColor: '#fffdfa', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #d4af37' }}>
-                  <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600', color: '#8b0000' }}>✨ Highlighted Notice Box (Callout Box)</h5>
-                  
-                  <div className="form-group" style={{ marginBottom: '12px' }}>
-                    <label>Callout Box Title</label>
-                    <input
-                      type="text"
-                      value={currentPage.calloutTitle || ''}
-                      onChange={(e) => handleUpdateCurrentFooterPage('calloutTitle', e.target.value)}
-                      placeholder="e.g. Free Express Shipping Across India"
-                    />
-                  </div>
+                {/* Highlight Callout Box Notice (Hidden for About Us page) */}
+                {selectedFooterPageId !== 'about-us' && (
+                  <div style={{ backgroundColor: '#fffdfa', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #d4af37' }}>
+                    <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600', color: '#8b0000' }}>✨ Highlighted Notice Box (Callout Box)</h5>
+                    
+                    <div className="form-group" style={{ marginBottom: '12px' }}>
+                      <label>Callout Box Title</label>
+                      <input
+                        type="text"
+                        value={currentPage.calloutTitle || ''}
+                        onChange={(e) => handleUpdateCurrentFooterPage('calloutTitle', e.target.value)}
+                        placeholder="e.g. Free Express Shipping Across India"
+                      />
+                    </div>
 
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>Callout Box Message / Description</label>
-                    <textarea
-                      rows={3}
-                      value={currentPage.calloutText || ''}
-                      onChange={(e) => handleUpdateCurrentFooterPage('calloutText', e.target.value)}
-                      placeholder="Callout highlight message shown at the bottom of the page..."
-                      style={{ width: '100%', fontFamily: 'sans-serif', fontSize: '13px', lineHeight: '1.5', padding: '10px' }}
-                    />
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>Callout Box Message / Description</label>
+                      <textarea
+                        rows={3}
+                        value={currentPage.calloutText || ''}
+                        onChange={(e) => handleUpdateCurrentFooterPage('calloutText', e.target.value)}
+                        placeholder="Callout highlight message shown at the bottom of the page..."
+                        style={{ width: '100%', fontFamily: 'sans-serif', fontSize: '13px', lineHeight: '1.5', padding: '10px' }}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <button
                   type="button"

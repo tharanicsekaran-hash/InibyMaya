@@ -300,8 +300,8 @@ export default function InfoPage({ tab, setTab, orders = [], boutiqueSettings = 
                 </>
               )}
 
-              {/* Highlight Callout Box Notice */}
-              {activeCustomPage.calloutTitle && (
+              {/* Highlight Callout Box Notice (Hidden for About Us) */}
+              {tab !== 'about-us' && activeCustomPage.calloutTitle && (
                 <div className="tab-highlight-callout" style={{
                   backgroundColor: '#fffdfa',
                   padding: '20px 24px',

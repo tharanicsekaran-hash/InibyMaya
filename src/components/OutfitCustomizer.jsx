@@ -8,41 +8,41 @@ const LINING_OPTIONS = ['Without Lining', 'Lining'];
 const ZIP_OPTIONS    = ['No', 'Yes'];
 
 const SLEEVES = [
-  { id: 'thin-strap',       name: 'Thin Strap' },
-  { id: '1inch-strap',      name: '1 Inch Strap' },
-  { id: 'tank',             name: 'Tank' },
-  { id: 'cap',              name: 'Cap Sleeves' },
-  { id: 'short',            name: 'Short Sleeves' },
-  { id: 'short-balloon',    name: 'Short Balloon Puff' },
-  { id: 'above-elbow',      name: 'Above Elbow' },
-  { id: 'above-elbow-puff', name: 'Above Elbow With Puff' },
-  { id: 'three-quarter',    name: 'Three Quarter' },
-  { id: 'full',             name: 'Full Sleeves' },
-  { id: 'chudidaar',        name: 'Chudidaar' },
-  { id: 'bell',             name: 'Full Bell Sleeves' },
+  { id: 'thin-strap',       name: 'Thin Strap', price: 0 },
+  { id: '1inch-strap',      name: '1 Inch Strap', price: 0 },
+  { id: 'tank',             name: 'Tank', price: 0 },
+  { id: 'cap',              name: 'Cap Sleeves', price: 0 },
+  { id: 'short',            name: 'Short Sleeves', price: 0 },
+  { id: 'short-balloon',    name: 'Short Balloon Puff', price: 200 },
+  { id: 'above-elbow',      name: 'Above Elbow', price: 100 },
+  { id: 'above-elbow-puff', name: 'Above Elbow With Puff', price: 200 },
+  { id: 'three-quarter',    name: 'Three Quarter', price: 100 },
+  { id: 'full',             name: 'Full Sleeves', price: 150 },
+  { id: 'chudidaar',        name: 'Chudidaar', price: 200 },
+  { id: 'bell',             name: 'Full Bell Sleeves', price: 250 },
 ];
 
 const NECKS = [
-  { id: 'round',          name: 'Round Neck' },
-  { id: 'v-neck',         name: 'V Neck' },
-  { id: 'scalloped-round',name: 'Scalloped Round Neck' },
-  { id: 'scalloped-v',    name: 'Scalloped V Neck' },
-  { id: 'square',         name: 'Square Neck' },
-  { id: 'rectangular',    name: 'Rectangular Neck' },
-  { id: 'sweetheart',     name: 'Sweetheart Neck' },
-  { id: 'keyhole',        name: 'Round Keyhole With Button' },
-  { id: 'round-v-cut',    name: 'Round V Cut' },
-  { id: 'paan',           name: 'Paan Neck' },
-  { id: 'masaba',         name: 'Masaba Neck' },
-  { id: 'halter',         name: 'Halter Neck' },
-  { id: 'v-overlap',      name: 'V-Overlap Collar' },
-  { id: 'chinese',        name: 'Chinese Collar' },
-  { id: 'shirt',          name: 'Shirt Collar' },
-  { id: 'kaftan',         name: 'Kaftan Neck' },
-  { id: 'boat',           name: 'Boat Neck' },
-  { id: 'sabrina',        name: 'Sabrina Neck' },
-  { id: 'glass',          name: 'Glass Neck' },
-  { id: 'diamond',        name: 'Diamond Neck' },
+  { id: 'round',          name: 'Round Neck', price: 0 },
+  { id: 'v-neck',         name: 'V Neck', price: 150 },
+  { id: 'scalloped-round',name: 'Scalloped Round Neck', price: 200 },
+  { id: 'scalloped-v',    name: 'Scalloped V Neck', price: 200 },
+  { id: 'square',         name: 'Square Neck', price: 100 },
+  { id: 'rectangular',    name: 'Rectangular Neck', price: 100 },
+  { id: 'sweetheart',     name: 'Sweetheart Neck', price: 200 },
+  { id: 'keyhole',        name: 'Round Keyhole With Button', price: 150 },
+  { id: 'round-v-cut',    name: 'Round V Cut', price: 150 },
+  { id: 'paan',           name: 'Paan Neck', price: 150 },
+  { id: 'masaba',         name: 'Masaba Neck', price: 150 },
+  { id: 'halter',         name: 'Halter Neck', price: 200 },
+  { id: 'v-overlap',      name: 'V-Overlap Collar', price: 250 },
+  { id: 'chinese',        name: 'Chinese Collar', price: 250 },
+  { id: 'shirt',          name: 'Shirt Collar', price: 250 },
+  { id: 'kaftan',         name: 'Kaftan Neck', price: 200 },
+  { id: 'boat',           name: 'Boat Neck', price: 150 },
+  { id: 'sabrina',        name: 'Sabrina Neck', price: 150 },
+  { id: 'glass',          name: 'Glass Neck', price: 150 },
+  { id: 'diamond',        name: 'Diamond Neck', price: 200 },
 ];
 
 // ========================
@@ -274,13 +274,29 @@ export default function OutfitCustomizer({ selectedColor, onCustomizationChange 
   const [openSection,    setOpenSection]    = useState('sleeves');
 
   const notify = (overrides) => {
+    const updatedSleeve = 'sleeve' in overrides ? overrides.sleeve : selectedSleeve;
+    const updatedNeck = 'neck' in overrides ? overrides.neck : selectedNeck;
+    const updatedZip = 'zip' in overrides ? overrides.zip : selectedZip;
+    const updatedLining = 'lining' in overrides ? overrides.lining : selectedLining;
+    const updatedNotes = 'notes' in overrides ? overrides.notes : customNotes;
+
+    const sObj = SLEEVES.find(s => s.id === updatedSleeve);
+    const nObj = NECKS.find(n => n.id === updatedNeck);
+    
+    const sPrice = sObj?.price || 0;
+    const nPrice = nObj?.price || 0;
+    const zPrice = updatedZip === 'Yes' ? 150 : 0;
+    const lPrice = updatedLining === 'Lining' ? 250 : 0;
+
+    const cost = sPrice + nPrice + zPrice + lPrice;
+
     onCustomizationChange?.({
-      lining: selectedLining,
-      zip:    selectedZip,
-      sleeve: selectedSleeve,
-      neck:   selectedNeck,
-      notes:  customNotes,
-      ...overrides,
+      lining: updatedLining,
+      zip: updatedZip,
+      sleeve: updatedSleeve,
+      neck: updatedNeck,
+      notes: updatedNotes,
+      tailoringCost: cost
     });
   };
 
@@ -429,7 +445,7 @@ export default function OutfitCustomizer({ selectedColor, onCustomizationChange 
                       {selectedSleeve === s.id && (
                         <span className="chip-check"><Check size={9} strokeWidth={3} /></span>
                       )}
-                      {s.name}
+                      {s.name} {s.price > 0 ? `(+₹${s.price})` : ''}
                     </button>
                   ))}
                 </div>
@@ -461,7 +477,7 @@ export default function OutfitCustomizer({ selectedColor, onCustomizationChange 
                       {selectedNeck === n.id && (
                         <span className="chip-check"><Check size={9} strokeWidth={3} /></span>
                       )}
-                      {n.name}
+                      {n.name} {n.price > 0 ? `(+₹${n.price})` : ''}
                     </button>
                   ))}
                 </div>

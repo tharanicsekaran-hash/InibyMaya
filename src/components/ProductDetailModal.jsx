@@ -71,8 +71,8 @@ export default function ProductDetailModal({
 
   const [errorMsg, setErrorMsg] = useState('');
 
-  const stitchingFee = 399;
-  const unitPrice = wantsCustomStitching ? price + stitchingFee : price;
+  const tailoringFee = wantsCustomStitching ? (styleCustomization?.tailoringCost || 0) : 0;
+  const unitPrice = price + tailoringFee;
   const totalPrice = unitPrice * quantity;
 
   const handleAddToCart = () => {
@@ -245,8 +245,8 @@ export default function ProductDetailModal({
                   <div className="toggle-info">
                     <Sparkles size={18} className="toggle-icon animate-pulse" />
                     <div>
-                      <span className="toggle-title">Custom Measurements Stitching</span>
-                      <span className="toggle-desc">Get tailored fittings for +₹{stitchingFee}</span>
+                      <span className="toggle-title">Custom Measurements & Style Stitching</span>
+                      <span className="toggle-desc">Tailoring charges depend on your selected custom style</span>
                     </div>
                   </div>
                   <div className={`toggle-checkbox-mock ${wantsCustomStitching ? 'checked' : ''}`}>

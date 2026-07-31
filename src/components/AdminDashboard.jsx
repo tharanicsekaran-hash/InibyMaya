@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings, Layout, ChevronUp, ChevronDown, Plus, Mail, FileText, Download } from 'lucide-react';
+import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings, Layout, ChevronUp, ChevronDown, Plus, Mail, FileText, Download, Sparkles } from 'lucide-react';
 import { uploadFileToGithub } from '../utils/githubUploader';
 import { sendOrderConfirmationEmail } from '../utils/resendEmail';
 import { DEFAULT_FOOTER_PAGES } from '../utils/footerPagesData';
+import { DEFAULT_CUSTOMIZER_PARTS } from '../utils/customizerData';
 
 function DonutChart({ data, centerTitle, centerSub }) {
   const total = data.reduce((acc, d) => acc + d.value, 0);
@@ -654,6 +655,12 @@ export default function AdminDashboard({
   const [reviewsCount, setReviewsCount] = useState(1);
   const [successMsg, setSuccessMsg] = useState('');
   const [analyticsTimeFilter, setAnalyticsTimeFilter] = useState('all');
+  const [customizerPartsConfig, setCustomizerPartsConfig] = useState(() => {
+    if (boutiqueSettings?.customizerParts) {
+      try { return JSON.parse(boutiqueSettings.customizerParts); } catch (e) { console.error(e); }
+    }
+    return DEFAULT_CUSTOMIZER_PARTS;
+  });
 
   // Lightweight canvas image compressor utility (cuts bandwidth & DB egress usage by 99%)
   const compressImage = (file, maxWidth = 1200, quality = 0.8) => {
@@ -1364,6 +1371,13 @@ alter table public.settings disable row level security;`}</pre>
           >
             <FileText size={15} />
             <span>Footer & Policies</span>
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'customizer' ? 'active' : ''}`}
+            onClick={() => setActiveTab('customizer')}
+          >
+            <Sparkles size={15} />
+            <span>2D Customizer Config</span>
           </button>
         </div>
       </div>
@@ -3824,6 +3838,176 @@ alter table public.settings disable row level security;`}</pre>
               </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* Tab 8: 2D Customizer Configurator (Garment Parts, Styles & Tailoring Prices) */}
+      {activeTab === 'customizer' && (
+        <div className="admin-content-section animate-fadeIn">
+          <div className="admin-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '24px', paddingBottom: '14px', borderBottom: '1px solid var(--color-border)' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '20px', color: '#8b0000', fontFamily: 'var(--font-display)' }}>✨ 2D Couture Studio Configurator</h3>
+              <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                Configure dynamic garment parts (Necklines, Sleeves, Zip, Lining, etc.), set tailoring prices (₹), and manage 2D SVG/PNG overlays.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="add-btn-submit"
+              onClick={() => {
+                const partName = prompt('Enter new Garment Part / Category name (e.g. Back Cut, Pocket, Embroidery):');
+                if (partName && partName.trim()) {
+                  const newPart = {
+                    id: partName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+                    name: partName.trim(),
+                    required: false,
+                    styles: [
+                      { id: 'standard', name: 'Standard Style', price: 0 }
+                    ]
+                  };
+                  setCustomizerPartsConfig(prev => [...prev, newPart]);
+                }
+              }}
+              style={{ width: 'auto', padding: '10px 18px', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Plus size={16} /> Add Garment Part
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '900px', margin: '0 auto' }}>
+            {customizerPartsConfig.map((part, pIdx) => (
+              <div key={pIdx} className="admin-form-box" style={{ padding: '20px', border: '1px solid var(--color-border)', borderRadius: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', paddingBottom: '10px', borderBottom: '1px solid var(--color-border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', color: '#8b0000' }}>{part.name}</h4>
+                    <span style={{ fontSize: '11px', backgroundColor: 'rgba(139, 0, 0, 0.08)', color: '#8b0000', padding: '2px 8px', borderRadius: '12px', fontWeight: '600' }}>
+                      ID: {part.id}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => {
+                        const styleName = prompt(`Enter new style name for ${part.name} (e.g. V-Neck, Bell Sleeves):`);
+                        if (styleName && styleName.trim()) {
+                          const priceStr = prompt(`Enter tailoring charge (₹) for "${styleName}":`, '150');
+                          const price = Number(priceStr) || 0;
+                          const newStyle = {
+                            id: styleName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+                            name: styleName.trim(),
+                            price: price
+                          };
+                          const updated = [...customizerPartsConfig];
+                          updated[pIdx].styles.push(newStyle);
+                          setCustomizerPartsConfig(updated);
+                        }
+                      }}
+                      style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <Plus size={14} /> Add Style
+                    </button>
+
+                    {customizerPartsConfig.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`Delete part "${part.name}" and all its styles?`)) {
+                            setCustomizerPartsConfig(prev => prev.filter((_, i) => i !== pIdx));
+                          }
+                        }}
+                        style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                        title="Delete Part"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Styles List Table */}
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="insights-table" style={{ width: '100%' }}>
+                    <thead>
+                      <tr>
+                        <th>Style Name</th>
+                        <th>Tailoring Fee (₹)</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {part.styles.map((sItem, sIdx) => (
+                        <tr key={sIdx}>
+                          <td>
+                            <input
+                              type="text"
+                              value={sItem.name}
+                              onChange={(e) => {
+                                const updated = [...customizerPartsConfig];
+                                updated[pIdx].styles[sIdx].name = e.target.value;
+                                setCustomizerPartsConfig(updated);
+                              }}
+                              style={{ width: '100%', padding: '6px 10px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                            />
+                          </td>
+                          <td style={{ width: '160px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-text-secondary)' }}>+₹</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={sItem.price !== undefined ? sItem.price : 0}
+                                onChange={(e) => {
+                                  const updated = [...customizerPartsConfig];
+                                  updated[pIdx].styles[sIdx].price = Math.max(0, Number(e.target.value) || 0);
+                                  setCustomizerPartsConfig(updated);
+                                }}
+                                style={{ width: '90px', padding: '6px 10px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--color-border)', fontWeight: '600', color: '#047857' }}
+                              />
+                            </div>
+                          </td>
+                          <td style={{ width: '100px' }}>
+                            {part.styles.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = [...customizerPartsConfig];
+                                  updated[pIdx].styles = updated[pIdx].styles.filter((_, i) => i !== sIdx);
+                                  setCustomizerPartsConfig(updated);
+                                }}
+                                style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}
+                                title="Delete Style"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              className="add-btn-submit"
+              onClick={() => {
+                const updatedSettings = {
+                  ...boutiqueSettings,
+                  customizerParts: JSON.stringify(customizerPartsConfig)
+                };
+                onSaveSettings(updatedSettings);
+                alert('✅ 2D Customizer Parts, Styles & Tailoring Prices saved and updated live!');
+              }}
+              style={{ width: '100%', padding: '14px', fontSize: '14px', marginTop: '10px' }}
+            >
+              <CheckCircle2 size={18} /> Save 2D Customizer Configuration
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -1329,6 +1329,7 @@ export default function App() {
           setSuccessOrder(null);
           setSelectedProduct(null);
         }}
+        boutiqueSettings={boutiqueSettings}
       />
 
       {/* Main Content Layout routing */}

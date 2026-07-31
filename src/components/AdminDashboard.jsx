@@ -271,6 +271,12 @@ export default function AdminDashboard({
   const [storefrontOccasions, setStorefrontOccasions] = useState([]);
   const [storefrontSuccessMsg, setStorefrontSuccessMsg] = useState('');
 
+  // Header Top Announcement Banner State
+  const [headerBannerEnabled, setHeaderBannerEnabled] = useState(true);
+  const [headerBannerText, setHeaderBannerText] = useState('FREE SHIPPING PAN INDIA | COD AVAILABLE');
+  const [headerBannerBg, setHeaderBannerBg] = useState('#f6f0e6');
+  const [headerBannerColor, setHeaderBannerColor] = useState('#333333');
+
   // Homepage Hero Banner State
   const [heroImage, setHeroImage] = useState('');
   const [heroTagline, setHeroTagline] = useState('');
@@ -312,6 +318,12 @@ export default function AdminDashboard({
       setNewsletterDiscount(Number(boutiqueSettings.newsletterDiscount !== undefined ? boutiqueSettings.newsletterDiscount : 10));
       setNewsletterPromoCode(boutiqueSettings.newsletterPromoCode || 'WELCOME10');
       setNewsletterEnabled(boutiqueSettings.newsletterEnabled !== false);
+
+      // Header Top Announcement Banner
+      setHeaderBannerEnabled(boutiqueSettings.headerBannerEnabled !== false);
+      setHeaderBannerText(boutiqueSettings.headerBannerText || 'FREE SHIPPING PAN INDIA | COD AVAILABLE');
+      setHeaderBannerBg(boutiqueSettings.headerBannerBg || '#f6f0e6');
+      setHeaderBannerColor(boutiqueSettings.headerBannerColor || '#333333');
 
       // Footer Pages Config
       try {
@@ -587,7 +599,11 @@ export default function AdminDashboard({
         newsletterSubtitle,
         newsletterDiscount: Number(newsletterDiscount),
         newsletterPromoCode: newsletterPromoCode.trim().toUpperCase(),
-        newsletterEnabled
+        newsletterEnabled,
+        headerBannerEnabled,
+        headerBannerText,
+        headerBannerBg,
+        headerBannerColor
       });
       setSettingsSuccessMsg('Boutique configurations updated successfully!');
       setTimeout(() => setSettingsSuccessMsg(''), 4000);
@@ -2850,7 +2866,7 @@ alter table public.settings disable row level security;`}</pre>
                 {newsletterEnabled && (
                   <>
                     <div className="form-group">
-                      <label>Newsletter Title *</label>
+                  <label>Newsletter Title *</label>
                       <input 
                         type="text" 
                         value={newsletterTitle} 
@@ -2870,30 +2886,77 @@ alter table public.settings disable row level security;`}</pre>
                         required 
                       />
                     </div>
+                  </>
+                )}
+              </div>
 
-                    <div className="form-row-double">
+              {/* Header Top Announcement Offer Banner Settings */}
+              <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--color-border)' }}>
+                <h4 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '12px', color: '#8b0000' }}>
+                  ✨ Header Top Announcement Banner (Offer Bar)
+                </h4>
+
+                <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                  <input
+                    type="checkbox"
+                    id="headerBannerEnabled"
+                    checked={headerBannerEnabled}
+                    onChange={(e) => setHeaderBannerEnabled(e.target.checked)}
+                    style={{ width: 'auto', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="headerBannerEnabled" style={{ cursor: 'pointer', marginBottom: 0, fontWeight: '600' }}>
+                    Enable Top Announcement Offer Banner
+                  </label>
+                </div>
+
+                {headerBannerEnabled && (
+                  <>
+                    <div className="form-group" style={{ marginBottom: '14px' }}>
+                      <label>Banner Text Content *</label>
+                      <input
+                        type="text"
+                        value={headerBannerText}
+                        onChange={(e) => setHeaderBannerText(e.target.value)}
+                        placeholder="e.g. FREE SHIPPING PAN INDIA | COD AVAILABLE"
+                        required
+                      />
+                    </div>
+
+                    <div className="form-row-double" style={{ gap: '14px' }}>
                       <div className="form-group">
-                        <label>Discount Percentage (%) *</label>
-                        <input 
-                          type="number" 
-                          min={1}
-                          max={100}
-                          value={newsletterDiscount} 
-                          onChange={(e) => setNewsletterDiscount(e.target.value)} 
-                          placeholder="e.g. 10" 
-                          required 
-                        />
+                        <label>Banner Background Color</label>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input
+                            type="color"
+                            value={headerBannerBg}
+                            onChange={(e) => setHeaderBannerBg(e.target.value)}
+                            style={{ width: '40px', height: '36px', padding: 0, border: 'none', cursor: 'pointer', borderRadius: '4px' }}
+                          />
+                          <input
+                            type="text"
+                            value={headerBannerBg}
+                            onChange={(e) => setHeaderBannerBg(e.target.value)}
+                            style={{ flex: 1 }}
+                          />
+                        </div>
                       </div>
 
                       <div className="form-group">
-                        <label>Generated Promo Code *</label>
-                        <input 
-                          type="text" 
-                          value={newsletterPromoCode} 
-                          onChange={(e) => setNewsletterPromoCode(e.target.value)} 
-                          placeholder="WELCOME10" 
-                          required 
-                        />
+                        <label>Banner Text Color</label>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input
+                            type="color"
+                            value={headerBannerColor}
+                            onChange={(e) => setHeaderBannerColor(e.target.value)}
+                            style={{ width: '40px', height: '36px', padding: 0, border: 'none', cursor: 'pointer', borderRadius: '4px' }}
+                          />
+                          <input
+                            type="text"
+                            value={headerBannerColor}
+                            onChange={(e) => setHeaderBannerColor(e.target.value)}
+                            style={{ flex: 1 }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </>

@@ -13,10 +13,16 @@ export default function Header({
   logout, 
   onSearchToggle,
   favoritesCount = 0,
-  onFavoritesClick
+  onFavoritesClick,
+  boutiqueSettings = {}
 }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const announcementEnabled = boutiqueSettings?.headerBannerEnabled !== false;
+  const announcementText = boutiqueSettings?.headerBannerText || 'FREE SHIPPING PAN INDIA | COD AVAILABLE';
+  const announcementBg = boutiqueSettings?.headerBannerBg || '#f6f0e6';
+  const announcementColor = boutiqueSettings?.headerBannerColor || '#333333';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,7 +38,28 @@ export default function Header({
   }, []);
 
   return (
-    <header className={`header ${isScrolled ? 'scrolled' : ''}`}>
+    <>
+      {/* Top Configurable Announcement Offer Banner */}
+      {announcementEnabled && (
+        <div 
+          className="top-announcement-bar" 
+          style={{ 
+            backgroundColor: announcementBg, 
+            color: announcementColor,
+            padding: '7px 16px',
+            textAlign: 'center',
+            fontSize: '11.5px',
+            fontWeight: '600',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            borderBottom: '1px solid rgba(0,0,0,0.04)'
+          }}
+        >
+          <span>{announcementText}</span>
+        </div>
+      )}
+
+      <header className={`header ${isScrolled ? 'scrolled' : ''}`}>
       <div className="header-container">
         {/* Left Side Navigation / Menu */}
         <div className="header-left">
@@ -192,5 +219,6 @@ export default function Header({
         </>
       )}
     </header>
+    </>
   );
 }

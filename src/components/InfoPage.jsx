@@ -264,12 +264,26 @@ export default function InfoPage({ tab, setTab, orders = [], boutiqueSettings = 
                     </div>
                   )}
 
-                  {/* Single Unified About Us Description Passage */}
-                  {(activeCustomPage.fullDescription || activeCustomPage.section1Content || activeCustomPage.section2Content) && (
-                    <div style={{ whiteSpace: 'pre-wrap', fontSize: '14.5px', lineHeight: '1.85', color: 'var(--color-text-secondary)', marginBottom: '32px' }}>
-                      {activeCustomPage.fullDescription || [activeCustomPage.section1Content, activeCustomPage.section2Content].filter(Boolean).join('\n\n')}
-                    </div>
-                  )}
+                  {/* Single Unified About Us Description Passage with Inline Image & HTML Support */}
+                  {(activeCustomPage.fullDescription || activeCustomPage.section1Content || activeCustomPage.section2Content) && (() => {
+                    const rawContent = activeCustomPage.fullDescription || [activeCustomPage.section1Content, activeCustomPage.section2Content].filter(Boolean).join('\n\n');
+                    const hasHtml = /<[a-z][\s\S]*>/i.test(rawContent);
+
+                    if (hasHtml) {
+                      return (
+                        <div 
+                          className="about-us-rich-content"
+                          dangerouslySetInnerHTML={{ __html: rawContent }}
+                          style={{ fontSize: '14.5px', lineHeight: '1.85', color: 'var(--color-text-secondary)', marginBottom: '32px' }}
+                        />
+                      );
+                    }
+                    return (
+                      <div className="about-us-rich-content" style={{ whiteSpace: 'pre-wrap', fontSize: '14.5px', lineHeight: '1.85', color: 'var(--color-text-secondary)', marginBottom: '32px' }}>
+                        {rawContent}
+                      </div>
+                    );
+                  })()}
                 </>
               ) : (
                 <>

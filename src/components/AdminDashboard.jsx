@@ -802,6 +802,30 @@ export default function AdminDashboard({
 
 
 
+  const handleInsertImageIntoAboutText = async (file) => {
+    if (!file) return;
+    try {
+      let imageUrl;
+      if (import.meta.env.VITE_GITHUB_TOKEN) {
+        imageUrl = await uploadFileToGithub(file, 'media/storefront');
+      } else {
+        imageUrl = await compressImage(file);
+      }
+      if (imageUrl) {
+        const imgTag = `<img src="${imageUrl}" alt="About Us Image" style="max-width: 100%; border-radius: 10px; margin: 16px 0; display: block;" />`;
+        const currentPage = footerPagesConfig[selectedFooterPageId] || {};
+        const currentText = currentPage.fullDescription || currentPage.section1Content || '';
+        const updatedText = currentText ? `${currentText}\n\n${imgTag}\n\n` : imgTag;
+        
+        handleUpdateCurrentFooterPage('fullDescription', updatedText);
+        handleUpdateCurrentFooterPage('section1Content', updatedText);
+      }
+    } catch (err) {
+      console.error('❌ [Inline Image Insert Error]:', err);
+      alert(`❌ Image Insertion Failed: ${err.message || 'Error uploading image'}`);
+    }
+  };
+
   // Video File upload helper for Reels with automatic GitHub API integration
   const handleVideoUpload = async (e) => {
     const file = e.target.files[0];
@@ -3481,16 +3505,58 @@ alter table public.settings disable row level security;`}</pre>
 
                 {selectedFooterPageId === 'about-us' ? (
                   <>
-                    {/* Single Unified About Us Description Field */}
+                    {/* Single Unified About Us Description Field with Image Copy/Paste Support */}
                     <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid var(--color-border)' }}>
-                      <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600', color: '#8b0000' }}>
-                        📖 About Us Full Description (Single Passage - Unlimited Characters)
-                      </h5>
-                      <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '10px' }}>
-                        Paste your complete story, history, craftsmanship philosophy, and brand passage here. All line breaks, formatting, and paragraphs will be preserved.
-                      </p>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+                        <div>
+                          <h5 style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#8b0000' }}>
+                            📖 About Us Full Description (Supports Image Copy/Paste & Rich Content)
+                          </h5>
+                          <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: '4px 0 0 0' }}>
+                            Paste text & images directly into the passage box (supports Cmd+V / Ctrl+V image paste, rich HTML, and inline images).
+                          </p>
+                        </div>
+
+                        {/* Inline Image Upload & Insert Toolbar */}
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <label className="custom-file-upload" style={{ cursor: 'pointer', margin: 0, padding: '6px 12px', fontSize: '12px', border: '1px solid var(--color-border)', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#ffffff', color: 'var(--color-text-primary)', fontWeight: '500' }}>
+                            <Upload size={14} />
+                            📷 Upload & Insert Image into Text
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) {
+                                  handleInsertImageIntoAboutText(e.target.files[0]);
+                                  e.target.value = '';
+                                }
+                              }} 
+                              style={{ display: 'none' }} 
+                            />
+                          </label>
+
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            onClick={() => {
+                              const url = prompt('Enter image URL to insert into passage:');
+                              if (url && url.trim()) {
+                                const imgTag = `<img src="${url.trim()}" alt="About Us Image" style="max-width: 100%; border-radius: 10px; margin: 16px 0; display: block;" />`;
+                                const currentText = currentPage.fullDescription || currentPage.section1Content || '';
+                                const updatedText = currentText ? `${currentText}\n\n${imgTag}\n\n` : imgTag;
+                                handleUpdateCurrentFooterPage('fullDescription', updatedText);
+                                handleUpdateCurrentFooterPage('section1Content', updatedText);
+                              }
+                            }}
+                            style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            🔗 Insert Image URL
+                          </button>
+                        </div>
+                      </div>
+
                       <textarea
-                        rows={14}
+                        rows={16}
                         value={currentPage.fullDescription !== undefined 
                           ? currentPage.fullDescription 
                           : [currentPage.section1Content, currentPage.section2Content].filter(Boolean).join('\n\n')}
@@ -3498,7 +3564,22 @@ alter table public.settings disable row level security;`}</pre>
                           handleUpdateCurrentFooterPage('fullDescription', e.target.value);
                           handleUpdateCurrentFooterPage('section1Content', e.target.value);
                         }}
-                        placeholder="Paste your full About Us brand passage here..."
+                        onPaste={(e) => {
+                          const items = e.clipboardData?.items;
+                          if (items) {
+                            for (let i = 0; i < items.length; i++) {
+                              if (items[i].type.startsWith('image/')) {
+                                const file = items[i].getAsFile();
+                                if (file) {
+                                  e.preventDefault();
+                                  handleInsertImageIntoAboutText(file);
+                                }
+                                break;
+                              }
+                            }
+                          }
+                        }}
+                        placeholder="Paste your full About Us brand passage here... You can copy & paste images directly, or click 'Upload & Insert Image' above."
                         style={{ width: '100%', fontFamily: 'inherit', fontSize: '13.5px', lineHeight: '1.7', padding: '12px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
                       />
                     </div>

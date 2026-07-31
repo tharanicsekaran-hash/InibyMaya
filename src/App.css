@@ -7651,3 +7651,17 @@ html, body, #root {
   }
 }
 
+/* About Us Rich Content Inline Image & Paragraph Styling */
+.about-us-rich-content img {
+  max-width: 100% !important;
+  height: auto !important;
+  border-radius: 12px;
+  margin: 20px 0;
+  display: block;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+.about-us-rich-content p {
+  margin-bottom: 16px;
+  line-height: 1.85;
+}
+

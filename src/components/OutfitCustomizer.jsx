@@ -235,9 +235,9 @@ export default function OutfitCustomizer({ selectedColor, boutiqueSettings, onCu
                         {st.image ? (
                           <img src={st.image} alt={st.name} />
                         ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px', color: 'var(--color-text-secondary)', padding: '16px', height: '100%' }}>
-                            <Shirt size={32} strokeWidth={1.2} style={{ color: '#8b0000', opacity: 0.6 }} />
-                            <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center' }}>{st.name}</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', color: 'var(--color-text-secondary)', padding: '6px', height: '100%' }}>
+                            <Shirt size={24} strokeWidth={1.2} style={{ color: '#8b0000', opacity: 0.6 }} />
+                            <span style={{ fontSize: '9.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'center', color: '#666', lineHeight: '1.2' }}>{st.name}</span>
                           </div>
                         )}
 

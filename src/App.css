@@ -7735,8 +7735,8 @@ html, body, #root {
 /* 2-Column Main Studio Grid */
 .visual-customizer-body {
   display: grid;
-  grid-template-columns: 240px 1fr;
-  min-height: 480px;
+  grid-template-columns: 180px 1fr;
+  min-height: 440px;
 }
 
 /* Left Step Sidebar Navigation */
@@ -7753,7 +7753,7 @@ html, body, #root {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 20px;
+  padding: 11px 14px;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -7785,9 +7785,10 @@ html, body, #root {
 .step-sidebar-title-group {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 11.5px;
   color: var(--color-text-primary);
+  line-height: 1.3;
 }
 
 .step-sidebar-btn.active .step-sidebar-title-group {
@@ -7835,12 +7836,12 @@ html, body, #root {
   margin: 0;
 }
 
-/* 4-Column Options Cards Grid */
+/* Responsive Options Cards Grid */
 .style-image-cards-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
 .style-image-card {
@@ -7870,7 +7871,7 @@ html, body, #root {
 
 .card-image-box {
   width: 100%;
-  aspect-ratio: 1;
+  height: 95px;
   background-color: #faf9f6;
   position: relative;
   overflow: hidden;
@@ -7906,20 +7907,22 @@ html, body, #root {
 }
 
 .card-label-box {
-  padding: 10px 8px;
+  padding: 8px 6px;
   background-color: #ffffff;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
+  min-height: 48px;
 }
 
 .card-style-name {
-  font-size: 12.5px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--color-text-primary);
   line-height: 1.3;
+  word-break: break-word;
 }
 
 .card-style-price {

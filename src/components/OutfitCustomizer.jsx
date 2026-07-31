@@ -136,7 +136,7 @@ export default function OutfitCustomizer({ selectedColor, boutiqueSettings, onCu
       {/* Top Bar */}
       <div className="visual-customizer-header">
         <div className="visual-customizer-title-group">
-          <Sparkles size={18} style={{ color: '#8b0000' }} />
+          <Sparkles size={18} style={{ color: '#b58c59' }} />
           <h3 className="visual-customizer-title">CUSTOMIZE YOUR COUTURE OUTFIT</h3>
           <span className="step-badge-indicator">STEP {activeStepIdx + 1} OF {totalSteps}</span>
         </div>
@@ -236,7 +236,7 @@ export default function OutfitCustomizer({ selectedColor, boutiqueSettings, onCu
                           <img src={st.image} alt={st.name} />
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', color: 'var(--color-text-secondary)', padding: '6px', height: '100%' }}>
-                            <Shirt size={24} strokeWidth={1.2} style={{ color: '#8b0000', opacity: 0.6 }} />
+                            <Shirt size={24} strokeWidth={1.2} style={{ color: '#b58c59', opacity: 0.7 }} />
                             <span style={{ fontSize: '9.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'center', color: '#666', lineHeight: '1.2' }}>{st.name}</span>
                           </div>
                         )}

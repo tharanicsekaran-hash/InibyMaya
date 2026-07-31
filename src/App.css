@@ -7710,7 +7710,7 @@ html, body, #root {
 }
 
 .step-badge-indicator {
-  background-color: #8b0000;
+  background-color: #b58c59;
   color: #ffffff;
   font-size: 11px;
   font-weight: 700;
@@ -7720,9 +7720,9 @@ html, body, #root {
 }
 
 .tailoring-cost-badge {
-  background: rgba(139, 0, 0, 0.08);
-  border: 1px solid rgba(139, 0, 0, 0.2);
-  color: #8b0000;
+  background: #f7f3ed;
+  border: 1px solid #e6dac8;
+  color: #7d5c2e;
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 12px;
@@ -7764,22 +7764,24 @@ html, body, #root {
 }
 
 .step-sidebar-btn:hover {
-  background-color: rgba(139, 0, 0, 0.04);
+  background-color: #fcf8f2;
 }
 
 .step-sidebar-btn.active {
-  background-color: #ffffff;
+  background-color: #f7f3ed;
   font-weight: 700;
+  border-radius: 8px;
 }
 
 .step-sidebar-btn.active::before {
   content: '';
   position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
+  left: 4px;
+  top: 6px;
+  bottom: 6px;
   width: 4px;
-  background-color: #8b0000;
+  border-radius: 4px;
+  background-color: #b58c59;
 }
 
 .step-sidebar-title-group {
@@ -7792,14 +7794,15 @@ html, body, #root {
 }
 
 .step-sidebar-btn.active .step-sidebar-title-group {
-  color: #8b0000;
+  color: #1a1a1a;
+  font-weight: 700;
 }
 
 .step-selected-chip {
   font-size: 11px;
-  color: #8b0000;
+  color: #7d5c2e;
   font-weight: 600;
-  background: rgba(139, 0, 0, 0.08);
+  background: #eaddcb;
   padding: 2px 8px;
   border-radius: 10px;
   max-width: 90px;
@@ -7860,13 +7863,13 @@ html, body, #root {
 
 .style-image-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
-  border-color: #8b0000;
+  box-shadow: 0 6px 16px rgba(181, 140, 89, 0.15);
+  border-color: #b58c59;
 }
 
 .style-image-card.active {
-  border: 2px solid #8b0000;
-  box-shadow: 0 4px 14px rgba(139, 0, 0, 0.15);
+  border: 2px solid #b58c59;
+  box-shadow: 0 4px 14px rgba(181, 140, 89, 0.22);
 }
 
 .card-image-box {
@@ -7893,17 +7896,17 @@ html, body, #root {
 
 .card-selected-badge {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 6px;
+  right: 6px;
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background-color: #8b0000;
+  background-color: #b58c59;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
 }
 
 .card-label-box {

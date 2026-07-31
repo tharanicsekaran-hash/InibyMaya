@@ -74,19 +74,65 @@ const NECK_PATHS = {
   sabrina:         'M 70,106 Q 150,114 230,106',
   glass:           'M 88,100 L 112,124 L 132,119 L 150,124 L 168,119 L 188,124 L 212,100',
   diamond:         'M 88,100 L 150,76 L 212,100 L 150,164 Z',
+  'off-shoulder':  'M 68,132 Q 150,140 232,132 M 68,132 L 88,100 M 232,132 L 212,100',
+  'off-shoulder-neck': 'M 68,132 Q 150,140 232,132 M 68,132 L 88,100 M 232,132 L 212,100',
+  'scalloped-box-neck': 'M 88,100 L 88,148 Q 120,154 150,148 Q 180,154 212,148 L 212,100',
 };
+
+function getNeckPath(neckId, neckStyleObj) {
+  if (neckStyleObj?.svgPath) return neckStyleObj.svgPath;
+  if (!neckId) return NECK_PATHS['round'];
+
+  const idStr = String(neckId).toLowerCase();
+  if (NECK_PATHS[idStr]) return NECK_PATHS[idStr];
+
+  const normalized = idStr.replace(/[^a-z0-9]/g, '');
+  
+  for (const key of Object.keys(NECK_PATHS)) {
+    const keyNorm = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (keyNorm === normalized) return NECK_PATHS[key];
+  }
+
+  // Substring / keyword fuzzy matching
+  if (normalized.includes('offshoulder') || normalized.includes('shoulder')) {
+    return 'M 68,132 Q 150,140 232,132 M 68,132 L 88,100 M 232,132 L 212,100';
+  }
+  if (normalized.includes('box')) {
+    return 'M 88,100 L 88,148 Q 120,154 150,148 Q 180,154 212,148 L 212,100';
+  }
+  if (normalized.includes('scallop')) {
+    return 'M 88,100 C 100,130 120,144 130,136 Q 140,150 150,144 Q 160,150 170,136 C 180,144 200,130 212,100';
+  }
+  if (normalized.includes('sweetheart')) {
+    return 'M 88,100 C 88,150 118,170 150,157 C 182,170 212,150 212,100';
+  }
+  if (normalized.includes('v')) {
+    return 'M 88,100 L 150,174 L 212,100';
+  }
+  if (normalized.includes('square') || normalized.includes('rect')) {
+    return 'M 88,100 L 88,154 L 212,154 L 212,100';
+  }
+  if (normalized.includes('collar') || normalized.includes('chinese') || normalized.includes('mandarin')) {
+    return 'M 88,100 Q 150,114 212,100 M 90,89 Q 150,100 210,89';
+  }
+  if (normalized.includes('boat') || normalized.includes('sabrina')) {
+    return 'M 74,108 Q 150,116 226,108';
+  }
+
+  return NECK_PATHS['round'];
+}
 
 // ========================
 // GARMENT SVG COMPONENT
 // ========================
-function GarmentSVG({ sleeveId, neckId, lining, zip, fillColor }) {
+function GarmentSVG({ sleeveId, neckId, neckStyleObj, lining, zip, fillColor }) {
   const S  = '#1a1a1a';      // stroke colour
   const F  = fillColor || '#f5f0e8'; // garment fill
   const AC = '#b8935a';      // accent / gold
   const SW = 1.8;            // stroke width
   const FO = 0.45;           // fill opacity
 
-  const neckPath = NECK_PATHS[neckId || 'round'];
+  const neckPath = getNeckPath(neckId, neckStyleObj);
 
   const renderSleeves = () => {
     const noSleeve = (
@@ -385,6 +431,7 @@ export default function OutfitCustomizer({ selectedColor, boutiqueSettings, onCu
             <GarmentSVG
               sleeveId={selectedSleeve}
               neckId={selectedNeck}
+              neckStyleObj={NECKS.find(n => n.id === selectedNeck || n.name === selectedNeck)}
               lining={selectedLining}
               zip={selectedZip}
               fillColor={selectedColor?.hex}

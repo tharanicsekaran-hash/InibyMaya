@@ -3505,55 +3505,14 @@ alter table public.settings disable row level security;`}</pre>
 
                 {selectedFooterPageId === 'about-us' ? (
                   <>
-                    {/* Single Unified About Us Description Field with Image Copy/Paste Support */}
+                    {/* Single Unified About Us Description Field */}
                     <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid var(--color-border)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
-                        <div>
-                          <h5 style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#8b0000' }}>
-                            📖 About Us Full Description (Supports Image Copy/Paste & Rich Content)
-                          </h5>
-                          <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: '4px 0 0 0' }}>
-                            Paste text & images directly into the passage box (supports Cmd+V / Ctrl+V image paste, rich HTML, and inline images).
-                          </p>
-                        </div>
-
-                        {/* Inline Image Upload & Insert Toolbar */}
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <label className="custom-file-upload" style={{ cursor: 'pointer', margin: 0, padding: '6px 12px', fontSize: '12px', border: '1px solid var(--color-border)', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#ffffff', color: 'var(--color-text-primary)', fontWeight: '500' }}>
-                            <Upload size={14} />
-                            📷 Upload & Insert Image into Text
-                            <input 
-                              type="file" 
-                              accept="image/*" 
-                              onChange={(e) => {
-                                if (e.target.files?.[0]) {
-                                  handleInsertImageIntoAboutText(e.target.files[0]);
-                                  e.target.value = '';
-                                }
-                              }} 
-                              style={{ display: 'none' }} 
-                            />
-                          </label>
-
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={() => {
-                              const url = prompt('Enter image URL to insert into passage:');
-                              if (url && url.trim()) {
-                                const imgTag = `<img src="${url.trim()}" alt="About Us Image" style="max-width: 100%; border-radius: 10px; margin: 16px 0; display: block;" />`;
-                                const currentText = currentPage.fullDescription || currentPage.section1Content || '';
-                                const updatedText = currentText ? `${currentText}\n\n${imgTag}\n\n` : imgTag;
-                                handleUpdateCurrentFooterPage('fullDescription', updatedText);
-                                handleUpdateCurrentFooterPage('section1Content', updatedText);
-                              }
-                            }}
-                            style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                          >
-                            🔗 Insert Image URL
-                          </button>
-                        </div>
-                      </div>
+                      <h5 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600', color: '#8b0000' }}>
+                        📖 About Us Full Description
+                      </h5>
+                      <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
+                        Write or paste your brand description here, and copy/paste images directly into the passage (`Cmd+V` / `Ctrl+V`).
+                      </p>
 
                       <textarea
                         rows={16}
@@ -3579,7 +3538,7 @@ alter table public.settings disable row level security;`}</pre>
                             }
                           }
                         }}
-                        placeholder="Paste your full About Us brand passage here... You can copy & paste images directly, or click 'Upload & Insert Image' above."
+                        placeholder="Write or paste your full About Us description here... You can copy & paste images directly after the text (Cmd+V / Ctrl+V)."
                         style={{ width: '100%', fontFamily: 'inherit', fontSize: '13.5px', lineHeight: '1.7', padding: '12px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
                       />
                     </div>

@@ -1857,17 +1857,20 @@ html, body, #root {
 
 .cart-item-card {
   display: grid;
-  grid-template-columns: 80px 1fr;
-  gap: 16px;
+  grid-template-columns: 110px 1fr;
+  gap: 14px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--color-border);
   text-align: left;
+  position: relative;
 }
 
 .cart-item-img {
-  width: 100%;
-  aspect-ratio: 3/4;
+  width: 110px;
+  height: 140px;
   object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
   background-color: var(--color-bg-secondary);
 }
 
@@ -1877,16 +1880,17 @@ html, body, #root {
 }
 
 .cart-item-title {
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 4px;
-  line-height: 1.4;
+  font-size: 13.5px;
+  font-weight: 600;
+  margin-bottom: 2px;
+  line-height: 1.35;
+  padding-right: 20px;
 }
 
 .cart-item-meta {
   font-size: 11px;
   color: var(--color-text-secondary);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .cart-item-measurements-readout {
@@ -1925,23 +1929,23 @@ html, body, #root {
   display: flex;
   border: 1px solid var(--color-border);
   border-radius: 4px;
-  height: 28px;
+  height: 25px;
 }
 
 .qty-counter button {
+  width: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+.qty-counter span {
   width: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-}
-
-.qty-counter span {
-  width: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
   border-left: 1px solid var(--color-border);
   border-right: 1px solid var(--color-border);
 }

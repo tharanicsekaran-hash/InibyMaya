@@ -128,20 +128,21 @@ export default function CartDrawer({
                       </div>
                     )}
 
+                    {(item.tailoringFee > 0 || item.styleCustomization?.tailoringCost > 0) && (
+                      <p style={{ fontSize: '10.5px', color: '#8b0000', fontWeight: '600', marginBottom: '6px', lineHeight: '1.3' }}>
+                        ✨ Includes +₹{(item.tailoringFee || item.styleCustomization?.tailoringCost || 0)} custom tailoring fee
+                      </p>
+                    )}
+
                     <div className="cart-item-actions-row">
                       <div className="qty-counter">
                         <button onClick={() => onUpdateQty(idx, item.quantity - 1)}>-</button>
                         <span>{item.quantity}</span>
                         <button onClick={() => onUpdateQty(idx, item.quantity + 1)}>+</button>
                       </div>
-                      <div>
-                        <p className="item-price">₹{(item.price * item.quantity).toLocaleString('en-IN')}</p>
-                        {(item.tailoringFee > 0 || item.styleCustomization?.tailoringCost > 0) && (
-                          <p style={{ fontSize: '11px', color: '#8b0000', fontWeight: '600', margin: '2px 0 0 0' }}>
-                            Includes +₹{(item.tailoringFee || item.styleCustomization?.tailoringCost || 0)} Custom Tailoring Fee
-                          </p>
-                        )}
-                      </div>
+                      <p className="item-price" style={{ fontSize: '14px', fontWeight: '700', color: 'var(--color-text-primary)', margin: 0 }}>
+                        ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                      </p>
                     </div>
                     <button 
                       className="remove-item-btn" 

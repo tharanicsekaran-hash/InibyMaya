@@ -3933,7 +3933,7 @@ alter table public.settings disable row level security;`}</pre>
                     <thead>
                       <tr>
                         <th>Style Name</th>
-                        <th style={{ width: '220px' }}>2D Visual Shape / Preset</th>
+                        <th style={{ width: '320px' }}>Style Preview Photo (Upload or Paste URL)</th>
                         <th>Tailoring Fee (₹)</th>
                         <th>Actions</th>
                       </tr>
@@ -3953,35 +3953,56 @@ alter table public.settings disable row level security;`}</pre>
                               style={{ width: '100%', padding: '6px 10px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                             />
                           </td>
-                          <td style={{ width: '220px' }}>
-                            <select
-                              value={sItem.vectorPreset || (sItem.id?.includes('off-shoulder') ? 'off-shoulder' : '')}
-                              onChange={(e) => {
-                                const updated = [...customizerPartsConfig];
-                                updated[pIdx].styles[sIdx].vectorPreset = e.target.value;
-                                setCustomizerPartsConfig(updated);
-                              }}
-                              style={{ width: '100%', padding: '6px 8px', fontSize: '12px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
-                            >
-                              <option value="">Auto-Detect Shape</option>
-                              <option value="off-shoulder">✨ Off-Shoulder Neck</option>
-                              <option value="round">Round Neck</option>
-                              <option value="v-neck">V Neck</option>
-                              <option value="scalloped-round">Scalloped Round Neck</option>
-                              <option value="scalloped-v">Scalloped V Neck</option>
-                              <option value="scalloped-box-neck">Scalloped Box Neck</option>
-                              <option value="square">Square Neck</option>
-                              <option value="sweetheart">Sweetheart Neck</option>
-                              <option value="chinese">Chinese Collar</option>
-                              <option value="boat">Boat Neck</option>
-                              <option value="keyhole">Keyhole Neck</option>
-                              <option value="paan">Paan Neck</option>
-                              <option value="short">Short Sleeves</option>
-                              <option value="three-quarter">Three Quarter Sleeves</option>
-                              <option value="full">Full Sleeves</option>
-                              <option value="bell">Full Bell Sleeves</option>
-                              <option value="short-balloon">Short Balloon Puff</option>
-                            </select>
+                          <td style={{ width: '320px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {sItem.image ? (
+                                <img 
+                                  src={sItem.image} 
+                                  alt={sItem.name} 
+                                  style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--color-border)' }} 
+                                />
+                              ) : (
+                                <div style={{ width: '36px', height: '36px', borderRadius: '4px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#94a3b8', textAlign: 'center', padding: '2px' }}>
+                                  No Photo
+                                </div>
+                              )}
+
+                              <input
+                                type="text"
+                                placeholder="Paste image URL..."
+                                value={sItem.image || ''}
+                                onChange={(e) => {
+                                  const updated = [...customizerPartsConfig];
+                                  updated[pIdx].styles[sIdx].image = e.target.value;
+                                  setCustomizerPartsConfig(updated);
+                                }}
+                                style={{ flex: 1, padding: '6px 8px', fontSize: '11px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                              />
+
+                              <label className="custom-file-upload" style={{ cursor: 'pointer', padding: '6px 10px', fontSize: '11px', margin: 0, backgroundColor: '#8b0000', color: '#fff', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                                <Upload size={12} />
+                                <span>Upload</span>
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  onChange={async (e) => {
+                                    if (e.target.files?.[0]) {
+                                      try {
+                                        const url = await uploadFileToGithub(e.target.files[0]);
+                                        if (url) {
+                                          const updated = [...customizerPartsConfig];
+                                          updated[pIdx].styles[sIdx].image = url;
+                                          setCustomizerPartsConfig(updated);
+                                        }
+                                      } catch (err) {
+                                        alert('Image upload failed: ' + err.message);
+                                      }
+                                    }
+                                  }} 
+                                  style={{ display: 'none' }} 
+                                />
+                              </label>
+                            </div>
                           </td>
                           <td style={{ width: '160px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>

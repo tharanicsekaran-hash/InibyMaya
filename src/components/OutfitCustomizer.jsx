@@ -408,6 +408,25 @@ export default function OutfitCustomizer({ selectedColor, boutiqueSettings, onCu
   const neckLabel   = NECKS.find(n => n.id === selectedNeck || n.name === selectedNeck)?.name;
   const hasSelections = sleeveLabel || neckLabel || selectedLining === 'Lining' || selectedZip === 'Yes' || Object.keys(otherSelections).length > 0;
 
+  const selectedNeckObj = NECKS.find(n => n.id === selectedNeck || n.name === selectedNeck);
+  const selectedSleeveObj = SLEEVES.find(s => s.id === selectedSleeve || s.name === selectedSleeve);
+  
+  let activeStyleImage = selectedNeckObj?.image || selectedSleeveObj?.image;
+  let activeStyleTitle = selectedNeckObj?.image ? selectedNeckObj?.name : (selectedSleeveObj?.image ? selectedSleeveObj?.name : null);
+
+  if (!activeStyleImage) {
+    for (const partId of Object.keys(otherSelections)) {
+      const selectedStyleId = otherSelections[partId];
+      const partObj = OTHER_PARTS.find(p => p.id === partId);
+      const styleObj = partObj?.styles?.find(s => s.id === selectedStyleId || s.name === selectedStyleId);
+      if (styleObj?.image) {
+        activeStyleImage = styleObj.image;
+        activeStyleTitle = styleObj.name;
+        break;
+      }
+    }
+  }
+
   return (
     <div className="outfit-customizer-studio">
 
@@ -430,15 +449,28 @@ export default function OutfitCustomizer({ selectedColor, boutiqueSettings, onCu
         <div className="studio-preview-col">
           <p className="preview-eyebrow">Live Preview</p>
 
-          <div className="garment-preview-card">
-            <GarmentSVG
-              sleeveId={selectedSleeve}
-              neckId={selectedNeck}
-              neckStyleObj={NECKS.find(n => n.id === selectedNeck || n.name === selectedNeck)}
-              lining={selectedLining}
-              zip={selectedZip}
-              fillColor={selectedColor?.hex}
-            />
+          <div className="garment-preview-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '340px', backgroundColor: '#faf9f6', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'hidden', position: 'relative', padding: '12px' }}>
+            {activeStyleImage ? (
+              <img
+                src={activeStyleImage}
+                alt={activeStyleTitle || 'Selected Style Preview'}
+                style={{ width: '100%', maxHeight: '320px', objectFit: 'contain', borderRadius: '8px', transition: 'all 0.3s ease' }}
+              />
+            ) : (
+              <div style={{ padding: '36px 16px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                <Sparkles size={32} style={{ color: '#8b0000', marginBottom: '12px', opacity: 0.7 }} />
+                <h5 style={{ margin: '0 0 6px 0', fontSize: '14px', fontWeight: '600', color: 'var(--color-text-primary)' }}>Style Photo Preview</h5>
+                <p style={{ margin: 0, fontSize: '12px', opacity: 0.75, lineHeight: '1.5' }}>
+                  Select any custom neckline or sleeve style on the right to view its style photo!
+                </p>
+              </div>
+            )}
+            
+            {activeStyleTitle && (
+              <div style={{ position: 'absolute', bottom: '12px', left: '12px', right: '12px', backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(4px)', padding: '6px 12px', borderRadius: '6px', textAlign: 'center', border: '1px solid var(--color-border)', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                <span style={{ fontSize: '12px', fontWeight: '600', color: '#8b0000' }}>📸 {activeStyleTitle}</span>
+              </div>
+            )}
           </div>
 
           {/* Selection summary */}

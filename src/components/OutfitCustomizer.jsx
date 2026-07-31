@@ -80,10 +80,13 @@ const NECK_PATHS = {
 };
 
 function getNeckPath(neckId, neckStyleObj) {
+  if (neckStyleObj?.vectorPreset && NECK_PATHS[neckStyleObj.vectorPreset]) {
+    return NECK_PATHS[neckStyleObj.vectorPreset];
+  }
   if (neckStyleObj?.svgPath) return neckStyleObj.svgPath;
-  if (!neckId) return NECK_PATHS['round'];
+  if (!neckId && !neckStyleObj?.name) return NECK_PATHS['round'];
 
-  const idStr = String(neckId).toLowerCase();
+  const idStr = String(neckStyleObj?.name || neckId).toLowerCase();
   if (NECK_PATHS[idStr]) return NECK_PATHS[idStr];
 
   const normalized = idStr.replace(/[^a-z0-9]/g, '');

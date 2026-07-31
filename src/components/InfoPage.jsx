@@ -10,9 +10,11 @@ export default function InfoPage({ tab, setTab, orders = [], boutiqueSettings = 
   const [searchPhone, setSearchPhone] = useState('');
   const [trackedOrder, setTrackedOrder] = useState(null);
   const [searchError, setSearchError] = useState('');
+  const [openFaqIndex, setOpenFaqIndex] = useState(0);
 
   const menuItems = [
     { id: 'about-us', label: 'About Us' },
+    { id: 'faq', label: 'FAQ' },
     { id: 'track-order', label: 'Track Couture Order' },
     { id: 'contact-care', label: 'Contact Care' },
     { id: 'fit-guide', label: 'Couture Fit Guide' },
@@ -285,6 +287,105 @@ export default function InfoPage({ tab, setTab, orders = [], boutiqueSettings = 
                     );
                   })()}
                 </>
+              ) : tab === 'faq' ? (
+                <div className="faq-page-container">
+                  <div style={{ marginBottom: '24px' }}>
+                    <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#8b0000', marginBottom: '8px' }}>
+                      💡 Frequently Asked Questions
+                    </h4>
+                    <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                      Click on any question below to expand details regarding custom fitting, orders, cash on delivery, shipping, and exchanges.
+                    </p>
+                  </div>
+
+                  {(() => {
+                    const faqList = (activeCustomPage.faqs && activeCustomPage.faqs.length > 0) 
+                      ? activeCustomPage.faqs 
+                      : [
+                        {
+                          question: 'How do I place an order with Cash on Delivery (COD)?',
+                          answer: 'Simply select your desired couture outfit, add it to your bag, and choose Cash on Delivery at checkout. Payment will be collected in cash or via UPI when the courier delivers your package to your doorstep.'
+                        },
+                        {
+                          question: 'How does Bespoke Custom Tailoring work?',
+                          answer: 'You can choose "Bespoke Custom Tailoring" on any outfit product page. Enter your custom measurements (Bust, Waist, Hips, Shoulder, Sleeve Length, Kurta Length) and special fitting notes. Our atelier tailors will stitch the outfit precisely to your specifications at no extra cost!'
+                        },
+                        {
+                          question: 'How long does domestic shipping and delivery take?',
+                          answer: 'Ready-to-wear orders are dispatched within 24–48 hours. Custom-tailored orders require 5–10 business days for hand-stitching before dispatch. Delivery via Delhivery Express takes 2–4 business days across India.'
+                        },
+                        {
+                          question: 'How can I track my order status?',
+                          answer: 'Click "Track Order" in the website footer or menu drawer. Enter your Order ID (e.g. ORD-123456) and registered phone number to view live courier tracking updates.'
+                        },
+                        {
+                          question: 'What is your size exchange policy?',
+                          answer: 'We offer a 7-day hassle-free size exchange policy. If your piece needs a different size, email care@inibymaya.com or contact us on WhatsApp (+91 98765 43210).'
+                        },
+                        {
+                          question: 'Are there any extra charges for custom stitching?',
+                          answer: 'No! All custom tailoring and measurement stitching services are provided complimentary with zero extra fees.'
+                        }
+                      ];
+
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {faqList.map((item, fIdx) => {
+                          const isOpen = openFaqIndex === fIdx;
+                          return (
+                            <div 
+                              key={fIdx} 
+                              style={{ 
+                                border: '1px solid var(--color-border)', 
+                                borderRadius: '10px', 
+                                overflow: 'hidden',
+                                backgroundColor: 'var(--color-bg-secondary)',
+                                transition: 'all 0.2s ease'
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => setOpenFaqIndex(isOpen ? -1 : fIdx)}
+                                style={{
+                                  width: '100%',
+                                  padding: '16px 20px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  border: 'none',
+                                  background: 'none',
+                                  cursor: 'pointer',
+                                  textAlign: 'left',
+                                  fontSize: '14.5px',
+                                  fontWeight: '600',
+                                  color: 'var(--color-text-primary)'
+                                }}
+                              >
+                                <span>{item.question}</span>
+                                <span style={{ fontSize: '18px', color: '#8b0000', marginLeft: '12px', fontWeight: 'bold' }}>
+                                  {isOpen ? '−' : '+'}
+                                </span>
+                              </button>
+
+                              {isOpen && (
+                                <div style={{ 
+                                  padding: '0 20px 18px 20px', 
+                                  fontSize: '13.5px', 
+                                  lineHeight: '1.7', 
+                                  color: 'var(--color-text-secondary)',
+                                  borderTop: '1px solid rgba(0, 0, 0, 0.05)',
+                                  paddingTop: '12px'
+                                }}>
+                                  {item.answer}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
               ) : (
                 <>
                   {activeCustomPage.section1Heading && (

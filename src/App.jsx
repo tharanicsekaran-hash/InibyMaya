@@ -1854,6 +1854,7 @@ export default function App() {
             <h4>Customer Support</h4>
             <ul>
               <li><button onClick={() => { setActivePage('info'); setInfoPageTab('about-us'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>About Us</button></li>
+              <li><button onClick={() => { setActivePage('info'); setInfoPageTab('faq'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>FAQ</button></li>
               <li><button onClick={() => { setActivePage('info'); setInfoPageTab('track-order'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Track Couture Order</button></li>
               <li><button onClick={() => { setActivePage('info'); setInfoPageTab('contact-care'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Contact Care</button></li>
               <li><button onClick={() => { setActivePage('info'); setInfoPageTab('fit-guide'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Couture Fit Guide</button></li>

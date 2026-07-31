@@ -99,5 +99,37 @@ export const DEFAULT_FOOTER_PAGES = {
     section2Content: 'If your shipment is delayed or you need an address update, reach out to Couture Care at care@inibymaya.com.',
     calloutTitle: 'Having Trouble Finding Your Order?',
     calloutText: 'Check your email confirmation receipt or contact care@inibymaya.com with your name and phone number.'
+  },
+  'faq': {
+    id: 'faq',
+    navLabel: 'FAQ',
+    title: 'Frequently Asked Questions (FAQ)',
+    subtitle: 'Everything You Need to Know About Ordering, Custom Tailoring, Shipping & Payments',
+    faqs: [
+      {
+        question: 'How do I place an order with Cash on Delivery (COD)?',
+        answer: 'Simply select your desired couture outfit, add it to your bag, and choose Cash on Delivery at checkout. Payment will be collected in cash or via UPI when the courier delivers your package to your doorstep.'
+      },
+      {
+        question: 'How does Bespoke Custom Tailoring work?',
+        answer: 'You can choose "Bespoke Custom Tailoring" on any outfit product page. Enter your custom measurements (Bust, Waist, Hips, Shoulder, Sleeve Length, Kurta Length) and special fitting notes. Our atelier tailors will stitch the outfit precisely to your specifications at no extra cost!'
+      },
+      {
+        question: 'How long does domestic shipping and delivery take?',
+        answer: 'Ready-to-wear orders are dispatched within 24–48 hours. Custom-tailored orders require 5–10 business days for hand-stitching before dispatch. Delivery via Delhivery Express takes 2–4 business days across India.'
+      },
+      {
+        question: 'How can I track my order status?',
+        answer: 'Click "Track Order" in the website footer or menu drawer. Enter your Order ID (e.g. ORD-123456) and registered phone number to view live courier tracking updates.'
+      },
+      {
+        question: 'What is your size exchange policy?',
+        answer: 'We offer a 7-day hassle-free size exchange policy. If your piece needs a different size, email care@inibymaya.com or contact us on WhatsApp (+91 98765 43210).'
+      },
+      {
+        question: 'Are there any extra charges for custom stitching?',
+        answer: 'No! All custom tailoring and measurement stitching services are provided complimentary with zero extra fees.'
+      }
+    ]
   }
 };

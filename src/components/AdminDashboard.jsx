@@ -3503,7 +3503,113 @@ alter table public.settings disable row level security;`}</pre>
                   />
                 </div>
 
-                {selectedFooterPageId === 'about-us' ? (
+                {selectedFooterPageId === 'faq' ? (
+                  <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid var(--color-border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                      <div>
+                        <h5 style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#8b0000' }}>
+                          ❓ FAQ Question & Answer Management
+                        </h5>
+                        <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: '4px 0 0 0' }}>
+                          Add, edit, delete, and reorder questions displayed on your customer FAQ page.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="add-btn-submit"
+                        onClick={() => {
+                          const currentFaqs = currentPage.faqs || DEFAULT_FOOTER_PAGES['faq'].faqs || [];
+                          const newFaq = { question: 'New Question?', answer: 'Answer details go here...' };
+                          handleUpdateCurrentFooterPage('faqs', [...currentFaqs, newFaq]);
+                        }}
+                        style={{ padding: '8px 14px', fontSize: '12px', width: 'auto', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <Plus size={14} /> Add New FAQ
+                      </button>
+                    </div>
+
+                    {((currentPage.faqs && currentPage.faqs.length > 0) ? currentPage.faqs : (DEFAULT_FOOTER_PAGES['faq'].faqs || [])).map((faqItem, idx) => (
+                      <div key={idx} style={{ backgroundColor: '#ffffff', padding: '14px', borderRadius: '8px', border: '1px solid var(--color-border)', marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                          <strong style={{ fontSize: '13px', color: '#8b0000' }}>FAQ #{idx + 1}</strong>
+                          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                            {idx > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const faqsList = [...(currentPage.faqs || DEFAULT_FOOTER_PAGES['faq'].faqs)];
+                                  const temp = faqsList[idx];
+                                  faqsList[idx] = faqsList[idx - 1];
+                                  faqsList[idx - 1] = temp;
+                                  handleUpdateCurrentFooterPage('faqs', faqsList);
+                                }}
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '2px 6px', color: 'var(--color-text-primary)' }}
+                                title="Move Up"
+                              >
+                                <ChevronUp size={14} />
+                              </button>
+                            )}
+                            {idx < (currentPage.faqs || DEFAULT_FOOTER_PAGES['faq'].faqs).length - 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const faqsList = [...(currentPage.faqs || DEFAULT_FOOTER_PAGES['faq'].faqs)];
+                                  const temp = faqsList[idx];
+                                  faqsList[idx] = faqsList[idx + 1];
+                                  faqsList[idx + 1] = temp;
+                                  handleUpdateCurrentFooterPage('faqs', faqsList);
+                                }}
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '2px 6px', color: 'var(--color-text-primary)' }}
+                                title="Move Down"
+                              >
+                                <ChevronDown size={14} />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const faqsList = (currentPage.faqs || DEFAULT_FOOTER_PAGES['faq'].faqs).filter((_, i) => i !== idx);
+                                handleUpdateCurrentFooterPage('faqs', faqsList);
+                              }}
+                              style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444', padding: '2px 6px' }}
+                              title="Delete FAQ"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div style={{ marginBottom: '10px' }}>
+                          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px', color: 'var(--color-text-primary)' }}>Question:</label>
+                          <input
+                            type="text"
+                            value={faqItem.question || ''}
+                            onChange={(e) => {
+                              const faqsList = [...(currentPage.faqs || DEFAULT_FOOTER_PAGES['faq'].faqs)];
+                              faqsList[idx] = { ...faqsList[idx], question: e.target.value };
+                              handleUpdateCurrentFooterPage('faqs', faqsList);
+                            }}
+                            style={{ width: '100%', padding: '8px 10px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px', color: 'var(--color-text-primary)' }}>Answer:</label>
+                          <textarea
+                            rows={3}
+                            value={faqItem.answer || ''}
+                            onChange={(e) => {
+                              const faqsList = [...(currentPage.faqs || DEFAULT_FOOTER_PAGES['faq'].faqs)];
+                              faqsList[idx] = { ...faqsList[idx], answer: e.target.value };
+                              handleUpdateCurrentFooterPage('faqs', faqsList);
+                            }}
+                            style={{ width: '100%', padding: '8px 10px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : selectedFooterPageId === 'about-us' ? (
                   <>
                     {/* Single Unified About Us Description Field */}
                     <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid var(--color-border)' }}>

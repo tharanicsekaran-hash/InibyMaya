@@ -661,6 +661,8 @@ export default function AdminDashboard({
     }
     return DEFAULT_CUSTOMIZER_PARTS;
   });
+  const [newPartNameInput, setNewPartNameInput] = useState('');
+  const [newStyleInputs, setNewStyleInputs] = useState({});
 
   // Lightweight canvas image compressor utility (cuts bandwidth & DB egress usage by 99%)
   const compressImage = (file, maxWidth = 1200, quality = 0.8) => {
@@ -3852,27 +3854,38 @@ alter table public.settings disable row level security;`}</pre>
               </p>
             </div>
 
-            <button
-              type="button"
-              className="add-btn-submit"
-              onClick={() => {
-                const partName = prompt('Enter new Garment Part / Category name (e.g. Back Cut, Pocket, Embroidery):');
-                if (partName && partName.trim()) {
-                  const newPart = {
-                    id: partName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-                    name: partName.trim(),
-                    required: false,
-                    styles: [
-                      { id: 'standard', name: 'Standard Style', price: 0 }
-                    ]
-                  };
-                  setCustomizerPartsConfig(prev => [...prev, newPart]);
-                }
-              }}
-              style={{ width: 'auto', padding: '10px 18px', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-            >
-              <Plus size={16} /> Add Garment Part
-            </button>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                placeholder="Type new Garment Part name (e.g. Back Cut, Pocket)..."
+                value={newPartNameInput}
+                onChange={(e) => setNewPartNameInput(e.target.value)}
+                style={{ padding: '8px 12px', fontSize: '13px', borderRadius: '6px', border: '1px solid var(--color-border)', width: '280px' }}
+              />
+              <button
+                type="button"
+                className="add-btn-submit"
+                onClick={() => {
+                  if (newPartNameInput && newPartNameInput.trim()) {
+                    const newPart = {
+                      id: newPartNameInput.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+                      name: newPartNameInput.trim(),
+                      required: false,
+                      styles: [
+                        { id: 'standard', name: 'Standard Style', price: 0 }
+                      ]
+                    };
+                    setCustomizerPartsConfig(prev => [...prev, newPart]);
+                    setNewPartNameInput('');
+                  } else {
+                    alert('Please type a garment part name first.');
+                  }
+                }}
+                style={{ width: 'auto', padding: '9px 16px', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Plus size={16} /> Add Garment Part
+              </button>
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '900px', margin: '0 auto' }}>
@@ -3887,29 +3900,6 @@ alter table public.settings disable row level security;`}</pre>
                   </div>
 
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => {
-                        const styleName = prompt(`Enter new style name for ${part.name} (e.g. V-Neck, Bell Sleeves):`);
-                        if (styleName && styleName.trim()) {
-                          const priceStr = prompt(`Enter tailoring charge (₹) for "${styleName}":`, '150');
-                          const price = Number(priceStr) || 0;
-                          const newStyle = {
-                            id: styleName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-                            name: styleName.trim(),
-                            price: price
-                          };
-                          const updated = [...customizerPartsConfig];
-                          updated[pIdx].styles.push(newStyle);
-                          setCustomizerPartsConfig(updated);
-                        }
-                      }}
-                      style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      <Plus size={14} /> Add Style
-                    </button>
-
                     {customizerPartsConfig.length > 1 && (
                       <button
                         type="button"
@@ -4038,6 +4028,111 @@ alter table public.settings disable row level security;`}</pre>
                           </td>
                         </tr>
                       ))}
+
+                      {/* Inline Form Row to Add New Style (No Prompt!) */}
+                      <tr style={{ backgroundColor: 'rgba(139, 0, 0, 0.02)' }}>
+                        <td>
+                          <input
+                            type="text"
+                            placeholder="➕ Type Style Name (e.g. Scalloped Box)..."
+                            value={newStyleInputs[pIdx]?.name || ''}
+                            onChange={(e) => {
+                              setNewStyleInputs(prev => ({
+                                ...prev,
+                                [pIdx]: { ...prev[pIdx], name: e.target.value }
+                              }));
+                            }}
+                            style={{ width: '100%', padding: '6px 10px', fontSize: '12px', borderRadius: '4px', border: '1px dashed #8b0000' }}
+                          />
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <input
+                              type="text"
+                              placeholder="Paste image URL..."
+                              value={newStyleInputs[pIdx]?.image || ''}
+                              onChange={(e) => {
+                                setNewStyleInputs(prev => ({
+                                  ...prev,
+                                  [pIdx]: { ...prev[pIdx], image: e.target.value }
+                                }));
+                              }}
+                              style={{ flex: 1, padding: '6px 8px', fontSize: '11px', borderRadius: '4px', border: '1px dashed #8b0000' }}
+                            />
+                            <label className="custom-file-upload" style={{ cursor: 'pointer', padding: '5px 8px', fontSize: '11px', margin: 0, backgroundColor: '#8b0000', color: '#fff', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                              <Upload size={12} />
+                              <span>Upload</span>
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={async (e) => {
+                                  if (e.target.files?.[0]) {
+                                    try {
+                                      const url = await uploadFileToGithub(e.target.files[0]);
+                                      if (url) {
+                                        setNewStyleInputs(prev => ({
+                                          ...prev,
+                                          [pIdx]: { ...prev[pIdx], image: url }
+                                        }));
+                                      }
+                                    } catch (err) {
+                                      alert('Upload failed: ' + err.message);
+                                    }
+                                  }
+                                }} 
+                                style={{ display: 'none' }} 
+                              />
+                            </label>
+                          </div>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: '600' }}>+₹</span>
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="150"
+                              value={newStyleInputs[pIdx]?.price !== undefined ? newStyleInputs[pIdx]?.price : ''}
+                              onChange={(e) => {
+                                setNewStyleInputs(prev => ({
+                                  ...prev,
+                                  [pIdx]: { ...prev[pIdx], price: e.target.value }
+                                }));
+                              }}
+                              style={{ width: '80px', padding: '6px 8px', fontSize: '12px', borderRadius: '4px', border: '1px dashed #8b0000', fontWeight: '600', color: '#047857' }}
+                            />
+                          </div>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="add-btn-submit"
+                            onClick={() => {
+                              const inputData = newStyleInputs[pIdx];
+                              if (inputData?.name && inputData.name.trim()) {
+                                const newStyle = {
+                                  id: inputData.name.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+                                  name: inputData.name.trim(),
+                                  price: Number(inputData.price) || 0,
+                                  image: inputData.image || ''
+                                };
+                                const updated = [...customizerPartsConfig];
+                                updated[pIdx].styles.push(newStyle);
+                                setCustomizerPartsConfig(updated);
+                                setNewStyleInputs(prev => ({
+                                  ...prev,
+                                  [pIdx]: { name: '', price: '', image: '' }
+                                }));
+                              } else {
+                                alert('Please type a style name first.');
+                              }
+                            }}
+                            style={{ padding: '5px 10px', fontSize: '11px', whiteSpace: 'nowrap' }}
+                          >
+                            <Plus size={12} /> Add Style
+                          </button>
+                        </td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>

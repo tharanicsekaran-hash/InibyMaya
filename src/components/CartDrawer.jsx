@@ -134,15 +134,22 @@ export default function CartDrawer({
                         <span>{item.quantity}</span>
                         <button onClick={() => onUpdateQty(idx, item.quantity + 1)}>+</button>
                       </div>
-                      <span className="cart-item-price">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
-                      <button 
-                        className="remove-item-btn" 
-                        onClick={() => onRemoveItem(idx)}
-                        title="Remove product"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div>
+                        <p className="item-price">₹{(item.price * item.quantity).toLocaleString('en-IN')}</p>
+                        {(item.tailoringFee > 0 || item.styleCustomization?.tailoringCost > 0) && (
+                          <p style={{ fontSize: '11px', color: '#8b0000', fontWeight: '600', margin: '2px 0 0 0' }}>
+                            Includes +₹{(item.tailoringFee || item.styleCustomization?.tailoringCost || 0)} Custom Tailoring Fee
+                          </p>
+                        )}
+                      </div>
                     </div>
+                    <button 
+                      className="remove-item-btn" 
+                      onClick={() => onRemoveItem(idx)}
+                      title="Remove product"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -238,27 +245,46 @@ export default function CartDrawer({
             </div>
 
             {/* Calculations */}
-            <div className="calc-table">
-              <div className="calc-row">
-                <span>Subtotal</span>
-                <span>₹{subtotal.toLocaleString('en-IN')}</span>
-              </div>
-              {appliedDiscount > 0 && (
-                <div className="calc-row discount-row">
-                  <span>Discount</span>
-                  <span>- ₹{appliedDiscount.toLocaleString('en-IN')}</span>
+            {(() => {
+              const customizationFeeTotal = cartItems.reduce((acc, item) => {
+                const fee = item.tailoringFee || item.styleCustomization?.tailoringCost || 0;
+                return acc + (fee * item.quantity);
+              }, 0);
+
+              const itemsOnlySubtotal = subtotal - customizationFeeTotal;
+
+              return (
+                <div className="calc-table">
+                  <div className="calc-row">
+                    <span>Items Subtotal</span>
+                    <span>₹{itemsOnlySubtotal.toLocaleString('en-IN')}</span>
+                  </div>
+
+                  {customizationFeeTotal > 0 && (
+                    <div className="calc-row" style={{ color: '#8b0000', fontWeight: '600' }}>
+                      <span>Custom Tailoring Add-on</span>
+                      <span>+ ₹{customizationFeeTotal.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
+
+                  {appliedDiscount > 0 && (
+                    <div className="calc-row discount-row">
+                      <span>Discount</span>
+                      <span>- ₹{appliedDiscount.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
+                  <div className="calc-row">
+                    <span>Shipping</span>
+                    <span>{shipping === 0 ? 'FREE' : `₹${shipping}`}</span>
+                  </div>
+                  <hr />
+                  <div className="calc-row total-row red-totals">
+                    <span className="total-label-red">Total</span>
+                    <span className="total-amount-red">₹{finalTotal.toLocaleString('en-IN')}</span>
+                  </div>
                 </div>
-              )}
-              <div className="calc-row">
-                <span>Shipping</span>
-                <span>{shipping === 0 ? 'FREE' : `₹${shipping}`}</span>
-              </div>
-              <hr />
-              <div className="calc-row total-row red-totals">
-                <span className="total-label-red">Total</span>
-                <span className="total-amount-red">₹{finalTotal.toLocaleString('en-IN')}</span>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* Checkout Call-to-action */}
             <button 

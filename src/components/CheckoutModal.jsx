@@ -175,30 +175,47 @@ export default function CheckoutModal({
               ))}
             </div>
 
-            <div className="receipt-calculations">
-              <div className="receipt-row">
-                <span>Subtotal</span>
-                <span>₹{computedSubtotal.toLocaleString('en-IN')}</span>
-              </div>
-              {computedDiscount > 0 && (
-                <div className="receipt-row discount">
-                  <span>Coupons Discount</span>
-                  <span>- ₹{computedDiscount.toLocaleString('en-IN')}</span>
+            {(() => {
+              const customTailoringTotal = (cartItems || []).reduce((acc, item) => {
+                const fee = item.tailoringFee || item.styleCustomization?.tailoringCost || 0;
+                return acc + (fee * item.quantity);
+              }, 0);
+
+              const itemsOnlySubtotal = computedSubtotal - customTailoringTotal;
+
+              return (
+                <div className="receipt-calculations">
+                  <div className="receipt-row">
+                    <span>Items Subtotal</span>
+                    <span>₹{itemsOnlySubtotal.toLocaleString('en-IN')}</span>
+                  </div>
+                  {customTailoringTotal > 0 && (
+                    <div className="receipt-row" style={{ color: '#8b0000', fontWeight: '600' }}>
+                      <span>Custom Tailoring Add-on</span>
+                      <span>+ ₹{customTailoringTotal.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
+                  {computedDiscount > 0 && (
+                    <div className="receipt-row discount">
+                      <span>Coupons Discount</span>
+                      <span>- ₹{computedDiscount.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
+                  <div className="receipt-row">
+                    <span>Cash on Delivery Shipping</span>
+                    <span>{computedShipping === 0 ? 'FREE' : `₹${computedShipping}`}</span>
+                  </div>
+                  <hr />
+                  <div className="receipt-row grand-total-row red-totals">
+                    <span className="total-label-red">Grand Total (COD)</span>
+                    <span className="total-amount-red">₹{computedFinalTotal.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="cod-notice-footer">
+                    <span>ℹ️ Pay cash/UPI to courier at the time of delivery.</span>
+                  </div>
                 </div>
-              )}
-              <div className="receipt-row">
-                <span>Cash on Delivery Shipping</span>
-                <span>{computedShipping === 0 ? 'FREE' : `₹${computedShipping}`}</span>
-              </div>
-              <hr />
-              <div className="receipt-row grand-total-row red-totals">
-                <span className="total-label-red">Grand Total (COD)</span>
-                <span className="total-amount-red">₹{computedFinalTotal.toLocaleString('en-IN')}</span>
-              </div>
-              <div className="cod-notice-footer">
-                <span>ℹ️ Pay cash/UPI to courier at the time of delivery.</span>
-              </div>
-            </div>
+              );
+            })()}
           </div>
         </div>
       </div>

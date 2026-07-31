@@ -3784,8 +3784,8 @@ alter table public.settings disable row level security;`}</pre>
                   </>
                 )}
 
-                {/* Highlight Callout Box Notice (Hidden for About Us page) */}
-                {selectedFooterPageId !== 'about-us' && (
+                {/* Highlight Callout Box Notice (Hidden for About Us and FAQ pages) */}
+                {selectedFooterPageId !== 'about-us' && selectedFooterPageId !== 'faq' && (
                   <div style={{ backgroundColor: '#fffdfa', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #d4af37' }}>
                     <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600', color: '#8b0000' }}>✨ Highlighted Notice Box (Callout Box)</h5>
                     

@@ -202,7 +202,7 @@ export default function ProductDetailModal({
                 <div className="detail-price-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', margin: '14px 0 18px' }}>
                   {hasDiscount && (
                     <span style={{ textDecoration: 'line-through', color: '#999999', fontSize: '18px', fontWeight: '400' }}>
-                      ₹{(Number(origP) + (wantsCustomStitching ? stitchingFee : 0)).toLocaleString('en-IN')}
+                      ₹{(Number(origP) + (wantsCustomStitching ? tailoringFee : 0)).toLocaleString('en-IN')}
                     </span>
                   )}
                   <span className="detail-price" style={{ fontSize: '26px', fontWeight: '700', color: 'var(--color-text-primary)' }}>

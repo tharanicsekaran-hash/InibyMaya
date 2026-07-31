@@ -12,7 +12,8 @@ export default function ProductDetailModal({
   onProductClick,
   onQuickViewClick,
   favorites = [],
-  onToggleFavorite
+  onToggleFavorite,
+  boutiqueSettings = {}
 }) {
   const { title, price, images, category, rating, reviewsCount, description, details, variants, customizable, highlights } = product;
 
@@ -259,6 +260,7 @@ export default function ProductDetailModal({
                   <div className="animate-slideDown" style={{ marginTop: '16px' }}>
                     <OutfitCustomizer
                       selectedColor={selectedColor}
+                      boutiqueSettings={boutiqueSettings}
                       onCustomizationChange={setStyleCustomization}
                     />
                   </div>

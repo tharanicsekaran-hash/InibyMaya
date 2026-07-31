@@ -1450,6 +1450,7 @@ export default function App() {
             }}
             favorites={favorites}
             onToggleFavorite={handleToggleFavorite}
+            boutiqueSettings={boutiqueSettings}
           />
         ) : activePage === 'home' ? (
           // Home Page

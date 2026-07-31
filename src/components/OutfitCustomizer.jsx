@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Check, ChevronDown, ChevronUp, RotateCcw, Sparkles } from 'lucide-react';
+import { DEFAULT_CUSTOMIZER_PARTS } from '../utils/customizerData';
 
 // ========================
 // OPTION DATA
@@ -265,11 +266,33 @@ function GarmentSVG({ sleeveId, neckId, lining, zip, fillColor }) {
 // ========================
 // MAIN COMPONENT
 // ========================
-export default function OutfitCustomizer({ selectedColor, onCustomizationChange }) {
+export default function OutfitCustomizer({ selectedColor, boutiqueSettings, onCustomizationChange }) {
+  const activeParts = useMemo(() => {
+    if (boutiqueSettings?.customizerParts) {
+      try {
+        const parsed = JSON.parse(boutiqueSettings.customizerParts);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error('Error parsing customizerParts:', e);
+      }
+    }
+    return DEFAULT_CUSTOMIZER_PARTS;
+  }, [boutiqueSettings?.customizerParts]);
+
+  const necklinesPart = activeParts.find(p => p.id === 'necklines') || activeParts[0];
+  const sleevesPart   = activeParts.find(p => p.id === 'sleeves') || activeParts[1];
+
+  const NECKS   = necklinesPart?.styles || [];
+  const SLEEVES = sleevesPart?.styles   || [];
+  const OTHER_PARTS = activeParts.filter(p => p.id !== 'necklines' && p.id !== 'sleeves');
+
   const [selectedLining, setSelectedLining] = useState('Without Lining');
   const [selectedZip,    setSelectedZip]    = useState('No');
   const [selectedSleeve, setSelectedSleeve] = useState(null);
   const [selectedNeck,   setSelectedNeck]   = useState(null);
+  const [otherSelections, setOtherSelections] = useState({});
   const [customNotes,    setCustomNotes]    = useState('');
   const [openSection,    setOpenSection]    = useState('sleeves');
 
@@ -279,22 +302,34 @@ export default function OutfitCustomizer({ selectedColor, onCustomizationChange 
     const updatedZip = 'zip' in overrides ? overrides.zip : selectedZip;
     const updatedLining = 'lining' in overrides ? overrides.lining : selectedLining;
     const updatedNotes = 'notes' in overrides ? overrides.notes : customNotes;
+    const updatedOthers = 'others' in overrides ? overrides.others : otherSelections;
 
-    const sObj = SLEEVES.find(s => s.id === updatedSleeve);
-    const nObj = NECKS.find(n => n.id === updatedNeck);
+    const sObj = SLEEVES.find(s => s.id === updatedSleeve || s.name === updatedSleeve);
+    const nObj = NECKS.find(n => n.id === updatedNeck || n.name === updatedNeck);
     
     const sPrice = sObj?.price || 0;
     const nPrice = nObj?.price || 0;
     const zPrice = updatedZip === 'Yes' ? 150 : 0;
     const lPrice = updatedLining === 'Lining' ? 250 : 0;
 
-    const cost = sPrice + nPrice + zPrice + lPrice;
+    let otherPrices = 0;
+    Object.keys(updatedOthers).forEach(partId => {
+      const selectedStyleId = updatedOthers[partId];
+      const partObj = OTHER_PARTS.find(p => p.id === partId);
+      const styleObj = partObj?.styles?.find(s => s.id === selectedStyleId);
+      if (styleObj?.price) {
+        otherPrices += Number(styleObj.price);
+      }
+    });
+
+    const cost = sPrice + nPrice + zPrice + lPrice + otherPrices;
 
     onCustomizationChange?.({
       lining: updatedLining,
       zip: updatedZip,
       sleeve: updatedSleeve,
       neck: updatedNeck,
+      others: updatedOthers,
       notes: updatedNotes,
       tailoringCost: cost
     });
@@ -315,13 +350,14 @@ export default function OutfitCustomizer({ selectedColor, onCustomizationChange 
     setSelectedZip('No');
     setSelectedSleeve(null);
     setSelectedNeck(null);
+    setOtherSelections({});
     setCustomNotes('');
-    notify({ lining: 'Without Lining', zip: 'No', sleeve: null, neck: null, notes: '' });
+    notify({ lining: 'Without Lining', zip: 'No', sleeve: null, neck: null, others: {}, notes: '' });
   };
 
-  const sleeveLabel = SLEEVES.find(s => s.id === selectedSleeve)?.name;
-  const neckLabel   = NECKS.find(n => n.id === selectedNeck)?.name;
-  const hasSelections = sleeveLabel || neckLabel || selectedLining === 'Lining' || selectedZip === 'Yes';
+  const sleeveLabel = SLEEVES.find(s => s.id === selectedSleeve || s.name === selectedSleeve)?.name;
+  const neckLabel   = NECKS.find(n => n.id === selectedNeck || n.name === selectedNeck)?.name;
+  const hasSelections = sleeveLabel || neckLabel || selectedLining === 'Lining' || selectedZip === 'Yes' || Object.keys(otherSelections).length > 0;
 
   return (
     <div className="outfit-customizer-studio">
@@ -460,7 +496,7 @@ export default function OutfitCustomizer({ selectedColor, onCustomizationChange 
               onClick={() => setOpenSection(p => p === 'neck' ? '' : 'neck')}
             >
               <span>
-                Neck Style
+                {necklinesPart?.name || 'Neck Style'}
                 {neckLabel && <em className="acc-chip">{neckLabel}</em>}
               </span>
               {openSection === 'neck' ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
@@ -484,6 +520,54 @@ export default function OutfitCustomizer({ selectedColor, onCustomizationChange 
               </div>
             )}
           </div>
+
+          {/* DYNAMIC OTHER PARTS ACCORDIONS */}
+          {OTHER_PARTS.map(part => {
+            const selectedStyleId = otherSelections[part.id];
+            const selectedStyle = part.styles?.find(s => s.id === selectedStyleId);
+            const isOpen = openSection === part.id;
+
+            return (
+              <div key={part.id} className="studio-accordion-block">
+                <button
+                  className={`studio-acc-trigger ${isOpen ? 'open' : ''}`}
+                  onClick={() => setOpenSection(p => p === part.id ? '' : part.id)}
+                >
+                  <span>
+                    {part.name}
+                    {selectedStyle && <em className="acc-chip">{selectedStyle.name}</em>}
+                  </span>
+                  {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                </button>
+
+                {isOpen && (
+                  <div className="studio-acc-body animate-slideDown">
+                    <div className="style-chips-grid">
+                      {part.styles?.map(st => (
+                        <button
+                          key={st.id}
+                          className={`style-chip ${otherSelections[part.id] === st.id ? 'active' : ''}`}
+                          onClick={() => {
+                            const newOthers = {
+                              ...otherSelections,
+                              [part.id]: otherSelections[part.id] === st.id ? null : st.id
+                            };
+                            setOtherSelections(newOthers);
+                            notify({ others: newOthers });
+                          }}
+                        >
+                          {otherSelections[part.id] === st.id && (
+                            <span className="chip-check"><Check size={9} strokeWidth={3} /></span>
+                          )}
+                          {st.name} {st.price > 0 ? `(+₹${st.price})` : ''}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
           {/* CUSTOM NOTES */}
           <div className="studio-field-group" style={{ borderBottom: 'none', paddingBottom: 4 }}>

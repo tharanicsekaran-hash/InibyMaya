@@ -5,6 +5,7 @@ import { sendOrderConfirmationEmail } from '../utils/resendEmail';
 import { DEFAULT_FOOTER_PAGES } from '../utils/footerPagesData';
 import { DEFAULT_CUSTOMIZER_PARTS } from '../utils/customizerData';
 import { renderRichTextHtml } from '../utils/textParser';
+import RichTextEditor from './RichTextEditor';
 
 function DonutChart({ data, centerTitle, centerSub }) {
   const total = data.reduce((acc, d) => acc + d.value, 0);
@@ -3692,262 +3693,26 @@ alter table public.settings disable row level security;`}</pre>
                   </div>
                 ) : selectedFooterPageId === 'about-us' ? (
                   <>
-                    {/* Single Unified About Us Description Field with Rich Text Formatting Toolbar */}
+                    {/* Single Unified About Us Description Field with ContentEditable Rich Text Editor */}
                     <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid var(--color-border)' }}>
                       <h5 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600', color: '#8b0000' }}>
-                        📖 About Us Rich Text Description
+                        📖 About Us Interactive Rich Text Editor
                       </h5>
                       <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
-                        Use the Rich Text toolbar below to format titles, headings, bold text, lists, and images (`# H1`, `## H2`, `**Bold**`, `*Italic*`, images).
+                        Type, format, or paste your brand passage below. Native <strong>Cmd + Z (Undo)</strong>, <strong>Cmd + Shift + Z (Redo)</strong>, bulk line lists, toggling bold/headings, and image pasting are fully supported.
                       </p>
 
-                      {/* Rich Text Formatting Toolbar */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap', backgroundColor: '#f1f5f9', padding: '8px 12px', borderRadius: '8px 8px 0 0', border: '1px solid var(--color-border)', borderBottom: 'none' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={() => {
-                              const textarea = document.getElementById('about-us-textarea');
-                              if (!textarea) return;
-                              const start = textarea.selectionStart;
-                              const end = textarea.selectionEnd;
-                              const currentVal = currentPage.fullDescription !== undefined ? currentPage.fullDescription : [currentPage.section1Content, currentPage.section2Content].filter(Boolean).join('\n\n');
-                              const selectedText = currentVal.substring(start, end) || 'Title';
-                              const replacement = `# ${selectedText}`;
-                              const newVal = currentVal.substring(0, start) + replacement + currentVal.substring(end);
-                              handleUpdateCurrentFooterPage('fullDescription', newVal);
-                              handleUpdateCurrentFooterPage('section1Content', newVal);
-                            }}
-                            style={{ padding: '4px 8px', fontSize: '11px', fontWeight: '700', minWidth: '32px' }}
-                            title="Title (H1)"
-                          >
-                            H1
-                          </button>
-
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={() => {
-                              const textarea = document.getElementById('about-us-textarea');
-                              if (!textarea) return;
-                              const start = textarea.selectionStart;
-                              const end = textarea.selectionEnd;
-                              const currentVal = currentPage.fullDescription !== undefined ? currentPage.fullDescription : [currentPage.section1Content, currentPage.section2Content].filter(Boolean).join('\n\n');
-                              const selectedText = currentVal.substring(start, end) || 'Heading';
-                              const replacement = `## ${selectedText}`;
-                              const newVal = currentVal.substring(0, start) + replacement + currentVal.substring(end);
-                              handleUpdateCurrentFooterPage('fullDescription', newVal);
-                              handleUpdateCurrentFooterPage('section1Content', newVal);
-                            }}
-                            style={{ padding: '4px 8px', fontSize: '11px', fontWeight: '700', minWidth: '32px' }}
-                            title="Heading (H2)"
-                          >
-                            H2
-                          </button>
-
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={() => {
-                              const textarea = document.getElementById('about-us-textarea');
-                              if (!textarea) return;
-                              const start = textarea.selectionStart;
-                              const end = textarea.selectionEnd;
-                              const currentVal = currentPage.fullDescription !== undefined ? currentPage.fullDescription : [currentPage.section1Content, currentPage.section2Content].filter(Boolean).join('\n\n');
-                              const selectedText = currentVal.substring(start, end) || 'Subheading';
-                              const replacement = `### ${selectedText}`;
-                              const newVal = currentVal.substring(0, start) + replacement + currentVal.substring(end);
-                              handleUpdateCurrentFooterPage('fullDescription', newVal);
-                              handleUpdateCurrentFooterPage('section1Content', newVal);
-                            }}
-                            style={{ padding: '4px 8px', fontSize: '11px', fontWeight: '700', minWidth: '32px' }}
-                            title="Subheading (H3)"
-                          >
-                            H3
-                          </button>
-
-                          <div style={{ width: '1px', height: '18px', backgroundColor: '#cbd5e1', margin: '0 4px' }} />
-
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={() => {
-                              const textarea = document.getElementById('about-us-textarea');
-                              if (!textarea) return;
-                              const start = textarea.selectionStart;
-                              const end = textarea.selectionEnd;
-                              const currentVal = currentPage.fullDescription !== undefined ? currentPage.fullDescription : [currentPage.section1Content, currentPage.section2Content].filter(Boolean).join('\n\n');
-                              const selectedText = currentVal.substring(start, end) || 'bold text';
-                              const replacement = `**${selectedText}**`;
-                              const newVal = currentVal.substring(0, start) + replacement + currentVal.substring(end);
-                              handleUpdateCurrentFooterPage('fullDescription', newVal);
-                              handleUpdateCurrentFooterPage('section1Content', newVal);
-                            }}
-                            style={{ padding: '4px 8px', fontSize: '11px', fontWeight: 'bold' }}
-                            title="Bold (**Text**)"
-                          >
-                            <b>B</b>
-                          </button>
-
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={() => {
-                              const textarea = document.getElementById('about-us-textarea');
-                              if (!textarea) return;
-                              const start = textarea.selectionStart;
-                              const end = textarea.selectionEnd;
-                              const currentVal = currentPage.fullDescription !== undefined ? currentPage.fullDescription : [currentPage.section1Content, currentPage.section2Content].filter(Boolean).join('\n\n');
-                              const selectedText = currentVal.substring(start, end) || 'italic text';
-                              const replacement = `*${selectedText}*`;
-                              const newVal = currentVal.substring(0, start) + replacement + currentVal.substring(end);
-                              handleUpdateCurrentFooterPage('fullDescription', newVal);
-                              handleUpdateCurrentFooterPage('section1Content', newVal);
-                            }}
-                            style={{ padding: '4px 8px', fontSize: '11px', fontStyle: 'italic' }}
-                            title="Italic (*Text*)"
-                          >
-                            <i>I</i>
-                          </button>
-
-                          <div style={{ width: '1px', height: '18px', backgroundColor: '#cbd5e1', margin: '0 4px' }} />
-
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={() => {
-                              const textarea = document.getElementById('about-us-textarea');
-                              if (!textarea) return;
-                              const start = textarea.selectionStart;
-                              const end = textarea.selectionEnd;
-                              const currentVal = currentPage.fullDescription !== undefined ? currentPage.fullDescription : [currentPage.section1Content, currentPage.section2Content].filter(Boolean).join('\n\n');
-                              const selectedText = currentVal.substring(start, end) || 'List item';
-                              const replacement = `- ${selectedText}`;
-                              const newVal = currentVal.substring(0, start) + replacement + currentVal.substring(end);
-                              handleUpdateCurrentFooterPage('fullDescription', newVal);
-                              handleUpdateCurrentFooterPage('section1Content', newVal);
-                            }}
-                            style={{ padding: '4px 8px', fontSize: '11px' }}
-                            title="Bullet List (- Item)"
-                          >
-                            • List
-                          </button>
-
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={() => {
-                              const textarea = document.getElementById('about-us-textarea');
-                              if (!textarea) return;
-                              const start = textarea.selectionStart;
-                              const end = textarea.selectionEnd;
-                              const currentVal = currentPage.fullDescription !== undefined ? currentPage.fullDescription : [currentPage.section1Content, currentPage.section2Content].filter(Boolean).join('\n\n');
-                              const selectedText = currentVal.substring(start, end) || 'Quote text';
-                              const replacement = `> ${selectedText}`;
-                              const newVal = currentVal.substring(0, start) + replacement + currentVal.substring(end);
-                              handleUpdateCurrentFooterPage('fullDescription', newVal);
-                              handleUpdateCurrentFooterPage('section1Content', newVal);
-                            }}
-                            style={{ padding: '4px 8px', fontSize: '11px' }}
-                            title="Quote (> Quote)"
-                          >
-                            “ Quote
-                          </button>
-
-                          <div style={{ width: '1px', height: '18px', backgroundColor: '#cbd5e1', margin: '0 4px' }} />
-
-                          <label className="custom-file-upload" style={{ cursor: 'pointer', margin: 0, padding: '4px 10px', fontSize: '11px', border: '1px solid var(--color-border)', borderRadius: '4px', backgroundColor: '#8b0000', color: '#fff', fontWeight: '500' }}>
-                            📷 Insert Image
-                            <input 
-                              type="file" 
-                              accept="image/*" 
-                              onChange={(e) => {
-                                if (e.target.files?.[0]) {
-                                  handleInsertImageIntoAboutText(e.target.files[0]);
-                                  e.target.value = '';
-                                }
-                              }} 
-                              style={{ display: 'none' }} 
-                            />
-                          </label>
-                        </div>
-
-                        {/* Mode Switcher */}
-                        <div style={{ display: 'flex', backgroundColor: '#e2e8f0', borderRadius: '6px', padding: '2px' }}>
-                          <button
-                            type="button"
-                            onClick={() => setAboutEditorMode('edit')}
-                            style={{
-                              padding: '4px 10px',
-                              fontSize: '11px',
-                              fontWeight: '600',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              backgroundColor: aboutEditorMode === 'edit' ? '#ffffff' : 'transparent',
-                              color: aboutEditorMode === 'edit' ? '#8b0000' : '#64748b',
-                              boxShadow: aboutEditorMode === 'edit' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-                            }}
-                          >
-                            ✏️ Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setAboutEditorMode('preview')}
-                            style={{
-                              padding: '4px 10px',
-                              fontSize: '11px',
-                              fontWeight: '600',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              backgroundColor: aboutEditorMode === 'preview' ? '#ffffff' : 'transparent',
-                              color: aboutEditorMode === 'preview' ? '#8b0000' : '#64748b',
-                              boxShadow: aboutEditorMode === 'preview' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-                            }}
-                          >
-                            👁️ Live Preview
-                          </button>
-                        </div>
-                      </div>
-
-                      {aboutEditorMode === 'edit' ? (
-                        <textarea
-                          id="about-us-textarea"
-                          rows={16}
-                          value={currentPage.fullDescription !== undefined 
-                            ? currentPage.fullDescription 
-                            : [currentPage.section1Content, currentPage.section2Content].filter(Boolean).join('\n\n')}
-                          onChange={(e) => {
-                            handleUpdateCurrentFooterPage('fullDescription', e.target.value);
-                            handleUpdateCurrentFooterPage('section1Content', e.target.value);
-                          }}
-                          onPaste={(e) => {
-                            const items = e.clipboardData?.items;
-                            if (items) {
-                              for (let i = 0; i < items.length; i++) {
-                                if (items[i].type.startsWith('image/')) {
-                                  const file = items[i].getAsFile();
-                                  if (file) {
-                                    e.preventDefault();
-                                    handleInsertImageIntoAboutText(file);
-                                  }
-                                  break;
-                                }
-                              }
-                            }
-                          }}
-                          placeholder="Write or paste your full About Us description here... Use the toolbar above for Titles (H1), Headings (H2), Bold (**text**), Lists, or Images."
-                          style={{ width: '100%', fontFamily: 'inherit', fontSize: '13.5px', lineHeight: '1.7', padding: '12px', borderRadius: '0 0 6px 6px', border: '1px solid var(--color-border)' }}
-                        />
-                      ) : (
-                        <div 
-                          className="about-us-rich-content"
-                          dangerouslySetInnerHTML={{ __html: renderRichTextHtml(currentPage.fullDescription !== undefined ? currentPage.fullDescription : [currentPage.section1Content, currentPage.section2Content].filter(Boolean).join('\n\n')) }}
-                          style={{ padding: '16px', backgroundColor: '#ffffff', border: '1px solid var(--color-border)', borderRadius: '0 0 6px 6px', minHeight: '280px' }}
-                        />
-                      )}
+                      <RichTextEditor
+                        value={currentPage.fullDescription !== undefined 
+                          ? currentPage.fullDescription 
+                          : [currentPage.section1Content, currentPage.section2Content].filter(Boolean).join('\n\n')}
+                        onChange={(newHtml) => {
+                          handleUpdateCurrentFooterPage('fullDescription', newHtml);
+                          handleUpdateCurrentFooterPage('section1Content', newHtml);
+                        }}
+                        onUploadImage={handleUploadAboutUsImage}
+                        isUploading={isAboutImageUploading}
+                      />
                     </div>
 
                     {/* About Us Brand Photos Showcase Gallery Manager */}

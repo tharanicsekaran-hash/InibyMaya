@@ -7655,18 +7655,96 @@ html, body, #root {
   }
 }
 
-/* About Us Rich Content Inline Image & Paragraph Styling */
-.about-us-rich-content img {
+/* About Us Rich Content Formatting Styles (Titles, Headings, Bold, Lists, Quotes & Images) */
+.about-us-rich-content {
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--color-text-secondary);
+  margin-bottom: 32px;
+}
+
+.about-us-rich-content h1, 
+.about-us-rich-content .rich-h1 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 28px 0 14px 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #8b0000;
+  letter-spacing: -0.01em;
+}
+
+.about-us-rich-content h2, 
+.about-us-rich-content .rich-h2 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: #8b0000;
+  margin: 24px 0 10px 0;
+  letter-spacing: 0.01em;
+}
+
+.about-us-rich-content h3, 
+.about-us-rich-content .rich-h3 {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 18px 0 8px 0;
+}
+
+.about-us-rich-content p, 
+.about-us-rich-content .rich-p {
+  font-size: 15px;
+  line-height: 1.85;
+  color: #333333;
+  margin-bottom: 16px;
+}
+
+.about-us-rich-content strong,
+.about-us-rich-content b {
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.about-us-rich-content em,
+.about-us-rich-content i {
+  font-style: italic;
+  color: #444444;
+}
+
+.about-us-rich-content ul, 
+.about-us-rich-content .rich-ul {
+  margin: 12px 0 16px 24px;
+  list-style-type: disc;
+}
+
+.about-us-rich-content li, 
+.about-us-rich-content .rich-li {
+  margin-bottom: 6px;
+  line-height: 1.7;
+  color: #333333;
+}
+
+.about-us-rich-content blockquote, 
+.about-us-rich-content .rich-quote {
+  border-left: 4px solid #8b0000;
+  padding: 12px 18px;
+  margin: 18px 0;
+  background-color: #faf9f6;
+  font-style: italic;
+  color: #555555;
+  border-radius: 0 8px 8px 0;
+}
+
+.about-us-rich-content img, 
+.about-us-rich-content .rich-img {
   max-width: 100% !important;
   height: auto !important;
   border-radius: 12px;
   margin: 20px 0;
   display: block;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-}
-.about-us-rich-content p {
-  margin-bottom: 16px;
-  line-height: 1.85;
 }
 
 /* ==========================================================================

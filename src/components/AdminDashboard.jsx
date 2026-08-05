@@ -3968,20 +3968,20 @@ alter table public.settings disable row level security;`}</pre>
                 </div>
 
                 {/* Styles List Table */}
-                <div style={{ overflowX: 'auto' }}>
-                  <table className="insights-table" style={{ width: '100%' }}>
+                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                  <table className="insights-table" style={{ width: '100%', minWidth: '560px' }}>
                     <thead>
                       <tr>
-                        <th>Style Name</th>
-                        <th style={{ width: '320px' }}>Style Preview Photo (Upload or Paste URL)</th>
-                        <th>Tailoring Fee (₹)</th>
-                        <th>Actions</th>
+                        <th style={{ minWidth: '150px' }}>Style Name</th>
+                        <th style={{ minWidth: '220px' }}>Style Preview Photo (Upload or Paste URL)</th>
+                        <th style={{ minWidth: '110px' }}>Tailoring Fee (₹)</th>
+                        <th style={{ width: '70px' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {part.styles.map((sItem, sIdx) => (
                         <tr key={sIdx}>
-                          <td>
+                          <td style={{ minWidth: '150px' }}>
                             <input
                               type="text"
                               value={sItem.name}
@@ -3990,10 +3990,10 @@ alter table public.settings disable row level security;`}</pre>
                                 updated[pIdx].styles[sIdx].name = e.target.value;
                                 setCustomizerPartsConfig(updated);
                               }}
-                              style={{ width: '100%', padding: '6px 10px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                              style={{ width: '100%', minWidth: '130px', padding: '6px 10px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                             />
                           </td>
-                          <td style={{ width: '320px' }}>
+                          <td style={{ minWidth: '220px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               {sItem.image ? (
                                 <img 
@@ -4081,10 +4081,10 @@ alter table public.settings disable row level security;`}</pre>
 
                       {/* Inline Form Row to Add New Style (No Prompt!) */}
                       <tr style={{ backgroundColor: 'rgba(139, 0, 0, 0.02)' }}>
-                        <td>
+                        <td style={{ minWidth: '150px' }}>
                           <input
                             type="text"
-                            placeholder="➕ Type Style Name (e.g. Scalloped Box)..."
+                            placeholder="➕ Type Style Name..."
                             value={newStyleInputs[pIdx]?.name || ''}
                             onChange={(e) => {
                               setNewStyleInputs(prev => ({
@@ -4092,10 +4092,10 @@ alter table public.settings disable row level security;`}</pre>
                                 [pIdx]: { ...prev[pIdx], name: e.target.value }
                               }));
                             }}
-                            style={{ width: '100%', padding: '6px 10px', fontSize: '12px', borderRadius: '4px', border: '1px dashed #8b0000' }}
+                            style={{ width: '100%', minWidth: '130px', padding: '6px 10px', fontSize: '12px', borderRadius: '4px', border: '1px dashed #8b0000' }}
                           />
                         </td>
-                        <td>
+                        <td style={{ minWidth: '220px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <input
                               type="text"

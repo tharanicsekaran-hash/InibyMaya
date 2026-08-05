@@ -31,20 +31,18 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
 
     if (supabase) {
       const emailLower = email.trim().toLowerCase();
+      const primaryAdminEmails = ['inibymaya@gmail.com', 'tharanichandrasekaran2000@gmail.com'];
+      
       // Guarantee Admin Access with designated credentials
-      if (emailLower === 'tharanichandrasekaran2000@gmail.com' && isLoginView) {
+      if (primaryAdminEmails.includes(emailLower) && isLoginView) {
         if (password === 'Remedy@1234567890') {
           setIsLoading(false);
           setStatusMsg('Supabase Auth: Success! Admin session initiated.');
-          login({ email: 'tharanichandrasekaran2000@gmail.com', name: 'Tharani Admin' });
+          const adminName = emailLower.includes('tharanichandrasekaran') ? 'Tharani Admin' : 'INI BY MAYA Admin';
+          login({ email: emailLower, name: adminName });
           setTimeout(() => {
             onClose();
           }, 600);
-          return;
-        } else {
-          setIsLoading(false);
-          setErrorMsg('Invalid credentials. Please enter the correct password for your Administrator account.');
-          setStatusMsg('');
           return;
         }
       }
@@ -119,15 +117,17 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
       setIsLoading(false);
       
       const emailLower = email.trim().toLowerCase();
+      const primaryAdminEmails = ['inibymaya@gmail.com', 'tharanichandrasekaran2000@gmail.com'];
       
       // Strict Admin Credentials Check
-      if (emailLower === 'tharanichandrasekaran2000@gmail.com') {
+      if (primaryAdminEmails.includes(emailLower)) {
         if (password !== 'Remedy@1234567890') {
           setErrorMsg('Invalid credentials. Please enter the correct password for your Administrator account.');
           setStatusMsg('');
           return;
         }
-        login({ email: 'tharanichandrasekaran2000@gmail.com', name: 'Tharani Admin' });
+        const adminName = emailLower.includes('tharanichandrasekaran') ? 'Tharani Admin' : 'INI BY MAYA Admin';
+        login({ email: emailLower, name: adminName });
         setStatusMsg('Supabase Auth: Success! Admin session initiated.');
         onClose();
         return;
@@ -193,7 +193,9 @@ export default function AuthModal({ user, login, signup, logout, onClose, orderH
               </div>
               <h3 className="profile-name" style={{ margin: '8px 0 2px 0', fontSize: '18px', fontWeight: '600', color: 'var(--color-text-primary)' }}>{user.name || user.email.split('@')[0]}</h3>
               <p className="profile-email" style={{ margin: '0 0 10px 0', fontSize: '13.5px', color: 'var(--color-text-secondary)' }}>{user.email}</p>
-              <span className="profile-badge">{user.email === 'tharanichandrasekaran2000@gmail.com' ? 'Store Administrator' : 'Loyalty Member'}</span>
+              <span className="profile-badge">
+                {['inibymaya@gmail.com', 'tharanichandrasekaran2000@gmail.com', 'inibymaya2026@gmail.com', 'care@inibymaya.com'].includes(user.email?.toLowerCase().trim()) ? 'Store Administrator' : 'Loyalty Member'}
+              </span>
             </div>
 
             <hr className="detail-divider" />

@@ -279,12 +279,7 @@ export default function App() {
     if (saved) {
       try { existing = JSON.parse(saved); } catch (e) {}
     }
-    const combinedMap = new Map();
-    RESTORED_MISSING_ORDERS.forEach(o => combinedMap.set(o.id, o));
-    if (Array.isArray(existing)) {
-      existing.forEach(o => { if (o && o.id) combinedMap.set(o.id, o); });
-    }
-    return Array.from(combinedMap.values());
+    return Array.isArray(existing) ? existing : [];
   });
 
   // Offers / Promos State
@@ -485,37 +480,9 @@ export default function App() {
         }
         const remoteOrders = (oData && Array.isArray(oData)) ? oData.map(mapDbOrderToClient) : [];
 
-        // Non-destructive merge: Merge remote orders with local orders (preserving any order not yet in DB)
-        setOrdersList(prevLocal => {
-          const combinedMap = new Map();
-          // First add remote orders
-          remoteOrders.forEach(o => { if (o && o.id) combinedMap.set(o.id, o); });
-          
-          // Then add any local orders that might not be in DB yet
-          (prevLocal || []).forEach(o => {
-            if (o && o.id && !combinedMap.has(o.id)) {
-              combinedMap.set(o.id, o);
-              // Asynchronously attempt to sync missing local order back to Supabase DB!
-              const dbPayload = mapClientOrderToDb(o);
-              supabase.from('orders').upsert(dbPayload).then(({ error }) => {
-                if (!error) console.log(`✅ Auto-synced missing order #${o.id} back to Supabase DB.`);
-              }).catch(() => {});
-            }
-          });
-
-          // Also merge restored missing orders (e.g. ORD-891100)
-          RESTORED_MISSING_ORDERS.forEach(o => {
-            if (!combinedMap.has(o.id)) {
-              combinedMap.set(o.id, o);
-              const dbPayload = mapClientOrderToDb(o);
-              supabase.from('orders').upsert(dbPayload).catch(() => {});
-            }
-          });
-
-          const merged = Array.from(combinedMap.values()).sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
-          safeSetItem('im_orders', JSON.stringify(merged));
-          return merged;
-        });
+        // Strictly set remote orders from Supabase DB (Supabase DB is source of truth)
+        setOrdersList(remoteOrders);
+        safeSetItem('im_orders', JSON.stringify(remoteOrders));
       } catch (err) {
         console.error('Error fetching orders:', err);
       }

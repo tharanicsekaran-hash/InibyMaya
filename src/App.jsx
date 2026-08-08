@@ -1122,6 +1122,24 @@ export default function App() {
     }
   };
 
+  const handleDeleteSingleOrder = async (orderId) => {
+    try {
+      setOrdersList(prev => {
+        const updated = prev.filter(o => String(o.id) !== String(orderId));
+        safeSetItem('im_orders', JSON.stringify(updated));
+        return updated;
+      });
+      if (supabase) {
+        const { error } = await supabase.from('orders').delete().eq('id', orderId);
+        if (error) console.error('Supabase DB delete order error:', error.message);
+      }
+      return true;
+    } catch (e) {
+      console.error('Error deleting single order:', e);
+      return false;
+    }
+  };
+
   const handleUpdateOrderStatus = async (orderId, nextStatus, trackingNum = '') => {
     let targetOrder = null;
     setOrdersList(prev => prev.map(order => {
@@ -1743,6 +1761,7 @@ export default function App() {
             onDeleteProduct={handleDeleteProduct}
             onUpdateProduct={handleUpdateProduct}
             onUpdateOrderStatus={handleUpdateOrderStatus}
+            onDeleteOrder={handleDeleteSingleOrder}
             onClearAllOrders={handleClearAllOrders}
             promosList={promosList}
             setPromosList={setPromosList}

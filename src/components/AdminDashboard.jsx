@@ -201,6 +201,7 @@ export default function AdminDashboard({
   isDbRlsActive = false
 }) {
   const [activeTab, setActiveTab] = useState('orders');
+  const [deleteConfirmOrder, setDeleteConfirmOrder] = useState(null);
 
   // Boutique Settings Form States
   const [settingsDesc, setSettingsDesc] = useState('');
@@ -936,6 +937,27 @@ export default function AdminDashboard({
   };
 
   const [isAboutImageUploading, setIsAboutImageUploading] = useState(false);
+  const [isRichTextImageUploading, setIsRichTextImageUploading] = useState(false);
+
+  const handleUploadRichTextImage = async (file) => {
+    if (!file) return null;
+    setIsRichTextImageUploading(true);
+    try {
+      let imageUrl;
+      if (import.meta.env.VITE_GITHUB_TOKEN) {
+        imageUrl = await uploadFileToGithub(file, 'media/storefront');
+      } else {
+        imageUrl = await compressImage(file);
+      }
+      return imageUrl;
+    } catch (err) {
+      console.error('❌ [Rich Text Image Upload Error]:', err);
+      alert(`❌ Image Upload Failed: ${err.message || 'Error uploading image'}`);
+      return null;
+    } finally {
+      setIsRichTextImageUploading(false);
+    }
+  };
 
   const handleUploadAboutUsImage = async (file) => {
     if (!file) return;
@@ -1409,27 +1431,9 @@ alter table public.settings disable row level security;`}</pre>
       {/* Tab 1: Orders Lifecycle */}
       {activeTab === 'orders' && (
         <div className="admin-content-section animate-fadeIn">
-          <div className="admin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-              <h3>Stitching & Dispatch Operations</h3>
-              <p>Advance each customer's order through the boutique stitching rooms, pattern drafts, quality control, and final Delhivery courier dispatch.</p>
-            </div>
-            {onClearAllOrders && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (window.confirm('🚨 PERMANENT RESET FOR CLIENT DELIVERY:\n\nAre you sure you want to delete ALL order history?\n\nThis will purge all past test orders from local memory and Supabase DB so your client starts with a 100% fresh store.')) {
-                    const ok = await onClearAllOrders();
-                    if (ok) {
-                      alert('✅ All order history cleared! The store is now 100% fresh and ready for client delivery.');
-                    }
-                  }
-                }}
-                style={{ backgroundColor: '#ef4444', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
-              >
-                <Trash2 size={14} /> Purge & Clear All Orders (Client Reset)
-              </button>
-            )}
+          <div className="admin-section-header">
+            <h3>Stitching & Dispatch Operations</h3>
+            <p>Advance each customer's order through the boutique stitching rooms, pattern drafts, quality control, and final Delhivery courier dispatch.</p>
           </div>
 
           {orders.length > 0 ? (
@@ -1442,6 +1446,7 @@ alter table public.settings disable row level security;`}</pre>
                     <th>Sizing / Tailoring Inputs</th>
                     <th>Lifecycle Status Updates</th>
                     <th>Price Total</th>
+                    <th style={{ width: '60px', textAlign: 'center' }}>Delete</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1618,6 +1623,29 @@ alter table public.settings disable row level security;`}</pre>
                         </td>
                         <td>
                           <strong className="table-cost-total red-totals-text">₹{order.total.toLocaleString('en-IN')}</strong>
+                        </td>
+                        <td style={{ textAlign: 'center', width: '60px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteConfirmOrder(order)}
+                            style={{
+                              border: 'none',
+                              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                              color: '#ef4444',
+                              width: '34px',
+                              height: '34px',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.2s ease'
+                            }}
+                            className="order-trash-btn"
+                            title="Delete Order"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </td>
                       </tr>
                     );
@@ -3735,8 +3763,8 @@ alter table public.settings disable row level security;`}</pre>
                           handleUpdateCurrentFooterPage('fullDescription', newHtml);
                           handleUpdateCurrentFooterPage('section1Content', newHtml);
                         }}
-                        onUploadImage={handleUploadAboutUsImage}
-                        isUploading={isAboutImageUploading}
+                        onUploadImage={handleUploadRichTextImage}
+                        isUploading={isRichTextImageUploading}
                       />
                     </div>
 
@@ -4177,6 +4205,49 @@ alter table public.settings disable row level security;`}</pre>
             >
               <CheckCircle2 size={18} /> Save 2D Customizer Configuration
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Order Confirmation GUI Modal */}
+      {deleteConfirmOrder && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, padding: '20px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', maxWidth: '440px', width: '100%', padding: '28px', boxShadow: '0 20px 50px rgba(0,0,0,0.25)', border: '1px solid var(--color-border)', textAlign: 'center' }}>
+            <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
+              <Trash2 size={26} />
+            </div>
+            
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
+              Delete Order #{deleteConfirmOrder.id}?
+            </h3>
+            
+            <p style={{ fontSize: '13.5px', color: 'var(--color-text-secondary)', lineHeight: '1.6', marginBottom: '24px' }}>
+              Are you sure you want to delete order <strong>#{deleteConfirmOrder.id}</strong> (Customer: <strong>{deleteConfirmOrder.shippingDetails?.name || 'Customer'}</strong>)? This action will permanently remove it.
+            </p>
+            
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setDeleteConfirmOrder(null)}
+                style={{ flex: 1, padding: '10px 16px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '600', border: '1px solid var(--color-border)', backgroundColor: '#f8fafc', color: '#475569', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              
+              <button
+                type="button"
+                onClick={async () => {
+                  if (onDeleteOrder) {
+                    await onDeleteOrder(deleteConfirmOrder.id);
+                  }
+                  setDeleteConfirmOrder(null);
+                }}
+                style={{ flex: 1, padding: '10px 16px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '600', backgroundColor: '#ef4444', color: '#ffffff', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                <Trash2 size={16} /> Yes, Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

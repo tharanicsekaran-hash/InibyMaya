@@ -2404,14 +2404,18 @@ alter table public.settings disable row level security;`}</pre>
           return true;
         });
 
-        const filteredTotalOrders = filteredAnalyticsOrders.length;
-        
-        const validOrders = filteredAnalyticsOrders.filter(o => o.status !== 'Cancelled');
+        const validOrders = filteredAnalyticsOrders.filter(o => {
+          const st = (o.status || '').toLowerCase();
+          return !st.includes('cancel');
+        });
+
+        const filteredTotalOrders = validOrders.length;
         const filteredTotalRevenue = validOrders.reduce((sum, o) => sum + (o.total || o.totalAmount || 0), 0);
         const filteredAvgOrderVal = filteredTotalOrders > 0 ? Math.round(filteredTotalRevenue / filteredTotalOrders) : 0;
 
         const pendingPaymentOrders = filteredAnalyticsOrders.filter(o => {
-          if (o.status === 'Cancelled' || o.status === 'Delivered') return false;
+          const st = (o.status || '').toLowerCase();
+          if (st.includes('cancel') || st === 'delivered') return false;
           
           const payId = (o.paymentId || o.payment_id || '').toString().toUpperCase();
           const payMethod = (o.paymentMethod || '').toString().toUpperCase();
@@ -2439,7 +2443,7 @@ alter table public.settings disable row level security;`}</pre>
           'Quality Check': filteredAnalyticsOrders.filter(o => o.status === 'Quality Check').length,
           'Shipped': filteredAnalyticsOrders.filter(o => o.status === 'Shipped').length,
           'Delivered': filteredAnalyticsOrders.filter(o => o.status === 'Delivered').length,
-          'Cancelled': filteredAnalyticsOrders.filter(o => o.status === 'Cancelled').length
+          'Cancelled': filteredAnalyticsOrders.filter(o => (o.status || '').toLowerCase().includes('cancel')).length
         };
 
         const donutChartData = [
@@ -2475,7 +2479,7 @@ alter table public.settings disable row level security;`}</pre>
 
         const productSalesMap = {};
         filteredAnalyticsOrders.forEach(o => {
-          if (o.status === 'Cancelled') return;
+          if ((o.status || '').toLowerCase().includes('cancel')) return;
           o.items?.forEach(i => {
             const pId = i.product?.id || i.id || i.title;
             const pTitle = i.product?.title || i.title || 'Outfit Item';

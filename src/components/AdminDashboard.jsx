@@ -3691,21 +3691,27 @@ alter table public.settings disable row level security;`}</pre>
                       </div>
                     ))}
                   </div>
-                ) : selectedFooterPageId === 'about-us' ? (
+                ) : (
                   <>
-                    {/* Single Unified About Us Description Field with ContentEditable Rich Text Editor */}
+                    {/* Unified Interactive Rich Text Editor for All Policy Pages */}
                     <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid var(--color-border)' }}>
                       <h5 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600', color: '#8b0000' }}>
-                        📖 About Us Interactive Rich Text Editor
+                        📖 {currentPage.navLabel || selectedFooterPageId} Interactive Rich Text Content
                       </h5>
                       <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
-                        Type, format, or paste your brand passage below. Native <strong>Cmd + Z (Undo)</strong>, <strong>Cmd + Shift + Z (Redo)</strong>, bulk line lists, toggling bold/headings, and image pasting are fully supported.
+                        Type, format, or paste your page passage below. Native <strong>Cmd + Z (Undo)</strong>, <strong>Cmd + Shift + Z (Redo)</strong>, bulk line lists, toggling bold/headings, and image pasting are fully supported.
                       </p>
 
                       <RichTextEditor
-                        value={currentPage.fullDescription !== undefined 
-                          ? currentPage.fullDescription 
-                          : [currentPage.section1Content, currentPage.section2Content].filter(Boolean).join('\n\n')}
+                        value={(() => {
+                          if (currentPage.fullDescription !== undefined) return currentPage.fullDescription;
+                          const parts = [];
+                          if (currentPage.section1Heading) parts.push(`## ${currentPage.section1Heading}`);
+                          if (currentPage.section1Content) parts.push(currentPage.section1Content);
+                          if (currentPage.section2Heading) parts.push(`## ${currentPage.section2Heading}`);
+                          if (currentPage.section2Content) parts.push(currentPage.section2Content);
+                          return parts.join('\n\n');
+                        })()}
                         onChange={(newHtml) => {
                           handleUpdateCurrentFooterPage('fullDescription', newHtml);
                           handleUpdateCurrentFooterPage('section1Content', newHtml);
@@ -3715,138 +3721,86 @@ alter table public.settings disable row level security;`}</pre>
                       />
                     </div>
 
-                    {/* About Us Brand Photos Showcase Gallery Manager */}
-                    <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #cbd5e1' }}>
-                      <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>
-                        🖼️ About Us Brand & Atelier Photos Showcase
-                      </h5>
-                      <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '14px' }}>
-                        Upload or add photo URLs to display in the About Us gallery showcase on the storefront.
-                      </p>
-                      
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px', marginBottom: '16px' }}>
-                        {(currentPage.aboutImages || []).map((imgUrl, idx) => (
-                          <div key={idx} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--color-border)', height: '110px', backgroundColor: '#fff' }}>
-                            <img src={imgUrl} alt={`About Photo ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = (currentPage.aboutImages || []).filter((_, i) => i !== idx);
-                                handleUpdateCurrentFooterPage('aboutImages', updated);
-                              }}
-                              style={{
-                                position: 'absolute',
-                                top: '6px',
-                                right: '6px',
-                                backgroundColor: 'rgba(239, 68, 68, 0.9)',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '50%',
-                                width: '22px',
-                                height: '22px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '11px',
-                                fontWeight: 'bold'
-                              }}
-                              title="Remove Photo"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                    {/* About Us Brand Photos Showcase Gallery Manager (Only for About Us) */}
+                    {selectedFooterPageId === 'about-us' && (
+                      <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #cbd5e1' }}>
+                        <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>
+                          🖼️ About Us Brand & Atelier Photos Showcase
+                        </h5>
+                        <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '14px' }}>
+                          Upload or add photo URLs to display in the About Us gallery showcase on the storefront.
+                        </p>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                          {(currentPage.aboutImages || []).map((imgUrl, idx) => (
+                            <div key={idx} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--color-border)', height: '110px', backgroundColor: '#fff' }}>
+                              <img src={imgUrl} alt={`About Photo ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = (currentPage.aboutImages || []).filter((_, i) => i !== idx);
+                                  handleUpdateCurrentFooterPage('aboutImages', updated);
+                                }}
+                                style={{
+                                  position: 'absolute',
+                                  top: '6px',
+                                  right: '6px',
+                                  backgroundColor: 'rgba(239, 68, 68, 0.9)',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '50%',
+                                  width: '22px',
+                                  height: '22px',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '11px',
+                                  fontWeight: 'bold'
+                                }}
+                                title="Remove Photo"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
 
-                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <label className="custom-file-upload" style={{ cursor: 'pointer', margin: 0, padding: '10px 16px', fontSize: '13px', border: '1px solid var(--color-border)', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#8b0000', color: '#fff', fontWeight: '500' }}>
-                          <Upload size={16} />
-                          {isAboutImageUploading ? 'Uploading to GitHub...' : 'Choose File & Upload to GitHub'}
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            disabled={isAboutImageUploading} 
-                            onChange={(e) => {
-                              if (e.target.files?.[0]) {
-                                handleUploadAboutUsImage(e.target.files[0]);
-                                e.target.value = '';
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <label className="custom-file-upload" style={{ cursor: 'pointer', margin: 0, padding: '10px 16px', fontSize: '13px', border: '1px solid var(--color-border)', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#8b0000', color: '#fff', fontWeight: '500' }}>
+                            <Upload size={16} />
+                            {isAboutImageUploading ? 'Uploading to GitHub...' : 'Choose File & Upload to GitHub'}
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              disabled={isAboutImageUploading} 
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) {
+                                  handleUploadAboutUsImage(e.target.files[0]);
+                                  e.target.value = '';
+                                }
+                              }} 
+                              style={{ display: 'none' }} 
+                            />
+                          </label>
+
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            onClick={() => {
+                              const url = prompt('Enter direct image URL:');
+                              if (url && url.trim()) {
+                                const currentList = currentPage.aboutImages || [];
+                                handleUpdateCurrentFooterPage('aboutImages', [...currentList, url.trim()]);
                               }
-                            }} 
-                            style={{ display: 'none' }} 
-                          />
-                        </label>
-
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          onClick={() => {
-                            const url = prompt('Enter direct image URL:');
-                            if (url && url.trim()) {
-                              const currentList = currentPage.aboutImages || [];
-                              handleUpdateCurrentFooterPage('aboutImages', [...currentList, url.trim()]);
-                            }
-                          }}
-                          style={{ padding: '9px 16px', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                        >
-                          ➕ Add Photo URL
-                        </button>
+                            }}
+                            style={{ padding: '9px 16px', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                          >
+                            ➕ Add Photo URL
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    {/* Section 1 Content */}
-                    <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid var(--color-border)' }}>
-                      <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600' }}>Section 1: Core Policy Details</h5>
-                      
-                      <div className="form-group" style={{ marginBottom: '12px' }}>
-                        <label>Section 1 Heading</label>
-                        <input
-                          type="text"
-                          value={currentPage.section1Heading || ''}
-                          onChange={(e) => handleUpdateCurrentFooterPage('section1Heading', e.target.value)}
-                          placeholder="e.g. Dispatch Timeline & Delivery Standards"
-                        />
-                      </div>
-
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label>Section 1 Body Content</label>
-                        <textarea
-                          rows={5}
-                          value={currentPage.section1Content || ''}
-                          onChange={(e) => handleUpdateCurrentFooterPage('section1Content', e.target.value)}
-                          placeholder="Write your section content here..."
-                          style={{ width: '100%', fontFamily: 'sans-serif', fontSize: '13px', lineHeight: '1.6', padding: '10px' }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Section 2 Content */}
-                    <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid var(--color-border)' }}>
-                      <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600' }}>Section 2: Secondary Guidelines & Information</h5>
-                      
-                      <div className="form-group" style={{ marginBottom: '12px' }}>
-                        <label>Section 2 Heading</label>
-                        <input
-                          type="text"
-                          value={currentPage.section2Heading || ''}
-                          onChange={(e) => handleUpdateCurrentFooterPage('section2Heading', e.target.value)}
-                          placeholder="e.g. Live Tracking & Delivery Partner Updates"
-                        />
-                      </div>
-
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label>Section 2 Body Content</label>
-                        <textarea
-                          rows={5}
-                          value={currentPage.section2Content || ''}
-                          onChange={(e) => handleUpdateCurrentFooterPage('section2Content', e.target.value)}
-                          placeholder="Write secondary guidelines, policies, or sizing details here..."
-                          style={{ width: '100%', fontFamily: 'sans-serif', fontSize: '13px', lineHeight: '1.6', padding: '10px' }}
-                        />
-                      </div>
-                    </div>
+                    )}
                   </>
                 )}
 

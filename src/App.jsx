@@ -192,47 +192,7 @@ const mapClientOrderToDb = (clientOrder) => {
   };
 };
 
-const RESTORED_MISSING_ORDERS = [
-  {
-    id: 'ORD-891100',
-    userId: null,
-    items: [
-      {
-        product: {
-          id: 'prod-kadhal-magenta',
-          title: 'Kadhal rich maganta stright kurti',
-          category: 'Long Kurti',
-          price: 499,
-          images: ['https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=800']
-        },
-        title: 'Kadhal rich maganta stright kurti',
-        color: 'Indigo Blue',
-        size: 'M',
-        quantity: 1,
-        price: 499,
-        wantsCustomStitching: false
-      }
-    ],
-    shippingDetails: {
-      name: 'Aravindh Pavish',
-      email: 'aravindhpavish@gmail.com',
-      phone: '',
-      address: '',
-      city: '',
-      pincode: ''
-    },
-    subtotal: 499,
-    discount: 0,
-    shipping: 99,
-    shippingFee: 99,
-    total: 598,
-    paymentId: 'COD-900366',
-    status: 'Pending Shipment',
-    trackingNumber: '',
-    notes: '',
-    timestamp: '2026-07-26T11:17:00.000Z'
-  }
-];
+const RESTORED_MISSING_ORDERS = [];
 
 export default function App() {
   // Navigation & Page routing
@@ -1146,6 +1106,22 @@ export default function App() {
     } catch (e) {}
     return res;
   };
+  const handleClearAllOrders = async () => {
+    try {
+      setOrdersList([]);
+      localStorage.removeItem('im_orders');
+      localStorage.removeItem('inibymaya_orders');
+      if (supabase) {
+        const { error } = await supabase.from('orders').delete().neq('id', '0');
+        if (error) console.error('Supabase DB clear orders error:', error.message);
+      }
+      return true;
+    } catch (e) {
+      console.error('Error clearing all orders:', e);
+      return false;
+    }
+  };
+
   const handleUpdateOrderStatus = async (orderId, nextStatus, trackingNum = '') => {
     let targetOrder = null;
     setOrdersList(prev => prev.map(order => {
@@ -1767,6 +1743,7 @@ export default function App() {
             onDeleteProduct={handleDeleteProduct}
             onUpdateProduct={handleUpdateProduct}
             onUpdateOrderStatus={handleUpdateOrderStatus}
+            onClearAllOrders={handleClearAllOrders}
             promosList={promosList}
             setPromosList={setPromosList}
             reelsList={reelsList}

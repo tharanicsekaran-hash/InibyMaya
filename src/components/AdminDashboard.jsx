@@ -197,6 +197,7 @@ export default function AdminDashboard({
   onDeleteTestimonial,
   boutiqueSettings = {},
   onSaveSettings,
+  onClearAllOrders,
   isDbRlsActive = false
 }) {
   const [activeTab, setActiveTab] = useState('orders');
@@ -1408,9 +1409,27 @@ alter table public.settings disable row level security;`}</pre>
       {/* Tab 1: Orders Lifecycle */}
       {activeTab === 'orders' && (
         <div className="admin-content-section animate-fadeIn">
-          <div className="admin-section-header">
-            <h3>Stitching & Dispatch Operations</h3>
-            <p>Advance each customer's order through the boutique stitching rooms, pattern drafts, quality control, and final Delhivery courier dispatch.</p>
+          <div className="admin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h3>Stitching & Dispatch Operations</h3>
+              <p>Advance each customer's order through the boutique stitching rooms, pattern drafts, quality control, and final Delhivery courier dispatch.</p>
+            </div>
+            {onClearAllOrders && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (window.confirm('🚨 PERMANENT RESET FOR CLIENT DELIVERY:\n\nAre you sure you want to delete ALL order history?\n\nThis will purge all past test orders from local memory and Supabase DB so your client starts with a 100% fresh store.')) {
+                    const ok = await onClearAllOrders();
+                    if (ok) {
+                      alert('✅ All order history cleared! The store is now 100% fresh and ready for client delivery.');
+                    }
+                  }
+                }}
+                style={{ backgroundColor: '#ef4444', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
+              >
+                <Trash2 size={14} /> Purge & Clear All Orders (Client Reset)
+              </button>
+            )}
           </div>
 
           {orders.length > 0 ? (

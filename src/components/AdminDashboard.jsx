@@ -1725,14 +1725,16 @@ alter table public.settings disable row level security;`}</pre>
                   ✨ Automatic Discount: {Math.round(((parseFloat(originalPrice) - parseFloat(price)) / parseFloat(originalPrice)) * 100)}% OFF (Customer saves ₹{(parseFloat(originalPrice) - parseFloat(price)).toLocaleString('en-IN')})
                 </div>
               )}
-              <div className="form-group">
-                <label>Description Details *</label>
-                <textarea 
-                  rows="3" 
-                  value={description} 
-                  onChange={(e) => setDescription(e.target.value)} 
-                  placeholder="Fabric, embroidery type, wash care tips..."
-                  required 
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: 'var(--color-text-primary)' }}>Description Details *</label>
+                <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '10px' }}>
+                  Type, format, or copy & paste formatted text directly from Google Docs, Word, WhatsApp, or websites. Headings, Bold, Italics, Bullet lists, and font styles will reflect on the storefront exactly as it is.
+                </p>
+                <RichTextEditor
+                  value={description || ''}
+                  onChange={(newHtml) => setDescription(newHtml)}
+                  onUploadImage={handleUploadRichTextImage}
+                  isUploading={isRichTextImageUploading}
                 />
               </div>
 

@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
-import { X, Star, Ruler, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { 
+  X, 
+  Star, 
+  Ruler, 
+  ChevronLeft, 
+  ChevronRight, 
+  ChevronDown, 
+  ChevronUp, 
+  Share2, 
+  Sparkles,
+  Heart
+} from 'lucide-react';
+import { renderRichTextHtml } from '../utils/textParser';
 import OutfitCustomizer from './OutfitCustomizer';
 import ProductCard from './ProductCard';
 
@@ -367,7 +379,13 @@ export default function ProductDetailModal({
                 </button>
                 {activeAccordions.description && (
                   <div className="accordion-body-content animate-slideDown">
-                    <p className="accordion-desc-text">{description}</p>
+                    {description && (
+                      <div 
+                        className="accordion-desc-text rich-product-description"
+                        dangerouslySetInnerHTML={{ __html: renderRichTextHtml(description) }}
+                        style={{ fontSize: '14px', lineHeight: '1.7', color: 'var(--color-text-secondary)', marginBottom: '14px' }}
+                      />
+                    )}
                     <ul className="accordion-details-list">
                       {details.map((detail, idx) => (
                         <li key={idx}>{detail}</li>

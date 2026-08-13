@@ -323,47 +323,47 @@ export default function ProductDetailModal({
             </button>
 
             {/* Key Highlights Grid */}
-            <div className="key-highlights-container">
-              <h4 className="highlights-section-title">Key Highlights</h4>
-              <div className="highlights-grid">
-                <div className="highlight-item">
-                  <span className="highlight-label">Fit</span>
-                  <span className="highlight-value">{productHighlights.fit}</span>
-                </div>
-                <div className="highlight-item">
-                  <span className="highlight-label">Top Fabric</span>
-                  <span className="highlight-value">{productHighlights.fabric}</span>
-                </div>
-                <div className="highlight-item">
-                  <span className="highlight-label">Neck</span>
-                  <span className="highlight-value">{productHighlights.neck}</span>
-                </div>
-                <div className="highlight-item">
-                  <span className="highlight-label">Sleeve Styling</span>
-                  <span className="highlight-value">{productHighlights.sleeve}</span>
-                </div>
+            {(() => {
+              const configuredHighlights = [
+                { key: 'fit', label: 'Garment Fit', val: highlights?.fit },
+                { key: 'fabric', label: 'Fabric', val: highlights?.fabric },
+                { key: 'neck', label: 'Neckline Style', val: highlights?.neck },
+                { key: 'frontNeck', label: 'Front Neck', val: highlights?.frontNeck || highlights?.front_neck },
+                { key: 'backNeck', label: 'Back Neck', val: highlights?.backNeck || highlights?.back_neck },
+                { key: 'sleeve', label: 'Sleeve Styling', val: highlights?.sleeve },
+                { key: 'length', label: 'Sleeve Length', val: highlights?.length },
+                { key: 'topHeight', label: 'Top Height', val: highlights?.topHeight || highlights?.top_height },
+                { key: 'bottomHeight', label: 'Bottom Height', val: highlights?.bottomHeight || highlights?.bottom_height },
+                { key: 'technique', label: 'Craft Technique', val: highlights?.technique }
+              ].filter(item => Boolean(item.val && String(item.val).trim()));
 
-                {showAllHighlights && (
-                  <>
-                    <div className="highlight-item animate-fadeIn">
-                      <span className="highlight-label">Sleeve Length</span>
-                      <span className="highlight-value">{productHighlights.length}</span>
-                    </div>
-                    <div className="highlight-item animate-fadeIn">
-                      <span className="highlight-label">Top Technique</span>
-                      <span className="highlight-value">{productHighlights.technique}</span>
-                    </div>
-                  </>
-                )}
-              </div>
-              <button 
-                type="button" 
-                className="highlights-show-more-btn" 
-                onClick={() => setShowAllHighlights(!showAllHighlights)}
-              >
-                {showAllHighlights ? 'Show Less' : 'Show More'}
-              </button>
-            </div>
+              if (configuredHighlights.length === 0) return null;
+
+              const visibleHighlights = showAllHighlights ? configuredHighlights : configuredHighlights.slice(0, 4);
+
+              return (
+                <div className="key-highlights-container">
+                  <h4 className="highlights-section-title">Key Highlights</h4>
+                  <div className="highlights-grid">
+                    {visibleHighlights.map((item) => (
+                      <div key={item.key} className="highlight-item animate-fadeIn">
+                        <span className="highlight-label">{item.label}</span>
+                        <span className="highlight-value">{item.val}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {configuredHighlights.length > 4 && (
+                    <button 
+                      type="button" 
+                      className="highlights-show-more-btn" 
+                      onClick={() => setShowAllHighlights(!showAllHighlights)}
+                    >
+                      {showAllHighlights ? 'Show Less' : 'Show More'}
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Accordions / Downbars */}
             <div className="details-accordions-group">

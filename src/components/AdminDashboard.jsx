@@ -789,8 +789,12 @@ export default function AdminDashboard({
   const [hFit, setHFit] = useState('Straight Regular Fit');
   const [hFabric, setHFabric] = useState('100% Breathable Cotton');
   const [hNeck, setHNeck] = useState('Mandarin Neck');
+  const [hFrontNeck, setHFrontNeck] = useState('');
+  const [hBackNeck, setHBackNeck] = useState('');
   const [hSleeve, setHSleeve] = useState('3/4 Sleeves');
   const [hLength, setHLength] = useState('44 Inches');
+  const [hTopHeight, setHTopHeight] = useState('');
+  const [hBottomHeight, setHBottomHeight] = useState('');
   const [hTechnique, setHTechnique] = useState('Handcrafted Chikankari');
 
   // Promo Code manager states
@@ -1061,8 +1065,12 @@ export default function AdminDashboard({
           fit: hFit,
           fabric: hFabric,
           neck: hNeck,
+          frontNeck: hFrontNeck,
+          backNeck: hBackNeck,
           sleeve: hSleeve,
           length: hLength,
+          topHeight: hTopHeight,
+          bottomHeight: hBottomHeight,
           technique: hTechnique,
           originalPrice: validOrigPrice
         }
@@ -1098,8 +1106,12 @@ export default function AdminDashboard({
           fit: hFit,
           fabric: hFabric,
           neck: hNeck,
+          frontNeck: hFrontNeck,
+          backNeck: hBackNeck,
           sleeve: hSleeve,
           length: hLength,
+          topHeight: hTopHeight,
+          bottomHeight: hBottomHeight,
           technique: hTechnique,
           originalPrice: validOrigPrice
         }
@@ -1130,8 +1142,12 @@ export default function AdminDashboard({
     setHFit('Straight Regular Fit');
     setHFabric('100% Breathable Cotton');
     setHNeck('Mandarin Neck');
+    setHFrontNeck('');
+    setHBackNeck('');
     setHSleeve('3/4 Sleeves');
     setHLength('44 Inches');
+    setHTopHeight('');
+    setHBottomHeight('');
     setHTechnique('Handcrafted Chikankari');
 
     setTimeout(() => setSuccessMsg(''), 3000);
@@ -1160,12 +1176,16 @@ export default function AdminDashboard({
     
     setProductColors(prod.variants?.colors || [{ name: 'Indigo Blue', hex: '#1a365d' }]);
     setProductSizes(prod.variants?.sizes || ['XS', 'S', 'M', 'L', 'XL', 'XXL']);
-    setHFit(prod.highlights?.fit || 'Straight Regular Fit');
-    setHFabric(prod.highlights?.fabric || '100% Breathable Cotton');
-    setHNeck(prod.highlights?.neck || 'Mandarin Neck');
-    setHSleeve(prod.highlights?.sleeve || '3/4 Sleeves');
-    setHLength(prod.highlights?.length || '44 Inches');
-    setHTechnique(prod.highlights?.technique || 'Handcrafted Chikankari');
+    setHFit(prod.highlights?.fit || '');
+    setHFabric(prod.highlights?.fabric || '');
+    setHNeck(prod.highlights?.neck || '');
+    setHFrontNeck(prod.highlights?.frontNeck || prod.highlights?.front_neck || '');
+    setHBackNeck(prod.highlights?.backNeck || prod.highlights?.back_neck || '');
+    setHSleeve(prod.highlights?.sleeve || '');
+    setHLength(prod.highlights?.length || '');
+    setHTopHeight(prod.highlights?.topHeight || prod.highlights?.top_height || '');
+    setHBottomHeight(prod.highlights?.bottomHeight || prod.highlights?.bottom_height || '');
+    setHTechnique(prod.highlights?.technique || '');
     setSuccessMsg('');
   };
 
@@ -1835,16 +1855,16 @@ alter table public.settings disable row level security;`}</pre>
                       type="text" 
                       value={hFit} 
                       onChange={(e) => setHFit(e.target.value)} 
-                      placeholder="e.g. A-line fit"
+                      placeholder="e.g. Straight Regular Fit"
                     />
                   </div>
                   <div className="form-group">
-                    <label>Top Fabric</label>
+                    <label>Fabric</label>
                     <input 
                       type="text" 
                       value={hFabric} 
                       onChange={(e) => setHFabric(e.target.value)} 
-                      placeholder="e.g. Viscose / Silk Velvet"
+                      placeholder="e.g. 100% Breathable Cotton"
                     />
                   </div>
                 </div>
@@ -1856,7 +1876,7 @@ alter table public.settings disable row level security;`}</pre>
                       type="text" 
                       value={hNeck} 
                       onChange={(e) => setHNeck(e.target.value)} 
-                      placeholder="e.g. Frill Neck"
+                      placeholder="e.g. Mandarin Neck"
                     />
                   </div>
                   <div className="form-group">
@@ -1865,7 +1885,28 @@ alter table public.settings disable row level security;`}</pre>
                       type="text" 
                       value={hSleeve} 
                       onChange={(e) => setHSleeve(e.target.value)} 
-                      placeholder="e.g. 3/4th sleeve with Frills"
+                      placeholder="e.g. 3/4 Sleeves"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row-double">
+                  <div className="form-group">
+                    <label>Front Neck</label>
+                    <input 
+                      type="text" 
+                      value={hFrontNeck} 
+                      onChange={(e) => setHFrontNeck(e.target.value)} 
+                      placeholder="e.g. 6.5 Inches or Round 7&quot;"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Back Neck</label>
+                    <input 
+                      type="text" 
+                      value={hBackNeck} 
+                      onChange={(e) => setHBackNeck(e.target.value)} 
+                      placeholder="e.g. 8 Inches or Deep U 8&quot;"
                     />
                   </div>
                 </div>
@@ -1886,7 +1927,28 @@ alter table public.settings disable row level security;`}</pre>
                       type="text" 
                       value={hTechnique} 
                       onChange={(e) => setHTechnique(e.target.value)} 
-                      placeholder="e.g. Printed / Hand-embroidered"
+                      placeholder="e.g. Handcrafted Chikankari"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row-double">
+                  <div className="form-group">
+                    <label>Top Height</label>
+                    <input 
+                      type="text" 
+                      value={hTopHeight} 
+                      onChange={(e) => setHTopHeight(e.target.value)} 
+                      placeholder="e.g. 44 Inches"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Bottom Height</label>
+                    <input 
+                      type="text" 
+                      value={hBottomHeight} 
+                      onChange={(e) => setHBottomHeight(e.target.value)} 
+                      placeholder="e.g. 38 Inches"
                     />
                   </div>
                 </div>

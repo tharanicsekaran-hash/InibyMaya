@@ -9,7 +9,8 @@ import {
   ChevronUp, 
   Share2, 
   Sparkles,
-  Heart
+  Heart,
+  Check
 } from 'lucide-react';
 import { renderRichTextHtml } from '../utils/textParser';
 import OutfitCustomizer from './OutfitCustomizer';

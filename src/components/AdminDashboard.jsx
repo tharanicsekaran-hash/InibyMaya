@@ -1670,7 +1670,22 @@ alter table public.settings disable row level security;`}</pre>
                           <div className="order-meta-small">
                             <span>{order.timestamp ? new Date(order.timestamp).toLocaleDateString() : 'N/A'}</span>
                             <br />
-                            <span className="pay-id-badge">{order.paymentId || 'COD'}</span>
+                            {(() => {
+                              const pId = (order.paymentId || order.payment_id || '').toString();
+                              const isRazor = pId.startsWith('pay_') || (order.paymentMethod || '').toLowerCase().includes('razor');
+                              if (isRazor) {
+                                return (
+                                  <span className="pay-id-badge" style={{ backgroundColor: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', fontWeight: '600' }} title="Verified Prepaid Online via Razorpay">
+                                    💳 Razorpay: {pId}
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span className="pay-id-badge" style={{ backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde68a' }} title="Cash on Delivery">
+                                  💵 {pId || 'COD'}
+                                </span>
+                              );
+                            })()}
                           </div>
                         </td>
                         <td>
@@ -3376,7 +3391,44 @@ alter table public.settings disable row level security;`}</pre>
                 )}
               </div>
 
-              <button type="submit" className="add-btn-submit" style={{ marginTop: '16px' }}>
+              {/* Razorpay Online Payment Gateway Integration Card */}
+              <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                  <h4 style={{ fontSize: '15px', fontWeight: '600', margin: 0, color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>💳 Razorpay Payment Gateway Integration</span>
+                  </h4>
+                  <span style={{ 
+                    fontSize: '11px', 
+                    fontWeight: 700, 
+                    padding: '3px 8px', 
+                    borderRadius: '12px', 
+                    backgroundColor: import.meta.env.VITE_RAZORPAY_KEY_ID ? '#dcfce7' : '#fef9c3', 
+                    color: import.meta.env.VITE_RAZORPAY_KEY_ID ? '#15803d' : '#854d0e',
+                    border: import.meta.env.VITE_RAZORPAY_KEY_ID ? '1px solid #86efac' : '1px solid #fde047'
+                  }}>
+                    {import.meta.env.VITE_RAZORPAY_KEY_ID ? 'CONNECTED (LIVE / TEST)' : 'PREVIEW MODE'}
+                  </span>
+                </div>
+                
+                <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '12px', lineHeight: '1.5' }}>
+                  Allows customers to pay via UPI (Google Pay, PhonePe, Paytm), Credit & Debit Cards, NetBanking, and Wallets with 100% bank-grade encryption.
+                </p>
+
+                <div style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '12px', fontSize: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '4px' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>Razorpay Key ID:</span>
+                    <code style={{ background: 'var(--color-bg-primary)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)' }}>
+                      {import.meta.env.VITE_RAZORPAY_KEY_ID || 'Not set (Configured in .env as VITE_RAZORPAY_KEY_ID)'}
+                    </code>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>Supported Payment Modes:</span>
+                    <span style={{ fontWeight: 600, color: '#15803d' }}>UPI, Cards, NetBanking, Wallets, PayLater</span>
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" className="add-btn-submit" style={{ marginTop: '20px' }}>
                 <CheckCircle2 size={14} />
                 <span>Save Boutique Settings</span>
               </button>

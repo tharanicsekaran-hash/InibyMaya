@@ -54,7 +54,7 @@ const mapDbProductToClient = (dbProd) => {
     description: dbProd.description,
     details: dbProd.details || [],
     images: dbProd.images,
-    variants: dbProd.variants,
+    variants: (typeof dbProd.variants === 'string') ? (() => { try { return JSON.parse(dbProd.variants); } catch (e) { return dbProd.variants; } })() : dbProd.variants,
     customizable: dbProd.customizable,
     bestSeller: Boolean(dbProd.best_seller),
     newArrival: isNewArrival,

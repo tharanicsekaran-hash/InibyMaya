@@ -2685,25 +2685,147 @@ html, body, #root {
   gap: 16px;
 }
 
+/* Payment Method Selector in Checkout */
+.checkout-payment-methods {
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+.checkout-payment-methods label.section-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--color-text-primary);
+}
+
+.payment-options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.payment-option-card {
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  background-color: var(--color-bg-primary);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.payment-option-card:hover {
+  border-color: #8b0000;
+  background-color: rgba(139, 0, 0, 0.02);
+}
+
+.payment-option-card.selected {
+  border-color: #8b0000;
+  background-color: rgba(139, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.06);
+}
+
+.payment-option-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.payment-option-header input[type="radio"] {
+  margin-top: 3px;
+  accent-color: #8b0000;
+  cursor: pointer;
+}
+
+.payment-option-content {
+  flex-grow: 1;
+}
+
+.payment-option-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.payment-option-title-row strong {
+  font-size: 13.5px;
+  color: var(--color-text-primary);
+}
+
+.payment-recommended-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #15803d;
+  background-color: #dcfce7;
+  padding: 2px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.payment-option-desc {
+  font-size: 11.5px;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.payment-option-badges {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+  padding-left: 24px;
+  flex-wrap: wrap;
+}
+
+.razorpay-badge-pill {
+  font-size: 11px;
+  color: #0369a1;
+  background-color: #e0f2fe;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .pay-now-btn-trigger {
   width: 100%;
-  background-color: var(--color-text-primary);
+  background-color: #8b0000;
   color: var(--color-white);
   padding: 16px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   margin-top: 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
   transition: var(--transition-fast);
 }
 
 .pay-now-btn-trigger:hover {
-  background-color: var(--color-accent);
+  background-color: #6d0000;
+}
+
+.pay-now-btn-trigger.btn-cod {
+  background-color: var(--color-text-primary);
+}
+
+.pay-now-btn-trigger.btn-cod:hover {
+  background-color: #333333;
 }
 
 .error-text-summary {

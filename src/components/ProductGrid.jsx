@@ -117,8 +117,20 @@ export default function ProductGrid({
     return list;
   }, [products]);
 
-  // Standard couture size guide items
-  const allSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+  // Dynamic couture & kids size guide items from active catalog
+  const allSizes = useMemo(() => {
+    const defaultList = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size'];
+    const dynamicSet = new Set(defaultList);
+    (products || []).forEach(p => {
+      const pSizes = Array.isArray(p.variants?.sizes)
+        ? p.variants.sizes
+        : (typeof p.variants?.sizes === 'string' ? p.variants.sizes.split(',').map(s => s.trim()).filter(Boolean) : []);
+      pSizes.forEach(s => {
+        if (s) dynamicSet.add(String(s).trim());
+      });
+    });
+    return Array.from(dynamicSet);
+  }, [products]);
 
   // Toggle helpers
   const handleCategoryToggle = (cat) => {
@@ -199,8 +211,11 @@ export default function ProductGrid({
     // 3. Sizes Filter (Multiple Select)
     if (selectedSizes.length > 0) {
       result = result.filter(p => {
-        if (!p.variants || !p.variants.sizes) return false;
-        return p.variants.sizes.some(s => selectedSizes.includes(s));
+        const pSizes = Array.isArray(p.variants?.sizes)
+          ? p.variants.sizes
+          : (typeof p.variants?.sizes === 'string' ? p.variants.sizes.split(',').map(s => s.trim()).filter(Boolean) : []);
+        if (pSizes.length === 0) return false;
+        return pSizes.some(s => selectedSizes.includes(String(s).trim()));
       });
     }
 

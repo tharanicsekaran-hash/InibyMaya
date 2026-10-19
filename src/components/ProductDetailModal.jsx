@@ -53,14 +53,35 @@ export default function ProductDetailModal({
     return result.length > 0 ? result : [{ name: 'Default', hex: '#111111' }];
   }, [variants?.colors]);
 
+  // Safely parse and normalize available sizes
+  const availableSizes = useMemo(() => {
+    if (Array.isArray(variants?.sizes)) {
+      return variants.sizes.map(s => String(s).trim()).filter(Boolean);
+    }
+    if (typeof variants?.sizes === 'string') {
+      try {
+        const parsed = JSON.parse(variants.sizes);
+        if (Array.isArray(parsed)) return parsed.map(s => String(s).trim()).filter(Boolean);
+      } catch (e) {}
+      return variants.sizes.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    return ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+  }, [variants?.sizes]);
+
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [selectedColor, setSelectedColor] = useState(availableColors[0]);
-  const [selectedSize, setSelectedSize] = useState(
-    preselectedSize && variants?.sizes && variants.sizes.includes(preselectedSize) ? preselectedSize : ''
-  );
+  const [selectedSize, setSelectedSize] = useState(() => {
+    if (preselectedSize && availableSizes.includes(preselectedSize)) return preselectedSize;
+    return availableSizes[0] || '';
+  });
   const [quantity, setQuantity] = useState(1);
   const [wantsCustomStitching, setWantsCustomStitching] = useState(false);
   const [showSizeChart, setShowSizeChart] = useState(false);
+  const isKidsProduct = Boolean(
+    (category && /kid|child|baby|infant|toddler/i.test(category)) ||
+    (availableSizes.some(s => /^\d+[-–]\d+[MY]|^\d+[MY]|\b(month|year|newborn|infant|toddler)\b/i.test(String(s))))
+  );
+  const [sizeChartTab, setSizeChartTab] = useState(isKidsProduct ? 'kids' : 'adult');
 
   // Style customization state (from OutfitCustomizer)
   const [styleCustomization, setStyleCustomization] = useState({
@@ -310,13 +331,19 @@ export default function ProductDetailModal({
             <div className="option-section">
               <div className="size-label-row">
                 <span className="option-label">{wantsCustomStitching ? 'Base Size' : 'Size'}: <strong>{selectedSize || 'Select'}</strong></span>
-                <button className="size-chart-link-btn" onClick={() => setShowSizeChart(true)}>
+                <button 
+                  className="size-chart-link-btn" 
+                  onClick={() => {
+                    setSizeChartTab(isKidsProduct ? 'kids' : 'adult');
+                    setShowSizeChart(true);
+                  }}
+                >
                   <Ruler size={14} />
                   <span>Size Guide</span>
                 </button>
               </div>
               <div className="size-chips">
-                {variants.sizes.map((size) => (
+                {availableSizes.map((size) => (
                   <button
                     key={size}
                     className={`size-chip-btn ${selectedSize === size ? 'active' : ''}`}
@@ -525,70 +552,167 @@ export default function ProductDetailModal({
       {/* Embedded Size Chart Guide Modal */}
       {showSizeChart && (
         <div className="size-chart-modal-overlay" onClick={() => setShowSizeChart(false)}>
-          <div className="size-chart-modal" onClick={e => e.stopPropagation()}>
+          <div className="size-chart-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '560px' }}>
             <div className="size-chart-header">
-              <h3>Standard Size Guide (Inches)</h3>
-              <button className="close-btn" onClick={() => setShowSizeChart(false)}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600 }}>Standard Sizing Guide</h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                  Accurate body measurements in inches and cm
+                </p>
+              </div>
+              <button className="close-btn" onClick={() => setShowSizeChart(false)} aria-label="Close size guide">
                 <X size={20} />
               </button>
             </div>
-            <div className="size-chart-body">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Size</th>
-                    <th>Bust</th>
-                    <th>Waist</th>
-                    <th>Hips</th>
-                    <th>Length</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>XS</td>
-                    <td>32"</td>
-                    <td>26"</td>
-                    <td>36"</td>
-                    <td>42"</td>
-                  </tr>
-                  <tr>
-                    <td>S</td>
-                    <td>34"</td>
-                    <td>28"</td>
-                    <td>38"</td>
-                    <td>42"</td>
-                  </tr>
-                  <tr>
-                    <td>M</td>
-                    <td>36"</td>
-                    <td>30"</td>
-                    <td>40"</td>
-                    <td>43"</td>
-                  </tr>
-                  <tr>
-                    <td>L</td>
-                    <td>38"</td>
-                    <td>32"</td>
-                    <td>42"</td>
-                    <td>43"</td>
-                  </tr>
-                  <tr>
-                    <td>XL</td>
-                    <td>40"</td>
-                    <td>34"</td>
-                    <td>44"</td>
-                    <td>44"</td>
-                  </tr>
-                  <tr>
-                    <td>XXL</td>
-                    <td>42"</td>
-                    <td>36"</td>
-                    <td>46"</td>
-                    <td>44"</td>
-                  </tr>
-                </tbody>
-              </table>
-              <p className="size-chart-footer-note">Note: If your measurements fall between sizes, we recommend selecting the larger size or using our custom tailoring option.</p>
+
+            {/* Sizing Category Tabs */}
+            <div style={{ display: 'flex', gap: '4px', padding: '10px 16px 0', borderBottom: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-secondary)' }}>
+              <button 
+                type="button"
+                onClick={() => setSizeChartTab('adult')}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '12px',
+                  fontWeight: sizeChartTab === 'adult' ? 600 : 500,
+                  border: 'none',
+                  background: 'none',
+                  borderBottom: sizeChartTab === 'adult' ? '2.5px solid var(--color-text-primary)' : '2.5px solid transparent',
+                  color: sizeChartTab === 'adult' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                👩 Adult Standard (Inches)
+              </button>
+              <button 
+                type="button"
+                onClick={() => setSizeChartTab('kids')}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '12px',
+                  fontWeight: sizeChartTab === 'kids' ? 600 : 500,
+                  border: 'none',
+                  background: 'none',
+                  borderBottom: sizeChartTab === 'kids' ? '2.5px solid #8b0000' : '2.5px solid transparent',
+                  color: sizeChartTab === 'kids' ? '#8b0000' : 'var(--color-text-secondary)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                👶 Kids by Age Group
+              </button>
+            </div>
+
+            <div className="size-chart-body" style={{ padding: '16px 20px 20px' }}>
+              {sizeChartTab === 'adult' ? (
+                <div style={{ overflowX: 'auto' }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Size</th>
+                        <th>Bust</th>
+                        <th>Waist</th>
+                        <th>Hips</th>
+                        <th>Length</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>XS</strong></td>
+                        <td>32"</td>
+                        <td>26"</td>
+                        <td>36"</td>
+                        <td>42"</td>
+                      </tr>
+                      <tr>
+                        <td><strong>S</strong></td>
+                        <td>34"</td>
+                        <td>28"</td>
+                        <td>38"</td>
+                        <td>42"</td>
+                      </tr>
+                      <tr>
+                        <td><strong>M</strong></td>
+                        <td>36"</td>
+                        <td>30"</td>
+                        <td>40"</td>
+                        <td>43"</td>
+                      </tr>
+                      <tr>
+                        <td><strong>L</strong></td>
+                        <td>38"</td>
+                        <td>32"</td>
+                        <td>42"</td>
+                        <td>43"</td>
+                      </tr>
+                      <tr>
+                        <td><strong>XL</strong></td>
+                        <td>40"</td>
+                        <td>34"</td>
+                        <td>44"</td>
+                        <td>44"</td>
+                      </tr>
+                      <tr>
+                        <td><strong>XXL</strong></td>
+                        <td>42"</td>
+                        <td>36"</td>
+                        <td>46"</td>
+                        <td>44"</td>
+                      </tr>
+                      <tr>
+                        <td><strong>3XL</strong></td>
+                        <td>44"</td>
+                        <td>38"</td>
+                        <td>48"</td>
+                        <td>44"</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Free Size</strong></td>
+                        <td>34" - 42"</td>
+                        <td>Flexible</td>
+                        <td>40" - 46"</td>
+                        <td>43"</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <p className="size-chart-footer-note">
+                    Note: If your measurements fall between sizes, we recommend selecting the larger size or opting for our custom tailoring option for a personalized fit.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ maxHeight: '280px', overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: '6px', marginBottom: '14px' }}>
+                    <table style={{ margin: 0 }}>
+                      <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>
+                        <tr>
+                          <th>Age Group</th>
+                          <th>Chest (in)</th>
+                          <th>Waist (in)</th>
+                          <th>Approx. Height</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr><td><strong>0-6M</strong></td><td>17" - 18"</td><td>18"</td><td>60 - 68 cm</td></tr>
+                        <tr><td><strong>6-12M</strong></td><td>18" - 19"</td><td>19"</td><td>68 - 76 cm</td></tr>
+                        <tr><td><strong>1-2Y</strong></td><td>20" - 21"</td><td>20"</td><td>80 - 88 cm</td></tr>
+                        <tr><td><strong>2-3Y</strong></td><td>21" - 22"</td><td>20.5"</td><td>90 - 98 cm</td></tr>
+                        <tr><td><strong>3-4Y</strong></td><td>22" - 23"</td><td>21"</td><td>98 - 104 cm</td></tr>
+                        <tr><td><strong>4-5Y</strong></td><td>23" - 24"</td><td>21.5"</td><td>104 - 110 cm</td></tr>
+                        <tr><td><strong>5-6Y</strong></td><td>24" - 25"</td><td>22"</td><td>110 - 116 cm</td></tr>
+                        <tr><td><strong>6-7Y</strong></td><td>25" - 26"</td><td>22.5"</td><td>116 - 122 cm</td></tr>
+                        <tr><td><strong>7-8Y</strong></td><td>26" - 27"</td><td>23"</td><td>122 - 128 cm</td></tr>
+                        <tr><td><strong>8-9Y</strong></td><td>27" - 28"</td><td>24"</td><td>128 - 134 cm</td></tr>
+                        <tr><td><strong>9-10Y</strong></td><td>28" - 29"</td><td>24.5"</td><td>134 - 140 cm</td></tr>
+                        <tr><td><strong>10-12Y</strong></td><td>29" - 31"</td><td>25.5"</td><td>140 - 152 cm</td></tr>
+                        <tr><td><strong>12-14Y</strong></td><td>31" - 33"</td><td>26.5"</td><td>152 - 162 cm</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="size-chart-footer-note">
+                    👶 <strong>Tip for Parents:</strong> Kids grow fast! If your child is between age brackets or taller than average, we recommend choosing one size up for the most comfortable fit.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

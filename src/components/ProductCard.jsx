@@ -136,19 +136,27 @@ export default function ProductCard({
         })()}
 
         {/* Clickable Size Swatches directly under price */}
-        {variants?.sizes && variants.sizes.length > 0 && (
-          <div className="product-card-sizes" onClick={(e) => e.stopPropagation()}>
-            {variants.sizes.map(size => (
-              <span 
-                key={size} 
-                className="product-card-size-box"
-                onClick={(e) => handleQuickShop(e, size)}
-              >
-                {size}
-              </span>
-            ))}
-          </div>
-        )}
+        {(() => {
+          const cardSizes = Array.isArray(variants?.sizes)
+            ? variants.sizes
+            : (typeof variants?.sizes === 'string' ? variants.sizes.split(',').map(s => s.trim()).filter(Boolean) : []);
+          
+          if (cardSizes.length === 0) return null;
+
+          return (
+            <div className="product-card-sizes" onClick={(e) => e.stopPropagation()}>
+              {cardSizes.map(size => (
+                <span 
+                  key={size} 
+                  className="product-card-size-box"
+                  onClick={(e) => handleQuickShop(e, size)}
+                >
+                  {size}
+                </span>
+              ))}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

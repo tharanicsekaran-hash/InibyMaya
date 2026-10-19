@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings, Layout, ChevronUp, ChevronDown, Plus, Mail, FileText, Download, Sparkles, Palette, Check } from 'lucide-react';
+import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, X, Phone, Truck, Film, Upload, Settings, Layout, ChevronUp, ChevronDown, Plus, Mail, FileText, Download, Sparkles, Palette, Check } from 'lucide-react';
 import { uploadFileToGithub } from '../utils/githubUploader';
 import { sendOrderConfirmationEmail } from '../utils/resendEmail';
 import { DEFAULT_FOOTER_PAGES } from '../utils/footerPagesData';
@@ -232,6 +232,25 @@ export const deduplicateColors = (colorList = []) => {
   return result;
 };
 
+const DEFAULT_ADULT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size'];
+const DEFAULT_KIDS_SIZES = [
+  '0-6M', '6-12M', '1-2Y', '2-3Y', '3-4Y', '4-5Y', '5-6Y', '6-7Y', '7-8Y', '8-9Y', '9-10Y', '10-12Y', '12-14Y'
+];
+
+const toSafeSizesArray = (arr) => {
+  if (Array.isArray(arr)) return arr.map(s => (s !== null && s !== undefined ? String(s).trim() : '')).filter(Boolean);
+  if (typeof arr === 'string') {
+    try {
+      const parsed = JSON.parse(arr);
+      if (Array.isArray(parsed)) return parsed.map(s => (s !== null && s !== undefined ? String(s).trim() : '')).filter(Boolean);
+    } catch (e) {}
+    return arr.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+};
+
+const isKidsSizeString = (s) => /^\d+[-–]\d+[MY]|^\d+[MY]|\b(month|year|newborn|infant|toddler)\b/i.test(String(s || '').trim());
+
 export default function AdminDashboard({ 
   products, 
   orders, 
@@ -264,6 +283,49 @@ export default function AdminDashboard({
   const [settingsPhone, setSettingsPhone] = useState('');
   const [settingsAddress, setSettingsAddress] = useState('');
   const [settingsHours, setSettingsHours] = useState('');
+
+  const [settingsShippingPrice, setSettingsShippingPrice] = useState(() => (boutiqueSettings?.standardShippingPrice !== undefined ? Number(boutiqueSettings.standardShippingPrice) : 99));
+  const [settingsFreeShippingThreshold, setSettingsFreeShippingThreshold] = useState(() => (boutiqueSettings?.freeShippingThreshold !== undefined ? Number(boutiqueSettings.freeShippingThreshold) : 1500));
+
+  const [customAdultSizes, setCustomAdultSizes] = useState(() => {
+    try {
+      if (boutiqueSettings?.adultSizes) {
+        const parsed = JSON.parse(boutiqueSettings.adultSizes);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_ADULT_SIZES;
+  });
+
+  const [customKidsSizes, setCustomKidsSizes] = useState(() => {
+    try {
+      if (boutiqueSettings?.kidsSizes) {
+        const parsed = JSON.parse(boutiqueSettings.kidsSizes);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_KIDS_SIZES;
+  });
+
+  const [settingsAdultSizes, setSettingsAdultSizes] = useState(() => {
+    try {
+      if (boutiqueSettings?.adultSizes) {
+        const parsed = JSON.parse(boutiqueSettings.adultSizes);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed.join(', ');
+      }
+    } catch (e) {}
+    return DEFAULT_ADULT_SIZES.join(', ');
+  });
+
+  const [settingsKidsSizes, setSettingsKidsSizes] = useState(() => {
+    try {
+      if (boutiqueSettings?.kidsSizes) {
+        const parsed = JSON.parse(boutiqueSettings.kidsSizes);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed.join(', ');
+      }
+    } catch (e) {}
+    return DEFAULT_KIDS_SIZES.join(', ');
+  });
   const [newsletterTitle, setNewsletterTitle] = useState('');
   const [newsletterSubtitle, setNewsletterSubtitle] = useState('');
   const [newsletterDiscount, setNewsletterDiscount] = useState(10);
@@ -373,6 +435,26 @@ export default function AdminDashboard({
       setSettingsPhone(boutiqueSettings.phone || '');
       setSettingsAddress(boutiqueSettings.address || '');
       setSettingsHours(boutiqueSettings.hours || '');
+      setSettingsShippingPrice(boutiqueSettings.standardShippingPrice !== undefined ? Number(boutiqueSettings.standardShippingPrice) : 99);
+      setSettingsFreeShippingThreshold(boutiqueSettings.freeShippingThreshold !== undefined ? Number(boutiqueSettings.freeShippingThreshold) : 1500);
+      if (boutiqueSettings.adultSizes) {
+        try {
+          const parsed = JSON.parse(boutiqueSettings.adultSizes);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setCustomAdultSizes(parsed);
+            setSettingsAdultSizes(parsed.join(', '));
+          }
+        } catch (e) {}
+      }
+      if (boutiqueSettings.kidsSizes) {
+        try {
+          const parsed = JSON.parse(boutiqueSettings.kidsSizes);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setCustomKidsSizes(parsed);
+            setSettingsKidsSizes(parsed.join(', '));
+          }
+        } catch (e) {}
+      }
       setNewsletterTitle(boutiqueSettings.newsletterTitle || 'Subscribe and Get 10% OFF');
       setNewsletterSubtitle(boutiqueSettings.newsletterSubtitle || 'No Spam, No Drama – Just Good Clothes');
       setNewsletterDiscount(Number(boutiqueSettings.newsletterDiscount !== undefined ? boutiqueSettings.newsletterDiscount : 10));
@@ -650,11 +732,16 @@ export default function AdminDashboard({
     setSettingsSuccessMsg('');
     if (onSaveSettings) {
       onSaveSettings({
+        ...boutiqueSettings,
         description: settingsDesc,
         email: settingsEmail,
         phone: settingsPhone,
         address: settingsAddress,
         hours: settingsHours,
+        standardShippingPrice: Math.max(0, Number(settingsShippingPrice) || 0),
+        freeShippingThreshold: Math.max(0, Number(settingsFreeShippingThreshold) || 0),
+        adultSizes: JSON.stringify(settingsAdultSizes.split(',').map(s => s.trim()).filter(Boolean)),
+        kidsSizes: JSON.stringify(settingsKidsSizes.split(',').map(s => s.trim()).filter(Boolean)),
         newsletterTitle,
         newsletterSubtitle,
         newsletterDiscount: Number(newsletterDiscount),
@@ -892,11 +979,13 @@ export default function AdminDashboard({
   };
 
   // Variants editing states
-  const [productColors, setProductColors] = useState([]); // Starts fresh/empty for new products so Indigo Blue is not forced!
+  const [productColors, setProductColors] = useState([]); // Starts fresh/empty for new products
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#84a98c');
   const [colorErrorMsg, setColorErrorMsg] = useState('');
+  const [sizeType, setSizeType] = useState('adult'); // 'adult' or 'kids'
   const [productSizes, setProductSizes] = useState(['XS', 'S', 'M', 'L', 'XL', 'XXL']);
+  const [newCustomSize, setNewCustomSize] = useState('');
 
   // Key Highlights fields
   const [hFit, setHFit] = useState('Straight Regular Fit');
@@ -1176,9 +1265,63 @@ export default function AdminDashboard({
   };
 
   const handleSizeCheckboxToggle = (size) => {
-    setProductSizes(prev => 
-      prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]
-    );
+    setProductSizes(prev => {
+      const safePrev = toSafeSizesArray(prev);
+      return safePrev.includes(size) ? safePrev.filter(s => s !== size) : [...safePrev, size];
+    });
+  };
+
+  const handleAddCustomSize = () => {
+    const trimmed = (newCustomSize || '').trim();
+    if (!trimmed) return;
+
+    if (sizeType === 'kids') {
+      const currentList = Array.isArray(customKidsSizes) ? customKidsSizes : DEFAULT_KIDS_SIZES;
+      if (!currentList.some(s => String(s).toLowerCase() === trimmed.toLowerCase())) {
+        const updated = [...currentList, trimmed];
+        setCustomKidsSizes(updated);
+        if (onSaveSettings) {
+          onSaveSettings({ ...boutiqueSettings, kidsSizes: JSON.stringify(updated) });
+        }
+      }
+    } else {
+      const currentList = Array.isArray(customAdultSizes) ? customAdultSizes : DEFAULT_ADULT_SIZES;
+      if (!currentList.some(s => String(s).toLowerCase() === trimmed.toLowerCase())) {
+        const updated = [...currentList, trimmed];
+        setCustomAdultSizes(updated);
+        if (onSaveSettings) {
+          onSaveSettings({ ...boutiqueSettings, adultSizes: JSON.stringify(updated) });
+        }
+      }
+    }
+
+    setProductSizes(prev => {
+      const safePrev = toSafeSizesArray(prev);
+      if (!safePrev.some(s => String(s).toLowerCase() === trimmed.toLowerCase())) {
+        return [...safePrev, trimmed];
+      }
+      return safePrev;
+    });
+    setNewCustomSize('');
+  };
+
+  const handleDeleteCustomSize = (sizeToRemove) => {
+    if (sizeType === 'kids') {
+      const currentList = Array.isArray(customKidsSizes) ? customKidsSizes : DEFAULT_KIDS_SIZES;
+      const updated = currentList.filter(s => s !== sizeToRemove);
+      setCustomKidsSizes(updated);
+      if (onSaveSettings) {
+        onSaveSettings({ ...boutiqueSettings, kidsSizes: JSON.stringify(updated) });
+      }
+    } else {
+      const currentList = Array.isArray(customAdultSizes) ? customAdultSizes : DEFAULT_ADULT_SIZES;
+      const updated = currentList.filter(s => s !== sizeToRemove);
+      setCustomAdultSizes(updated);
+      if (onSaveSettings) {
+        onSaveSettings({ ...boutiqueSettings, adultSizes: JSON.stringify(updated) });
+      }
+    }
+    setProductSizes(prev => toSafeSizesArray(prev).filter(s => s !== sizeToRemove));
   };
 
 
@@ -1358,7 +1501,14 @@ export default function AdminDashboard({
     if (editColors.length > 0) {
       updateStoredColors([...storedColors, ...editColors]);
     }
-    setProductSizes(prod.variants?.sizes || ['XS', 'S', 'M', 'L', 'XL', 'XXL']);
+    const existingSizes = toSafeSizesArray(prod.variants?.sizes);
+    const finalSizes = existingSizes.length > 0 ? existingSizes : ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+    setProductSizes(finalSizes);
+    const isKidsProd = (prod.category || '').toLowerCase().includes('kid') || 
+                       (prod.category || '').toLowerCase().includes('child') || 
+                       (prod.category || '').toLowerCase().includes('baby') || 
+                       finalSizes.some(isKidsSizeString);
+    setSizeType(isKidsProd ? 'kids' : 'adult');
     setHFit(prod.highlights?.fit || '');
     setHFabric(prod.highlights?.fabric || '');
     setHNeck(prod.highlights?.neck || '');
@@ -1388,6 +1538,7 @@ export default function AdminDashboard({
     setProductColors([]);
     setNewColorName('');
     setColorErrorMsg('');
+    setSizeType('adult');
     setProductSizes(['XS', 'S', 'M', 'L', 'XL', 'XXL']);
     setHFit('Straight Regular Fit');
     setHFabric('100% Breathable Cotton');
@@ -1607,9 +1758,10 @@ alter table public.settings disable row level security;`}</pre>
           <button 
             className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
             onClick={() => setActiveTab('settings')}
+            style={activeTab === 'settings' ? {} : { border: '1px solid #e2b3b3' }}
           >
             <Settings size={15} />
-            <span>Boutique Settings</span>
+            <span>Boutique Settings & Shipping</span>
           </button>
           <button 
             className={`tab-btn ${activeTab === 'storefront' ? 'active' : ''}`}
@@ -1640,9 +1792,34 @@ alter table public.settings disable row level security;`}</pre>
       {/* Tab 1: Orders Lifecycle */}
       {activeTab === 'orders' && (
         <div className="admin-content-section animate-fadeIn">
-          <div className="admin-section-header">
-            <h3>Stitching & Dispatch Operations</h3>
-            <p>Advance each customer's order through the boutique stitching rooms, pattern drafts, quality control, and final Delhivery courier dispatch.</p>
+          <div className="admin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '18px' }}>
+            <div>
+              <h3 style={{ margin: '0 0 4px 0' }}>Stitching & Dispatch Operations</h3>
+              <p style={{ margin: 0 }}>Advance each customer's order through the boutique stitching rooms, pattern drafts, quality control, and final Delhivery courier dispatch.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveTab('settings')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                borderRadius: '24px',
+                backgroundColor: '#fff5f5',
+                border: '1.5px solid #fca5a5',
+                color: '#8b0000',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                transition: 'all 0.2s ease'
+              }}
+              title="Click to configure Standard Shipping & Free Delivery Threshold"
+            >
+              <Truck size={16} />
+              <span>Standard Shipping: <strong>₹{settingsShippingPrice}</strong> (Click to Configure)</span>
+            </button>
           </div>
 
           {orders.length > 0 ? (
@@ -1907,7 +2084,24 @@ alter table public.settings disable row level security;`}</pre>
               <div className="form-row-double">
                 <div className="form-group">
                   <label>Category *</label>
-                  <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                  <select 
+                    value={category} 
+                    onChange={(e) => {
+                      const newCat = e.target.value;
+                      setCategory(newCat);
+                      const isKids = newCat.toLowerCase().includes('kid') || newCat.toLowerCase().includes('child') || newCat.toLowerCase().includes('baby');
+                      if (isKids) {
+                        setSizeType('kids');
+                        setProductSizes(prev => {
+                          const safePrev = toSafeSizesArray(prev);
+                          if (!safePrev.some(isKidsSizeString)) {
+                            return ['1-2Y', '2-3Y', '3-4Y', '4-5Y', '5-6Y'];
+                          }
+                          return safePrev;
+                        });
+                      }
+                    }}
+                  >
                     {availableCategories.map((catName) => (
                       <option key={catName} value={catName}>{catName}</option>
                     ))}
@@ -1967,22 +2161,230 @@ alter table public.settings disable row level security;`}</pre>
                 <h5 style={{ margin: '0 0 16px 0', fontSize: '13.5px', fontWeight: 600, color: 'var(--color-text-primary)' }}>Garment Variants Configuration</h5>
                 
                 {/* Size selections */}
-                <div className="form-group" style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Available Sizes *</label>
-                  <div className="admin-sizes-checkbox-grid" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map(size => {
-                      const isChecked = productSizes.includes(size);
-                      return (
-                        <label key={size} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--color-bg-primary)', border: '1px solid var(--color-border)', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', userSelect: 'none' }}>
-                          <input 
-                            type="checkbox" 
-                            checked={isChecked} 
-                            onChange={() => handleSizeCheckboxToggle(size)}
-                          />
-                          <span>{size}</span>
-                        </label>
-                      );
-                    })}
+                <div className="form-group" style={{ marginBottom: '22px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', margin: 0, color: 'var(--color-text-primary)' }}>
+                        Available Garment Sizes ({productSizes.length} selected) *
+                      </label>
+                      <span style={{ fontSize: '11.5px', color: 'var(--color-text-secondary)' }}>
+                        Configure standard adult sizing or custom kids age groups for this garment
+                      </span>
+                    </div>
+
+                    {/* Sizing Mode Tabs */}
+                    <div style={{ display: 'flex', gap: '6px', background: 'var(--color-bg-primary)', padding: '3px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSizeType('adult');
+                          setProductSizes(prev => {
+                            const safePrev = toSafeSizesArray(prev);
+                            if (safePrev.length === 0 || safePrev.every(isKidsSizeString)) {
+                              return (Array.isArray(customAdultSizes) ? customAdultSizes : DEFAULT_ADULT_SIZES).slice(0, 6);
+                            }
+                            return safePrev;
+                          });
+                        }}
+                        style={{
+                          padding: '4px 10px',
+                          fontSize: '11.5px',
+                          fontWeight: 600,
+                          borderRadius: '4px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          backgroundColor: sizeType === 'adult' ? 'var(--color-text-primary)' : 'transparent',
+                          color: sizeType === 'adult' ? '#fff' : 'var(--color-text-secondary)',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        👩 Adult Sizing
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSizeType('kids');
+                          setProductSizes(prev => {
+                            const safePrev = toSafeSizesArray(prev);
+                            if (safePrev.length === 0 || !safePrev.some(isKidsSizeString)) {
+                              return ['1-2Y', '2-3Y', '3-4Y', '4-5Y', '5-6Y', '6-7Y'];
+                            }
+                            return safePrev;
+                          });
+                        }}
+                        style={{
+                          padding: '4px 10px',
+                          fontSize: '11.5px',
+                          fontWeight: 600,
+                          borderRadius: '4px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          backgroundColor: sizeType === 'kids' ? '#8b0000' : 'transparent',
+                          color: sizeType === 'kids' ? '#fff' : 'var(--color-text-secondary)',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        👶 Kids by Age Group
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* KIDS AGE GROUP PRESETS BAR (Shown in Kids mode) */}
+                  {sizeType === 'kids' && (
+                    <div style={{ 
+                      backgroundColor: '#fffaf8', 
+                      border: '1px solid #fecaca', 
+                      borderRadius: '6px', 
+                      padding: '10px 12px', 
+                      marginBottom: '12px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap', 
+                      gap: '8px' 
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Sparkles size={14} style={{ color: '#8b0000' }} />
+                        <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#8b0000' }}>
+                          Quick Age Presets:
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => setProductSizes(['0-6M', '6-12M', '1-2Y', '2-3Y'])}
+                          style={{ padding: '3px 8px', fontSize: '11px', borderRadius: '4px', border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer' }}
+                        >
+                          Toddlers (0-3Y)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setProductSizes(['3-4Y', '4-5Y', '5-6Y', '6-7Y'])}
+                          style={{ padding: '3px 8px', fontSize: '11px', borderRadius: '4px', border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer' }}
+                        >
+                          Young Kids (3-7Y)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setProductSizes(['7-8Y', '8-9Y', '9-10Y', '10-12Y', '12-14Y'])}
+                          style={{ padding: '3px 8px', fontSize: '11px', borderRadius: '4px', border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer' }}
+                        >
+                          Older Kids (7-14Y)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setProductSizes(Array.isArray(customKidsSizes) ? customKidsSizes : DEFAULT_KIDS_SIZES)}
+                          style={{ padding: '3px 8px', fontSize: '11px', borderRadius: '4px', border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer', fontWeight: 600, color: '#8b0000' }}
+                        >
+                          Select All Kids
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SIZES CHECKBOX GRID */}
+                  {(() => {
+                    const safeProductSizes = toSafeSizesArray(productSizes);
+                    const baseOptions = sizeType === 'kids'
+                      ? (Array.isArray(customKidsSizes) ? customKidsSizes : DEFAULT_KIDS_SIZES)
+                      : (Array.isArray(customAdultSizes) ? customAdultSizes : DEFAULT_ADULT_SIZES);
+
+                    const relevantCurrent = sizeType === 'kids'
+                      ? safeProductSizes.filter(isKidsSizeString)
+                      : safeProductSizes.filter(s => !isKidsSizeString(s));
+
+                    const activeSizeOptions = Array.from(new Set([...baseOptions, ...relevantCurrent]));
+
+                    return (
+                      <div className="admin-sizes-checkbox-grid" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                        {activeSizeOptions.map(size => {
+                          const isChecked = safeProductSizes.includes(size);
+                          const isDefault = (sizeType === 'kids' ? DEFAULT_KIDS_SIZES : DEFAULT_ADULT_SIZES).includes(size);
+
+                          return (
+                            <div 
+                              key={size} 
+                              onClick={() => handleSizeCheckboxToggle(size)}
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '6px', 
+                                background: isChecked ? (sizeType === 'kids' ? '#fef2f2' : 'var(--color-bg-primary)') : 'var(--color-bg-primary)', 
+                                border: isChecked ? (sizeType === 'kids' ? '1.5px solid #8b0000' : '1.5px solid var(--color-text-primary)') : '1px solid var(--color-border)', 
+                                padding: '5px 10px', 
+                                borderRadius: '4px', 
+                                cursor: 'pointer', 
+                                fontSize: '12.5px', 
+                                userSelect: 'none',
+                                fontWeight: isChecked ? 600 : 400,
+                                color: isChecked ? (sizeType === 'kids' ? '#8b0000' : 'var(--color-text-primary)') : 'var(--color-text-secondary)',
+                                transition: 'all 0.15s ease'
+                              }}
+                            >
+                              <input 
+                                type="checkbox" 
+                                checked={isChecked} 
+                                readOnly
+                                style={{ width: 'auto', margin: 0, pointerEvents: 'none' }}
+                              />
+                              <span>{size}</span>
+                              {!isDefault && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleDeleteCustomSize(size);
+                                  }}
+                                  style={{ background: 'none', border: 'none', color: '#9ca3af', padding: '0 2px', cursor: 'pointer', display: 'flex' }}
+                                  title="Delete custom size"
+                                >
+                                  <X size={12} />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+
+                  {/* CUSTOM SIZE / AGE GROUP QUICK ADD INPUT */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', maxWidth: '420px' }}>
+                    <input
+                      type="text"
+                      placeholder={sizeType === 'kids' ? "Add custom age: e.g. 18-24M, 4-5Y, Newborn" : "Add custom size: e.g. 3XL, 4XL, Free Size"}
+                      value={newCustomSize}
+                      onChange={(e) => setNewCustomSize(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddCustomSize();
+                        }
+                      }}
+                      style={{ fontSize: '12px', padding: '6px 10px', flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomSize}
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        backgroundColor: 'var(--color-bg-secondary)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <Plus size={13} />
+                      <span>Add {sizeType === 'kids' ? 'Age Group' : 'Size'}</span>
+                    </button>
                   </div>
                 </div>
 
@@ -3219,6 +3621,73 @@ alter table public.settings disable row level security;`}</pre>
             {settingsSuccessMsg && <p className="success-banner">{settingsSuccessMsg}</p>}
             
             <form onSubmit={handleSettingsSubmit}>
+              {/* Shipping & Delivery Charges Configurator (FEATURED AT TOP) */}
+              <div style={{ 
+                marginBottom: '26px', 
+                padding: '18px 20px', 
+                backgroundColor: '#fffaf8', 
+                border: '1.5px solid #8b0000', 
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(139, 0, 0, 0.06)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                  <h4 style={{ fontSize: '15px', fontWeight: '700', margin: 0, color: '#8b0000', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Truck size={18} />
+                    <span>🚚 Standard Shipping & Delivery Fee</span>
+                  </h4>
+                  <span style={{ 
+                    fontSize: '11px', 
+                    fontWeight: 700, 
+                    padding: '3px 8px', 
+                    borderRadius: '12px', 
+                    backgroundColor: '#dcfce7', 
+                    color: '#15803d',
+                    border: '1px solid #86efac'
+                  }}>
+                    LIVE ON STOREFRONT
+                  </span>
+                </div>
+                <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '14px', lineHeight: '1.5' }}>
+                  Configure the standard shipping fee charged at cart checkout and the qualifying subtotal threshold for complimentary free delivery.
+                </p>
+
+                <div className="form-row-double">
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label style={{ fontWeight: '600' }}>Standard Shipping Charge (₹) *</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      step="1"
+                      value={settingsShippingPrice} 
+                      onChange={(e) => setSettingsShippingPrice(e.target.value)} 
+                      placeholder="99" 
+                      required 
+                      style={{ fontSize: '15px', fontWeight: '600' }}
+                    />
+                    <small style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px', display: 'block' }}>
+                      Flat rate applied at checkout when cart subtotal is below the free shipping threshold. (Set to 0 for free delivery on all orders)
+                    </small>
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label style={{ fontWeight: '600' }}>Free Shipping Minimum Order (₹) *</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      step="1"
+                      value={settingsFreeShippingThreshold} 
+                      onChange={(e) => setSettingsFreeShippingThreshold(e.target.value)} 
+                      placeholder="1500" 
+                      required 
+                      style={{ fontSize: '15px', fontWeight: '600' }}
+                    />
+                    <small style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px', display: 'block' }}>
+                      Orders at or above this amount automatically receive FREE delivery. (Set to 0 to disable free shipping)
+                    </small>
+                  </div>
+                </div>
+              </div>
+
               <div className="form-group">
                 <label>Boutique Description *</label>
                 <textarea 
@@ -3274,6 +3743,58 @@ alter table public.settings disable row level security;`}</pre>
                   placeholder="Mon - Sat: 10:00 AM - 07:00 PM IST" 
                   required 
                 />
+              </div>
+
+              {/* Garment Sizing & Kids Age Groups Configuration */}
+              <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                  <h4 style={{ fontSize: '15px', fontWeight: '600', margin: 0, color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Ruler size={18} style={{ color: '#8b0000' }} />
+                    <span>Garment Sizing & Kids Age Groups Configuration</span>
+                  </h4>
+                  <span style={{ 
+                    fontSize: '11px', 
+                    fontWeight: 700, 
+                    padding: '3px 8px', 
+                    borderRadius: '12px', 
+                    backgroundColor: '#fef3c7', 
+                    color: '#92400e',
+                    border: '1px solid #fde68a'
+                  }}>
+                    CATALOG DEFAULT PRESETS
+                  </span>
+                </div>
+                <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '14px', lineHeight: '1.5' }}>
+                  Configure the global sizing presets available when adding garments. Enter sizes separated by commas.
+                </p>
+
+                <div className="form-group" style={{ marginBottom: '14px' }}>
+                  <label>Standard Adult Garment Sizes (comma-separated) *</label>
+                  <input 
+                    type="text" 
+                    value={settingsAdultSizes} 
+                    onChange={(e) => setSettingsAdultSizes(e.target.value)} 
+                    placeholder="XS, S, M, L, XL, XXL, 3XL, Free Size" 
+                    required 
+                  />
+                  <small style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px', display: 'block' }}>
+                    Default sizes available for Women's & Adult couture collections.
+                  </small>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Kids Garment Sizes by Age Group (comma-separated) *</label>
+                  <input 
+                    type="text" 
+                    value={settingsKidsSizes} 
+                    onChange={(e) => setSettingsKidsSizes(e.target.value)} 
+                    placeholder="0-6M, 6-12M, 1-2Y, 2-3Y, 3-4Y, 4-5Y, 5-6Y, 6-7Y, 7-8Y, 8-9Y, 9-10Y, 10-12Y, 12-14Y" 
+                    required 
+                  />
+                  <small style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px', display: 'block' }}>
+                    Default age-based sizes available for Children & Kids Wear collections (e.g. 0-6M, 1-2Y, 3-4Y).
+                  </small>
+                </div>
               </div>
 
               {/* Newsletter Offer Configurator */}

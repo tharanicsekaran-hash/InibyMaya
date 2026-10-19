@@ -6,7 +6,8 @@ export default function CheckoutModal({
   priceSummary, 
   onClose, 
   onOrderSuccess, 
-  user 
+  user,
+  boutiqueSettings = {}
 }) {
   const [name, setName] = useState(user?.name || '');
   const [address, setAddress] = useState('');
@@ -21,7 +22,8 @@ export default function CheckoutModal({
   // Dynamic calculations to guarantee 100% mathematical alignment with cartItems
   const computedSubtotal = cartItems.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
   const computedDiscount = priceSummary?.appliedDiscount || 0;
-  const computedShipping = priceSummary?.shipping !== undefined ? priceSummary.shipping : 99;
+  const defaultStandardShipping = boutiqueSettings?.standardShippingPrice !== undefined ? Number(boutiqueSettings.standardShippingPrice) : 99;
+  const computedShipping = priceSummary?.shipping !== undefined ? priceSummary.shipping : defaultStandardShipping;
   const computedFinalTotal = Math.max(0, computedSubtotal - computedDiscount + computedShipping);
 
   // Load Razorpay SDK dynamically if not already available on window

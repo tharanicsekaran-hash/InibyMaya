@@ -27,6 +27,22 @@ import {
 import { DEFAULT_FOOTER_PAGES } from './utils/footerPagesData';
 import './App.css';
 
+const normalizeProductSizes = (rawSizes) => {
+  if (Array.isArray(rawSizes)) {
+    return rawSizes.map(s => (s !== null && s !== undefined ? String(s).trim() : '')).filter(Boolean);
+  }
+  if (typeof rawSizes === 'string') {
+    try {
+      const parsed = JSON.parse(rawSizes);
+      if (Array.isArray(parsed)) {
+        return parsed.map(s => (s !== null && s !== undefined ? String(s).trim() : '')).filter(Boolean);
+      }
+    } catch (e) {}
+    return rawSizes.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+};
+
 // Database column mapping helpers
 const mapDbProductToClient = (dbProd) => {
   const hNewArrival = dbProd.highlights?.newArrival;
@@ -43,6 +59,23 @@ const mapDbProductToClient = (dbProd) => {
     normCategory = 'Long Kurti';
   }
 
+  let parsedVariants = dbProd.variants;
+  if (typeof parsedVariants === 'string') {
+    try {
+      parsedVariants = JSON.parse(parsedVariants);
+    } catch (e) {
+      parsedVariants = {};
+    }
+  }
+  if (!parsedVariants || typeof parsedVariants !== 'object') {
+    parsedVariants = {};
+  }
+
+  const safeVariants = {
+    colors: Array.isArray(parsedVariants.colors) ? parsedVariants.colors : [],
+    sizes: normalizeProductSizes(parsedVariants.sizes)
+  };
+
   return {
     id: dbProd.id,
     title: dbProd.title,
@@ -54,7 +87,7 @@ const mapDbProductToClient = (dbProd) => {
     description: dbProd.description,
     details: dbProd.details || [],
     images: dbProd.images,
-    variants: (typeof dbProd.variants === 'string') ? (() => { try { return JSON.parse(dbProd.variants); } catch (e) { return dbProd.variants; } })() : dbProd.variants,
+    variants: safeVariants,
     customizable: dbProd.customizable,
     bestSeller: Boolean(dbProd.best_seller),
     newArrival: isNewArrival,
@@ -209,6 +242,10 @@ export default function App() {
       phone: '+91 98765 43210',
       address: '14, Ground Floor, Linen Road, Jubilee Hills, Hyderabad - 500033',
       hours: 'Mon - Sat: 10:00 AM - 07:00 PM IST',
+      standardShippingPrice: 99,
+      freeShippingThreshold: 1500,
+      adultSizes: JSON.stringify(['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size']),
+      kidsSizes: JSON.stringify(['0-6M', '6-12M', '1-2Y', '2-3Y', '3-4Y', '4-5Y', '5-6Y', '6-7Y', '7-8Y', '8-9Y', '9-10Y', '10-12Y', '12-14Y']),
       newsletterTitle: 'Subscribe and Get 10% OFF',
       newsletterSubtitle: 'No Spam, No Drama – Just Good Clothes',
       newsletterDiscount: 10,
@@ -1222,8 +1259,9 @@ export default function App() {
   };
 
   const handleSaveSettings = async (newSettings) => {
-    setBoutiqueSettings(newSettings);
-    safeSetItem('im_settings', JSON.stringify(newSettings));
+    const merged = { ...boutiqueSettings, ...newSettings };
+    setBoutiqueSettings(merged);
+    safeSetItem('im_settings', JSON.stringify(merged));
     if (supabase) {
       try {
         const updates = Object.keys(newSettings).map(key => ({
@@ -1852,6 +1890,7 @@ export default function App() {
           onCheckoutClick={handleCheckoutTrigger}
           promosList={promosList}
           autoAppliedCode={autoAppliedPromo}
+          boutiqueSettings={boutiqueSettings}
         />
       )}
 
@@ -1868,7 +1907,7 @@ export default function App() {
         />
       )}
 
-      {/* 4. Checkout Modal (COD Only) */}
+      {/* 4. Checkout Modal (Razorpay + COD) */}
       {checkoutSummary && (
         <CheckoutModal 
           cartItems={cartItems}
@@ -1876,6 +1915,7 @@ export default function App() {
           onClose={() => setCheckoutSummary(null)}
           onOrderSuccess={handleOrderSuccess}
           user={currentUser}
+          boutiqueSettings={boutiqueSettings}
         />
       )}
 
@@ -1970,6 +2010,7 @@ export default function App() {
       {quickViewProduct && (
         <QuickViewModal
           product={quickViewProduct}
+          preselectedSize={preselectedSize}
           onClose={() => setQuickViewProduct(null)}
           onAddToCart={(cartItem) => {
             handleAddToCart(cartItem);
@@ -1980,11 +2021,14 @@ export default function App() {
             handleAddToCart(cartItem);
             const currentSubtotal = cartItems.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
             const totalSubtotal = currentSubtotal + ((cartItem.price || 0) * (cartItem.quantity || 1));
+            const stdShip = boutiqueSettings?.standardShippingPrice !== undefined ? Number(boutiqueSettings.standardShippingPrice) : 99;
+            const freeThresh = boutiqueSettings?.freeShippingThreshold !== undefined ? Number(boutiqueSettings.freeShippingThreshold) : 1500;
+            const ship = (freeThresh > 0 && totalSubtotal >= freeThresh) || totalSubtotal === 0 || stdShip === 0 ? 0 : stdShip;
             handleCheckoutTrigger({
               subtotal: totalSubtotal,
               appliedDiscount: 0,
-              shipping: 99,
-              finalTotal: totalSubtotal + 99
+              shipping: ship,
+              finalTotal: totalSubtotal + ship
             });
           }}
           onOpenFullDetail={(prod) => {

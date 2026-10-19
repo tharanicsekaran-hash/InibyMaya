@@ -3,6 +3,7 @@ import { X, Heart, Maximize2 } from 'lucide-react';
 
 export default function QuickViewModal({ 
   product, 
+  preselectedSize,
   onClose, 
   onAddToCart, 
   onBuyNow, 
@@ -19,11 +20,16 @@ export default function QuickViewModal({
   const primaryImgSrc = (images && images[0] && images[0].trim() !== '') ? images[0] : defaultFallback;
 
   // Available sizes
-  const sizesList = (variants?.sizes && variants.sizes.length > 0) 
-    ? variants.sizes 
-    : ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
+  const sizesList = Array.isArray(variants?.sizes) && variants.sizes.length > 0
+    ? variants.sizes
+    : (typeof variants?.sizes === 'string' && variants.sizes.trim()
+        ? variants.sizes.split(',').map(s => s.trim()).filter(Boolean)
+        : ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL']);
 
-  const [selectedSize, setSelectedSize] = useState(sizesList[0] || 'M');
+  const [selectedSize, setSelectedSize] = useState(() => {
+    if (preselectedSize && sizesList.includes(preselectedSize)) return preselectedSize;
+    return sizesList[0] || 'M';
+  });
   const [quantity, setQuantity] = useState(1);
   const [errorMsg, setErrorMsg] = useState('');
 

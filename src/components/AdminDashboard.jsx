@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings, Layout, ChevronUp, ChevronDown, Plus, Mail, FileText, Download, Sparkles } from 'lucide-react';
+import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, Phone, Truck, Film, Upload, Settings, Layout, ChevronUp, ChevronDown, Plus, Mail, FileText, Download, Sparkles, Palette, Check } from 'lucide-react';
 import { uploadFileToGithub } from '../utils/githubUploader';
 import { sendOrderConfirmationEmail } from '../utils/resendEmail';
 import { DEFAULT_FOOTER_PAGES } from '../utils/footerPagesData';
@@ -175,6 +175,61 @@ export const formatGithubUrl = (url) => {
   }
 
   return trimmed;
+};
+
+// Curated boutique starter color palette for InibyMaya
+export const DEFAULT_BOUTIQUE_COLORS = [
+  { name: 'Wild Black', hex: '#000000' },
+  { name: 'Cloud White', hex: '#ffffff' },
+  { name: 'Indigo Blue', hex: '#1a365d' },
+  { name: 'Royal Blue', hex: '#2563eb' },
+  { name: 'Peacock Blue', hex: '#004d65' },
+  { name: 'Dreamy Green', hex: '#263e0f' },
+  { name: 'Sage Green', hex: '#84a98c' },
+  { name: 'Mud Green', hex: '#4f5504' },
+  { name: 'Olive Green', hex: '#556b2f' },
+  { name: 'Pink', hex: '#f240a8' },
+  { name: 'Blush Pink', hex: '#f472b6' },
+  { name: 'Mandarin Orange', hex: '#ff6a00' },
+  { name: 'Yellow', hex: '#e9ec3c' },
+  { name: 'Fresh Cream', hex: '#ffecd4' },
+  { name: 'Clay Gray', hex: '#474747' },
+  { name: 'Dirty Grey', hex: '#48505b' },
+  { name: 'Maroon', hex: '#831843' },
+  { name: 'Rust Red', hex: '#b91c1c' },
+  { name: 'Lavender', hex: '#c084fc' }
+];
+
+// Helper to strictly deduplicate colors by trimmed case-insensitive name AND hex code
+export const deduplicateColors = (colorList = []) => {
+  if (!Array.isArray(colorList)) return [];
+  const seenNames = new Set();
+  const seenHexes = new Set();
+  const result = [];
+
+  for (const c of colorList) {
+    if (!c) continue;
+    const rawName = (typeof c === 'string' ? c : c.name || '').trim();
+    let rawHex = (typeof c === 'object' && c.hex ? c.hex : '#111111').trim();
+    if (!rawHex.startsWith('#') && /^[0-9a-fA-F]{3,8}$/.test(rawHex)) {
+      rawHex = '#' + rawHex;
+    }
+    if (!rawName) continue;
+
+    const normName = rawName.toLowerCase();
+    const normHex = rawHex.toLowerCase();
+
+    if (!seenNames.has(normName) && !seenHexes.has(normHex)) {
+      seenNames.add(normName);
+      seenHexes.add(normHex);
+      result.push({
+        name: rawName,
+        hex: rawHex
+      });
+    }
+  }
+
+  return result;
 };
 
 export default function AdminDashboard({ 
@@ -779,10 +834,68 @@ export default function AdminDashboard({
     });
   };
 
+  // Persistent Stored Boutique Colors Library (shared across all products and persisted)
+  const [storedColors, setStoredColors] = useState(() => {
+    let saved = [];
+    try {
+      const item = localStorage.getItem('im_store_colors');
+      if (item) saved = JSON.parse(item);
+    } catch (e) {
+      console.warn('Error reading im_store_colors:', e);
+    }
+
+    const fromProducts = [];
+    if (Array.isArray(products)) {
+      products.forEach(p => {
+        if (p.variants?.colors && Array.isArray(p.variants.colors)) {
+          fromProducts.push(...p.variants.colors);
+        }
+      });
+    }
+
+    return deduplicateColors([...saved, ...fromProducts, ...DEFAULT_BOUTIQUE_COLORS]);
+  });
+
+  // Keep stored colors updated when catalog products load or change
+  useEffect(() => {
+    if (Array.isArray(products) && products.length > 0) {
+      setStoredColors(prev => {
+        const fromProducts = [];
+        products.forEach(p => {
+          if (p.variants?.colors && Array.isArray(p.variants.colors)) {
+            fromProducts.push(...p.variants.colors);
+          }
+        });
+        const merged = deduplicateColors([...prev, ...fromProducts]);
+        try {
+          localStorage.setItem('im_store_colors', JSON.stringify(merged));
+        } catch (e) {}
+        return merged;
+      });
+    }
+  }, [products]);
+
+  const updateStoredColors = (newColors) => {
+    const deduped = deduplicateColors(newColors);
+    setStoredColors(deduped);
+    try {
+      localStorage.setItem('im_store_colors', JSON.stringify(deduped));
+    } catch (e) {}
+  };
+
+  const handleRemoveStoredColor = (e, colorName) => {
+    e.stopPropagation();
+    if (window.confirm(`Remove "${colorName}" from the stored colors library?`)) {
+      const filtered = storedColors.filter(c => c.name.toLowerCase() !== colorName.toLowerCase());
+      updateStoredColors(filtered);
+    }
+  };
+
   // Variants editing states
-  const [productColors, setProductColors] = useState([{ name: 'Indigo Blue', hex: '#1a365d' }]);
+  const [productColors, setProductColors] = useState([]); // Starts fresh/empty for new products so Indigo Blue is not forced!
   const [newColorName, setNewColorName] = useState('');
-  const [newColorHex, setNewColorHex] = useState('#1a365d');
+  const [newColorHex, setNewColorHex] = useState('#84a98c');
+  const [colorErrorMsg, setColorErrorMsg] = useState('');
   const [productSizes, setProductSizes] = useState(['XS', 'S', 'M', 'L', 'XL', 'XXL']);
 
   // Key Highlights fields
@@ -986,19 +1099,80 @@ export default function AdminDashboard({
     }
   };
 
-  const handleAddColor = (e) => {
-    e.preventDefault();
-    if (!newColorName.trim()) return;
-    if (productColors.some(c => c.name.toLowerCase() === newColorName.trim().toLowerCase())) {
-      alert('Color name already added!');
-      return;
+  const handleToggleStoredColor = (color) => {
+    setColorErrorMsg('');
+    const normName = color.name.trim().toLowerCase();
+    const normHex = color.hex.trim().toLowerCase();
+
+    const isSelected = productColors.some(
+      c => c.name.trim().toLowerCase() === normName || c.hex.trim().toLowerCase() === normHex
+    );
+
+    if (isSelected) {
+      // Unselect: remove from current product
+      setProductColors(prev => prev.filter(
+        c => c.name.trim().toLowerCase() !== normName && c.hex.trim().toLowerCase() !== normHex
+      ));
+    } else {
+      // Select: add to current product (strictly checking for duplicate name or hex)
+      const dupByName = productColors.find(c => c.name.trim().toLowerCase() === normName);
+      if (dupByName) {
+        setColorErrorMsg(`⚠️ Color "${dupByName.name}" is already added to this product.`);
+        return;
+      }
+      const dupByHex = productColors.find(c => c.hex.trim().toLowerCase() === normHex);
+      if (dupByHex) {
+        setColorErrorMsg(`⚠️ A color with hex code "${dupByHex.hex}" (${dupByHex.name}) is already added to this product.`);
+        return;
+      }
+
+      setProductColors(prev => [...prev, { name: color.name.trim(), hex: color.hex.trim() }]);
     }
-    setProductColors(prev => [...prev, { name: newColorName.trim(), hex: newColorHex }]);
-    setNewColorName('');
   };
 
-  const handleRemoveColor = (name) => {
-    setProductColors(prev => prev.filter(c => c.name !== name));
+  const handleAddColor = (e) => {
+    if (e) e.preventDefault();
+    setColorErrorMsg('');
+    const trimmedName = newColorName.trim();
+    const trimmedHex = (newColorHex || '#111111').trim();
+
+    if (!trimmedName) {
+      setColorErrorMsg('⚠️ Please enter a color name (e.g. Sage Green, Blush Pink).');
+      return;
+    }
+
+    const normName = trimmedName.toLowerCase();
+    const normHex = trimmedHex.toLowerCase();
+
+    // 1. Strict Duplicate Check on current product by name
+    const existingName = productColors.find(c => c.name.trim().toLowerCase() === normName);
+    if (existingName) {
+      setColorErrorMsg(`⚠️ Color name "${existingName.name}" is already added to this product! Duplicate colors are not allowed.`);
+      return;
+    }
+
+    // 2. Strict Duplicate Check on current product by hex
+    const existingHex = productColors.find(c => c.hex.trim().toLowerCase() === normHex);
+    if (existingHex) {
+      setColorErrorMsg(`⚠️ A color variant with hex code "${existingHex.hex}" (${existingHex.name}) is already added to this product! Duplicate hex colors are not allowed.`);
+      return;
+    }
+
+    const newColorObj = { name: trimmedName, hex: trimmedHex };
+
+    // Add to current product
+    setProductColors(prev => [...prev, newColorObj]);
+
+    // Automatically store in the persistent store library for all future products!
+    updateStoredColors([...storedColors, newColorObj]);
+
+    setNewColorName('');
+    setColorErrorMsg('');
+  };
+
+  const handleRemoveColor = (nameToRemove) => {
+    setColorErrorMsg('');
+    setProductColors(prev => prev.filter(c => c.name.trim().toLowerCase() !== nameToRemove.trim().toLowerCase()));
   };
 
   const handleSizeCheckboxToggle = (size) => {
@@ -1029,14 +1203,18 @@ export default function AdminDashboard({
       alert('Please fill out all required fields.');
       return;
     }
-    if (productColors.length === 0) {
-      alert('Please configure at least one color variant for the product.');
+    const cleanProductColors = deduplicateColors(productColors);
+    if (cleanProductColors.length === 0) {
+      alert('Please select or add at least one color variant for the product.');
       return;
     }
     if (productSizes.length === 0) {
       alert('Please configure at least one available size for the product.');
       return;
     }
+
+    // Automatically ensure all colors on this product are saved in stored colors library
+    updateStoredColors([...storedColors, ...cleanProductColors]);
 
     const parsedPrice = parseFloat(price);
     const parsedOrigPrice = originalPrice ? parseFloat(originalPrice) : null;
@@ -1052,7 +1230,7 @@ export default function AdminDashboard({
         description,
         images: finalImages,
         variants: {
-          colors: productColors,
+          colors: cleanProductColors,
           sizes: productSizes
         },
         customizable,
@@ -1095,7 +1273,7 @@ export default function AdminDashboard({
         details: ['Handcrafted quality fabric', 'Modern regular fitting style', 'Breathable weave structure'],
         images: finalImages,
         variants: {
-          colors: productColors,
+          colors: cleanProductColors,
           sizes: productSizes
         },
         customizable,
@@ -1137,7 +1315,8 @@ export default function AdminDashboard({
     setRating(5.0);
     setReviewsCount(1);
     setOccasion('Daily Elegance');
-    setProductColors([{ name: 'Indigo Blue', hex: '#1a365d' }]);
+    setProductColors([]);
+    setColorErrorMsg('');
     setProductSizes(['XS', 'S', 'M', 'L', 'XL', 'XXL']);
     setHFit('Straight Regular Fit');
     setHFabric('100% Breathable Cotton');
@@ -1174,7 +1353,11 @@ export default function AdminDashboard({
     setRating(prod.rating || 5.0);
     setReviewsCount(prod.reviewsCount || 1);
     
-    setProductColors(prod.variants?.colors || [{ name: 'Indigo Blue', hex: '#1a365d' }]);
+    const editColors = deduplicateColors(prod.variants?.colors || []);
+    setProductColors(editColors);
+    if (editColors.length > 0) {
+      updateStoredColors([...storedColors, ...editColors]);
+    }
     setProductSizes(prod.variants?.sizes || ['XS', 'S', 'M', 'L', 'XL', 'XXL']);
     setHFit(prod.highlights?.fit || '');
     setHFabric(prod.highlights?.fabric || '');
@@ -1202,13 +1385,19 @@ export default function AdminDashboard({
     setRating(5.0);
     setReviewsCount(1);
     setOccasion('Daily Elegance');
-    setProductColors([{ name: 'Indigo Blue', hex: '#1a365d' }]);
+    setProductColors([]);
+    setNewColorName('');
+    setColorErrorMsg('');
     setProductSizes(['XS', 'S', 'M', 'L', 'XL', 'XXL']);
     setHFit('Straight Regular Fit');
     setHFabric('100% Breathable Cotton');
     setHNeck('Mandarin Neck');
+    setHFrontNeck('');
+    setHBackNeck('');
     setHSleeve('3/4 Sleeves');
     setHLength('44 Inches');
+    setHTopHeight('');
+    setHBottomHeight('');
     setHTechnique('Handcrafted Chikankari');
   };
 
@@ -1784,62 +1973,168 @@ alter table public.settings disable row level security;`}</pre>
 
                 {/* Color configurer */}
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Add Couture Color Variant *</label>
                   
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '14px' }}>
-                    <input 
-                      type="text" 
-                      value={newColorName}
-                      onChange={(e) => setNewColorName(e.target.value)}
-                      placeholder="e.g. Sage Green"
-                      style={{ flexGrow: 1, height: '38px', minWidth: '150px', padding: '0 12px', border: '1px solid var(--color-border)', borderRadius: '4px', backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-primary)' }}
-                    />
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '38px', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '0 8px', backgroundColor: 'var(--color-bg-primary)' }}>
-                      <input 
-                        type="color" 
-                        value={newColorHex}
-                        onChange={(e) => setNewColorHex(e.target.value)}
-                        style={{ width: '28px', height: '24px', padding: 0, border: 'none', cursor: 'pointer', backgroundColor: 'transparent' }}
-                      />
-                      <input 
-                        type="text" 
-                        value={newColorHex}
-                        onChange={(e) => setNewColorHex(e.target.value)}
-                        placeholder="#hex"
-                        style={{ border: 'none', outline: 'none', background: 'none', width: '70px', padding: 0, fontSize: '12px', color: 'var(--color-text-primary)' }}
-                      />
+                  {/* 1. Selected Colors for This Product */}
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <label style={{ fontWeight: 600, fontSize: '13px', color: 'var(--color-text-primary)', margin: 0 }}>
+                        Selected Product Colors ({productColors.length}) *
+                      </label>
+                      {productColors.length > 0 && (
+                        <span style={{ fontSize: '11.5px', color: 'var(--color-text-secondary)' }}>
+                          Duplicates strictly prevented
+                        </span>
+                      )}
                     </div>
-                    <button 
-                      type="button" 
-                      onClick={handleAddColor} 
-                      className="btn-secondary" 
-                      style={{ height: '38px', padding: '0 16px', whiteSpace: 'nowrap', border: '1px solid var(--color-border)', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}
-                    >
-                      + Add Color
-                    </button>
+
+                    {productColors.length === 0 ? (
+                      <div style={{ padding: '12px 14px', borderRadius: '6px', background: 'var(--color-bg-primary)', border: '1px dashed var(--color-border)', fontSize: '12.5px', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Sparkles size={15} style={{ color: 'var(--color-accent)', flexShrink: 0 }} />
+                        <span>No colors selected yet. Click any color from the <strong>Stored Boutique Colors Library</strong> below, or add a custom color.</span>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', padding: '10px', background: 'var(--color-bg-primary)', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                        {productColors.map(color => (
+                          <div 
+                            key={`${color.name}-${color.hex}`} 
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', padding: '5px 12px', borderRadius: '20px', fontSize: '12px', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}
+                          >
+                            <span style={{ width: '13px', height: '13px', borderRadius: '50%', backgroundColor: color.hex, border: '1px solid rgba(0,0,0,0.15)', flexShrink: 0 }}></span>
+                            <span style={{ fontWeight: 500 }}>{color.name}</span>
+                            <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>({color.hex})</span>
+                            <button 
+                              type="button" 
+                              onClick={() => handleRemoveColor(color.name)}
+                              title={`Remove ${color.name} from this product`}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', padding: '0 2px', display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '14px', marginLeft: '4px' }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Colors List */}
-                  {productColors.length > 0 && (
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
-                      {productColors.map(color => (
-                        <div 
-                          key={color.name} 
-                          style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--color-bg-primary)', border: '1px solid var(--color-border)', padding: '4px 10px', borderRadius: '20px', fontSize: '12px' }}
-                        >
-                          <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: color.hex, border: '1px solid rgba(0,0,0,0.1)' }}></span>
-                          <span>{color.name} ({color.hex})</span>
-                          <button 
-                            type="button" 
-                            onClick={() => handleRemoveColor(color.name)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', padding: '2px', display: 'flex', alignItems: 'center', fontWeight: 'bold' }}
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
+                  {/* 2. Stored Boutique Colors Library (Click to toggle) */}
+                  <div style={{ marginBottom: '18px', padding: '12px', background: 'var(--color-bg-primary)', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px', flexWrap: 'wrap', gap: '6px' }}>
+                      <span style={{ fontWeight: 600, fontSize: '12.5px', color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Palette size={14} style={{ color: 'var(--color-accent)' }} />
+                        Stored Boutique Colors Library ({storedColors.length})
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                        Tap any color to instantly select / unselect
+                      </span>
                     </div>
-                  )}
+                    <p style={{ margin: '0 0 10px 0', fontSize: '11.5px', color: 'var(--color-text-secondary)' }}>
+                      All catalog colors are stored here and reflect automatically for new products. No need to re-type colors every time!
+                    </p>
+                    
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', maxHeight: '180px', overflowY: 'auto', padding: '2px' }}>
+                      {storedColors.map(color => {
+                        const isSelected = productColors.some(
+                          c => c.name.trim().toLowerCase() === color.name.trim().toLowerCase() ||
+                               c.hex.trim().toLowerCase() === color.hex.trim().toLowerCase()
+                        );
+                        return (
+                          <div
+                            key={`${color.name}-${color.hex}`}
+                            onClick={() => handleToggleStoredColor(color)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '5px 10px',
+                              borderRadius: '16px',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              border: isSelected ? '1.5px solid var(--color-accent)' : '1px solid var(--color-border)',
+                              backgroundColor: isSelected ? 'rgba(139, 0, 0, 0.08)' : 'var(--color-bg-secondary)',
+                              color: isSelected ? 'var(--color-accent)' : 'var(--color-text-primary)',
+                              fontWeight: isSelected ? 600 : 400,
+                              userSelect: 'none'
+                            }}
+                            title={`Click to ${isSelected ? 'remove' : 'add'} ${color.name} (${color.hex})`}
+                          >
+                            <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: color.hex, border: '1px solid rgba(0,0,0,0.15)', flexShrink: 0 }}></span>
+                            <span>{color.name}</span>
+                            {isSelected && (
+                              <Check size={12} strokeWidth={2.5} style={{ color: 'var(--color-accent)', marginLeft: '2px' }} />
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => handleRemoveStoredColor(e, color.name)}
+                              title={`Delete ${color.name} from stored library`}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: '0 0 0 4px',
+                                color: 'var(--color-text-secondary)',
+                                fontSize: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                opacity: 0.5
+                              }}
+                              onMouseEnter={(e) => e.target.style.opacity = '1'}
+                              onMouseLeave={(e) => e.target.style.opacity = '0.5'}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 3. Add Custom Color to Library & Product */}
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12.5px', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                      + Add Custom Color to Library & Product
+                    </label>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <input 
+                        type="text" 
+                        value={newColorName}
+                        onChange={(e) => { setNewColorName(e.target.value); setColorErrorMsg(''); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddColor(e); } }}
+                        placeholder="Color name (e.g. Sage Green, Ruby Red)"
+                        style={{ flexGrow: 1, height: '38px', minWidth: '180px', padding: '0 12px', border: '1px solid var(--color-border)', borderRadius: '4px', backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-primary)', fontSize: '13px' }}
+                      />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '38px', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '0 8px', backgroundColor: 'var(--color-bg-primary)' }}>
+                        <input 
+                          type="color" 
+                          value={newColorHex}
+                          onChange={(e) => { setNewColorHex(e.target.value); setColorErrorMsg(''); }}
+                          style={{ width: '28px', height: '24px', padding: 0, border: 'none', cursor: 'pointer', backgroundColor: 'transparent' }}
+                        />
+                        <input 
+                          type="text" 
+                          value={newColorHex}
+                          onChange={(e) => { setNewColorHex(e.target.value); setColorErrorMsg(''); }}
+                          placeholder="#hex"
+                          style={{ border: 'none', outline: 'none', background: 'none', width: '70px', padding: 0, fontSize: '12px', color: 'var(--color-text-primary)' }}
+                        />
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={handleAddColor} 
+                        className="btn-secondary" 
+                        style={{ height: '38px', padding: '0 16px', whiteSpace: 'nowrap', border: '1px solid var(--color-border)', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}
+                      >
+                        + Add Color
+                      </button>
+                    </div>
+
+                    {/* Color Error Message Banner */}
+                    {colorErrorMsg && (
+                      <div style={{ marginTop: '8px', padding: '8px 12px', borderRadius: '6px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '12px', fontWeight: 500 }}>
+                        {colorErrorMsg}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
               </div>

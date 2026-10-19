@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   X, 
   Star, 
@@ -30,10 +30,33 @@ export default function ProductDetailModal({
 }) {
   const { title, price, images, category, rating, reviewsCount, description, details, variants, customizable, highlights } = product;
 
+  // Deduplicate and fallback colors safely so duplicates and empty variants never cause issues
+  const availableColors = useMemo(() => {
+    const list = Array.isArray(variants?.colors) && variants.colors.length > 0
+      ? variants.colors
+      : [{ name: 'Default', hex: '#111111' }];
+    
+    const seenNames = new Set();
+    const seenHexes = new Set();
+    const result = [];
+    for (const c of list) {
+      if (!c) continue;
+      const n = (typeof c === 'string' ? c : c.name || '').trim();
+      const h = (typeof c === 'object' && c.hex ? c.hex : '#111111').trim().toLowerCase();
+      const normN = n.toLowerCase();
+      if (!seenNames.has(normN) && !seenHexes.has(h)) {
+        seenNames.add(normN);
+        seenHexes.add(h);
+        result.push({ name: n || 'Default', hex: typeof c === 'object' && c.hex ? c.hex : '#111111' });
+      }
+    }
+    return result.length > 0 ? result : [{ name: 'Default', hex: '#111111' }];
+  }, [variants?.colors]);
+
   const [activeImageIdx, setActiveImageIdx] = useState(0);
-  const [selectedColor, setSelectedColor] = useState(variants.colors[0]);
+  const [selectedColor, setSelectedColor] = useState(availableColors[0]);
   const [selectedSize, setSelectedSize] = useState(
-    preselectedSize && variants.sizes.includes(preselectedSize) ? preselectedSize : ''
+    preselectedSize && variants?.sizes && variants.sizes.includes(preselectedSize) ? preselectedSize : ''
   );
   const [quantity, setQuantity] = useState(1);
   const [wantsCustomStitching, setWantsCustomStitching] = useState(false);
@@ -233,17 +256,19 @@ export default function ProductDetailModal({
 
             {/* Colors */}
             <div className="option-section">
-              <span className="option-label">Color: <strong>{selectedColor.name}</strong></span>
+              <span className="option-label">Color: <strong>{selectedColor?.name || 'Default'}</strong></span>
               <div className="color-chips">
-                {variants.colors.map((color, idx) => (
+                {availableColors.map((color, idx) => (
                   <button
-                    key={idx}
-                    className={`color-chip-btn ${selectedColor.name === color.name ? 'active' : ''}`}
+                    key={`${color.name}-${color.hex}-${idx}`}
+                    className={`color-chip-btn ${(selectedColor?.name || '') === color.name ? 'active' : ''}`}
                     onClick={() => setSelectedColor(color)}
                     style={{ backgroundColor: color.hex }}
                     title={color.name}
                   >
-                    {selectedColor.name === color.name && <Check size={14} stroke={color.hex === '#fefefa' ? '#000' : '#fff'} />}
+                    {(selectedColor?.name || '') === color.name && (
+                      <Check size={14} stroke={color.hex === '#fefefa' || color.hex === '#ffffff' ? '#000' : '#fff'} />
+                    )}
                   </button>
                 ))}
               </div>

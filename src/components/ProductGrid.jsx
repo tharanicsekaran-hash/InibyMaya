@@ -92,19 +92,29 @@ export default function ProductGrid({
     }
   }, [initialCategory, categories]);
 
-  // Extract all unique color swatches and values dynamically
+  // Extract all unique color swatches and values dynamically (deduplicating case-insensitively and by hex)
   const allColors = useMemo(() => {
-    const map = new Map();
+    const seenNames = new Set();
+    const seenHexes = new Set();
+    const list = [];
     products.forEach(p => {
-      if (p.variants && p.variants.colors) {
+      if (p.variants && Array.isArray(p.variants.colors)) {
         p.variants.colors.forEach(c => {
-          if (c.name && c.hex) {
-            map.set(c.name, c.hex);
+          if (c && c.name && c.hex) {
+            const rawName = c.name.trim();
+            const lowerName = rawName.toLowerCase();
+            const lowerHex = c.hex.trim().toLowerCase();
+            if (!seenNames.has(lowerName) && !seenHexes.has(lowerHex)) {
+              seenNames.add(lowerName);
+              seenHexes.add(lowerHex);
+              const formattedName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+              list.push({ name: formattedName, rawName, hex: c.hex.trim() });
+            }
           }
         });
       }
     });
-    return Array.from(map.entries()).map(([name, hex]) => ({ name, hex }));
+    return list;
   }, [products]);
 
   // Standard couture size guide items
@@ -118,8 +128,11 @@ export default function ProductGrid({
   };
 
   const handleColorToggle = (colorName) => {
+    const target = colorName.trim().toLowerCase();
     setSelectedColors(prev => 
-      prev.includes(colorName) ? prev.filter(c => c !== colorName) : [...prev, colorName]
+      prev.some(c => c.trim().toLowerCase() === target)
+        ? prev.filter(c => c.trim().toLowerCase() !== target)
+        : [...prev, colorName]
     );
   };
 
@@ -173,11 +186,13 @@ export default function ProductGrid({
       });
     }
 
-    // 2. Colors Filter (Multiple Select)
+    // 2. Colors Filter (Multiple Select, case-insensitive)
     if (selectedColors.length > 0) {
       result = result.filter(p => {
-        if (!p.variants || !p.variants.colors) return false;
-        return p.variants.colors.some(c => selectedColors.includes(c.name));
+        if (!p.variants || !Array.isArray(p.variants.colors)) return false;
+        return p.variants.colors.some(c => 
+          c?.name && selectedColors.some(sc => sc.trim().toLowerCase() === c.name.trim().toLowerCase())
+        );
       });
     }
 
@@ -317,7 +332,7 @@ export default function ProductGrid({
               <h4 className="filter-widget-title">Color</h4>
               <div className="filter-color-list">
                 {allColors.map(color => {
-                  const isActive = selectedColors.includes(color.name);
+                  const isActive = selectedColors.some(sc => sc.trim().toLowerCase() === color.name.trim().toLowerCase());
                   return (
                     <button
                       key={color.name}

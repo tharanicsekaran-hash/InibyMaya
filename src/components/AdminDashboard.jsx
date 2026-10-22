@@ -998,6 +998,19 @@ export default function AdminDashboard({
   const [hTopHeight, setHTopHeight] = useState('');
   const [hBottomHeight, setHBottomHeight] = useState('');
   const [hTechnique, setHTechnique] = useState('Handcrafted Chikankari');
+  // New state for toggling visibility of Key Highlights Config
+  const [showKeyHighlightsConfig, setShowKeyHighlightsConfig] = useState(true);
+  // Editable heading states with defaults
+  const [headingFit, setHeadingFit] = useState('Garment Fit');
+  const [headingFabric, setHeadingFabric] = useState('Fabric');
+  const [headingNeck, setHeadingNeck] = useState('Neckline Style');
+  const [headingFrontNeck, setHeadingFrontNeck] = useState('Front Neck');
+  const [headingBackNeck, setHeadingBackNeck] = useState('Back Neck');
+  const [headingSleeve, setHeadingSleeve] = useState('Sleeve Styling');
+  const [headingLength, setHeadingLength] = useState('Sleeve Length');
+  const [headingTopHeight, setHeadingTopHeight] = useState('Top Height');
+  const [headingBottomHeight, setHeadingBottomHeight] = useState('Bottom Height');
+  const [headingTechnique, setHeadingTechnique] = useState('Craft Technique');
 
   // Promo Code manager states
   const [promoCode, setPromoCode] = useState('');
@@ -2558,11 +2571,17 @@ alter table public.settings disable row level security;`}</pre>
 
               {/* Product Highlights Inputs */}
               <div className="highlights-form-section" style={{ border: '1px dashed var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
-                <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: 'var(--color-accent)' }}>Key Highlights Configuration</h5>
+                <div className="form-group" style={{ marginBottom: '8px' }}>
+  <input type="checkbox" id="showKeyHighlightsConfig" checked={showKeyHighlightsConfig} onChange={e=>setShowKeyHighlightsConfig(e.target.checked)} />
+  <label htmlFor="showKeyHighlightsConfig" style={{ marginLeft: '4px' }}>Enable Key Highlights Configurations</label>
+</div>
+{showKeyHighlightsConfig && (
+  <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: 'var(--color-accent)' }}>Key Highlights Configuration</h5>
+)}
                 
                 <div className="form-row-double">
                   <div className="form-group">
-                    <label>Garment Fit</label>
+                    <label>{headingFit}</label>
                     <input 
                       type="text" 
                       value={hFit} 
@@ -2571,7 +2590,7 @@ alter table public.settings disable row level security;`}</pre>
                     />
                   </div>
                   <div className="form-group">
-                    <label>Fabric</label>
+                    <label>{headingFabric}</label>
                     <input 
                       type="text" 
                       value={hFabric} 
@@ -2583,7 +2602,7 @@ alter table public.settings disable row level security;`}</pre>
 
                 <div className="form-row-double">
                   <div className="form-group">
-                    <label>Neckline Style</label>
+                    <label>{headingNeck}</label>
                     <input 
                       type="text" 
                       value={hNeck} 
@@ -2604,7 +2623,7 @@ alter table public.settings disable row level security;`}</pre>
 
                 <div className="form-row-double">
                   <div className="form-group">
-                    <label>Front Neck</label>
+                    <label>{headingFrontNeck}</label>
                     <input 
                       type="text" 
                       value={hFrontNeck} 
@@ -2613,7 +2632,7 @@ alter table public.settings disable row level security;`}</pre>
                     />
                   </div>
                   <div className="form-group">
-                    <label>Back Neck</label>
+                    <label>{headingBackNeck}</label>
                     <input 
                       type="text" 
                       value={hBackNeck} 
@@ -2625,7 +2644,7 @@ alter table public.settings disable row level security;`}</pre>
 
                 <div className="form-row-double">
                   <div className="form-group">
-                    <label>Sleeve Length</label>
+                    <label>{headingLength}</label>
                     <input 
                       type="text" 
                       value={hLength} 
@@ -2634,7 +2653,7 @@ alter table public.settings disable row level security;`}</pre>
                     />
                   </div>
                   <div className="form-group">
-                    <label>Top Technique</label>
+                    <label>{headingTechnique}</label>
                     <input 
                       type="text" 
                       value={hTechnique} 
@@ -2646,7 +2665,7 @@ alter table public.settings disable row level security;`}</pre>
 
                 <div className="form-row-double">
                   <div className="form-group">
-                    <label>Top Height</label>
+                    <label>{headingTopHeight}</label>
                     <input 
                       type="text" 
                       value={hTopHeight} 
@@ -2655,7 +2674,7 @@ alter table public.settings disable row level security;`}</pre>
                     />
                   </div>
                   <div className="form-group">
-                    <label>Bottom Height</label>
+                    <label>{headingBottomHeight}</label>
                     <input 
                       type="text" 
                       value={hBottomHeight} 

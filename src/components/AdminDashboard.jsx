@@ -619,7 +619,7 @@ export default function AdminDashboard({
     });
 
     const set = new Set(combined.filter(Boolean));
-    return Array.from(set);
+    return ['None', ...Array.from(set)];
   }, [storefrontOccasions, boutiqueSettings, products]);
 
   const handleAddBannerSlide = () => {

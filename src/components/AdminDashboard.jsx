@@ -2578,111 +2578,84 @@ alter table public.settings disable row level security;`}</pre>
 {showKeyHighlightsConfig && (
   <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: 'var(--color-accent)' }}>Key Highlights Configuration</h5>
 )}
-                
-                <div className="form-row-double">
-                  <div className="form-group">
-                    <label>{headingFit}</label>
-                    <input 
-                      type="text" 
-                      value={hFit} 
-                      onChange={(e) => setHFit(e.target.value)} 
-                      placeholder="e.g. Straight Regular Fit"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>{headingFabric}</label>
-                    <input 
-                      type="text" 
-                      value={hFabric} 
-                      onChange={(e) => setHFabric(e.target.value)} 
-                      placeholder="e.g. 100% Breathable Cotton"
-                    />
-                  </div>
-                </div>
 
-                <div className="form-row-double">
-                  <div className="form-group">
-                    <label>{headingNeck}</label>
-                    <input 
-                      type="text" 
-                      value={hNeck} 
-                      onChange={(e) => setHNeck(e.target.value)} 
-                      placeholder="e.g. Mandarin Neck"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Sleeve Styling</label>
-                    <input 
-                      type="text" 
-                      value={hSleeve} 
-                      onChange={(e) => setHSleeve(e.target.value)} 
-                      placeholder="e.g. 3/4 Sleeves"
-                    />
-                  </div>
-                </div>
+                {/* Each highlight field: editable heading input on top, value input below */}
+                {(() => {
+                  const hStyle = {
+                    display: 'block',
+                    width: '100%',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: 'var(--color-text-secondary)',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px dashed var(--color-border)',
+                    outline: 'none',
+                    marginBottom: '4px',
+                    padding: '2px 0',
+                    cursor: 'text',
+                  };
+                  return (
+                    <>
+                      <div className="form-row-double">
+                        <div className="form-group">
+                          <input style={hStyle} value={headingFit} onChange={e => setHeadingFit(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                          <input type="text" value={hFit} onChange={(e) => setHFit(e.target.value)} placeholder="e.g. Straight Regular Fit" />
+                        </div>
+                        <div className="form-group">
+                          <input style={hStyle} value={headingFabric} onChange={e => setHeadingFabric(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                          <input type="text" value={hFabric} onChange={(e) => setHFabric(e.target.value)} placeholder="e.g. 100% Breathable Cotton" />
+                        </div>
+                      </div>
 
-                <div className="form-row-double">
-                  <div className="form-group">
-                    <label>{headingFrontNeck}</label>
-                    <input 
-                      type="text" 
-                      value={hFrontNeck} 
-                      onChange={(e) => setHFrontNeck(e.target.value)} 
-                      placeholder="e.g. 6.5 Inches or Round 7&quot;"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>{headingBackNeck}</label>
-                    <input 
-                      type="text" 
-                      value={hBackNeck} 
-                      onChange={(e) => setHBackNeck(e.target.value)} 
-                      placeholder="e.g. 8 Inches or Deep U 8&quot;"
-                    />
-                  </div>
-                </div>
+                      <div className="form-row-double">
+                        <div className="form-group">
+                          <input style={hStyle} value={headingNeck} onChange={e => setHeadingNeck(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                          <input type="text" value={hNeck} onChange={(e) => setHNeck(e.target.value)} placeholder="e.g. Mandarin Neck" />
+                        </div>
+                        <div className="form-group">
+                          <input style={hStyle} value={headingSleeve} onChange={e => setHeadingSleeve(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                          <input type="text" value={hSleeve} onChange={(e) => setHSleeve(e.target.value)} placeholder="e.g. 3/4 Sleeves" />
+                        </div>
+                      </div>
 
-                <div className="form-row-double">
-                  <div className="form-group">
-                    <label>{headingLength}</label>
-                    <input 
-                      type="text" 
-                      value={hLength} 
-                      onChange={(e) => setHLength(e.target.value)} 
-                      placeholder="e.g. 16 Inches"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>{headingTechnique}</label>
-                    <input 
-                      type="text" 
-                      value={hTechnique} 
-                      onChange={(e) => setHTechnique(e.target.value)} 
-                      placeholder="e.g. Handcrafted Chikankari"
-                    />
-                  </div>
-                </div>
+                      <div className="form-row-double">
+                        <div className="form-group">
+                          <input style={hStyle} value={headingFrontNeck} onChange={e => setHeadingFrontNeck(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                          <input type="text" value={hFrontNeck} onChange={(e) => setHFrontNeck(e.target.value)} placeholder='e.g. 6.5 Inches or Round 7"' />
+                        </div>
+                        <div className="form-group">
+                          <input style={hStyle} value={headingBackNeck} onChange={e => setHeadingBackNeck(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                          <input type="text" value={hBackNeck} onChange={(e) => setHBackNeck(e.target.value)} placeholder='e.g. 8 Inches or Deep U 8"' />
+                        </div>
+                      </div>
 
-                <div className="form-row-double">
-                  <div className="form-group">
-                    <label>{headingTopHeight}</label>
-                    <input 
-                      type="text" 
-                      value={hTopHeight} 
-                      onChange={(e) => setHTopHeight(e.target.value)} 
-                      placeholder="e.g. 44 Inches"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>{headingBottomHeight}</label>
-                    <input 
-                      type="text" 
-                      value={hBottomHeight} 
-                      onChange={(e) => setHBottomHeight(e.target.value)} 
-                      placeholder="e.g. 38 Inches"
-                    />
-                  </div>
-                </div>
+                      <div className="form-row-double">
+                        <div className="form-group">
+                          <input style={hStyle} value={headingLength} onChange={e => setHeadingLength(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                          <input type="text" value={hLength} onChange={(e) => setHLength(e.target.value)} placeholder="e.g. 16 Inches" />
+                        </div>
+                        <div className="form-group">
+                          <input style={hStyle} value={headingTechnique} onChange={e => setHeadingTechnique(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                          <input type="text" value={hTechnique} onChange={(e) => setHTechnique(e.target.value)} placeholder="e.g. Handcrafted Chikankari" />
+                        </div>
+                      </div>
+
+                      <div className="form-row-double">
+                        <div className="form-group">
+                          <input style={hStyle} value={headingTopHeight} onChange={e => setHeadingTopHeight(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                          <input type="text" value={hTopHeight} onChange={(e) => setHTopHeight(e.target.value)} placeholder="e.g. 44 Inches" />
+                        </div>
+                        <div className="form-group">
+                          <input style={hStyle} value={headingBottomHeight} onChange={e => setHeadingBottomHeight(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                          <input type="text" value={hBottomHeight} onChange={(e) => setHBottomHeight(e.target.value)} placeholder="e.g. 38 Inches" />
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
               
               {/* Primary Slideshow Images Upload & URLs */}

@@ -14,6 +14,7 @@ import AdminDashboard from './components/AdminDashboard';
 import ConfettiEffect from './components/ConfettiEffect';
 import InfoPage from './components/InfoPage';
 import ReelCard from './components/ReelCard';
+import SearchOverlay from './components/SearchOverlay';
 import { products as initialProducts } from './data/products';
 import { CheckCircle2, Calendar, Truck, ArrowLeft, Heart, ShoppingBag, Sparkles, Scissors, X, Film, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase, supabaseMedia } from './supabaseClient';
@@ -406,6 +407,7 @@ export default function App() {
   // Modal Triggers & Newsletter Offer
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quickViewProduct, setQuickViewProduct] = useState(null);
   const [checkoutSummary, setCheckoutSummary] = useState(null); 
@@ -1276,11 +1278,7 @@ export default function App() {
   };
 
   const handleSearchToggle = () => {
-    setActivePage('shop');
-    setTimeout(() => {
-      const searchBar = document.querySelector('.toolbar-search');
-      if (searchBar) searchBar.focus();
-    }, 200);
+    setIsSearchOpen(true);
   };
 
   // User-specific order history
@@ -1295,6 +1293,23 @@ export default function App() {
   return (
     <>
       {successOrder && <ConfettiEffect />}
+      <SearchOverlay
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        products={productsList}
+        onProductClick={(prod) => {
+          setSelectedProduct(prod);
+          setSuccessOrder(null);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onViewAll={(q) => {
+          setSelectedProduct(null);
+          setSuccessOrder(null);
+          setSearchQuery(q);
+          setActivePage('shop');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
       <Header 
         activePage={activePage}
         setActivePage={(page) => {

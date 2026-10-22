@@ -55,7 +55,7 @@ export default function CheckoutModal({
       const isLoaded = await ensureRazorpayLoaded();
       if (!isLoaded || !window.Razorpay) {
         setIsPlacing(false);
-        setRazorpayError('Unable to load Razorpay payment gateway. Please check your internet connection or choose Cash on Delivery.');
+        setRazorpayError('Unable to load Razorpay payment gateway. Please check your internet connection or retry.');
         return;
       }
 
@@ -84,7 +84,7 @@ export default function CheckoutModal({
           modal: {
             ondismiss: function () {
               setIsPlacing(false);
-              setRazorpayError('Payment was cancelled. You can retry online payment or switch to Cash on Delivery.');
+              setRazorpayError('Payment was cancelled. You can retry paying online anytime.');
             }
           },
           handler: function (response) {
@@ -187,39 +187,8 @@ export default function CheckoutModal({
     const hasCustom = cartItems.some(item => item.wantsCustomStitching);
     const orderId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
 
-    if (paymentMethod === 'online') {
-      handleOnlineRazorpayPayment(orderId, hasCustom);
-    } else {
-      // Cash on Delivery Order placement
-      setTimeout(() => {
-        const payId = `COD-${Math.floor(100000 + Math.random() * 900000)}`;
-        const orderData = {
-          id: orderId,
-          items: cartItems,
-          shippingDetails: { 
-            name: name.trim(), 
-            address: address.trim(), 
-            city: city.trim(), 
-            pincode: pincode.trim(), 
-            phone: phone.trim(), 
-            email: user?.email || 'care@inibymaya.com' 
-          },
-          subtotal: computedSubtotal,
-          discount: computedDiscount,
-          shipping: computedShipping,
-          shippingFee: computedShipping,
-          total: computedFinalTotal,
-          paymentId: payId,
-          paymentMethod: 'Cash on Delivery',
-          paymentStatus: 'Pending (COD)',
-          timestamp: new Date().toISOString(),
-          status: hasCustom ? 'Pending Stitching' : 'Pending Shipment',
-          trackingNumber: '',
-          notes: priceSummary?.orderNote || ''
-        };
-        onOrderSuccess(orderData);
-      }, 1500);
-    }
+    // Process exclusively via Razorpay
+    handleOnlineRazorpayPayment(orderId, hasCustom);
   };
 
   const hasRazorpayKey = Boolean(import.meta.env.VITE_RAZORPAY_KEY_ID);
@@ -300,71 +269,42 @@ export default function CheckoutModal({
                 />
               </div>
 
-              {/* Payment Method Selector */}
+              {/* Payment Method - Exclusively Razorpay */}
               <div className="checkout-payment-methods">
-                <label className="section-label">Select Payment Method *</label>
+                <label className="section-label">Payment Method *</label>
                 <div className="payment-options-grid">
                   {/* Online via Razorpay */}
                   <div 
-                    className={`payment-option-card ${paymentMethod === 'online' ? 'selected' : ''}`}
-                    onClick={() => { setPaymentMethod('online'); setRazorpayError(''); }}
+                    className="payment-option-card selected"
+                    style={{ borderColor: 'var(--color-primary, #8b0000)', background: '#fffaf8', cursor: 'default' }}
                   >
                     <div className="payment-option-header">
-                      <input 
-                        type="radio" 
-                        name="paymentMethod" 
-                        checked={paymentMethod === 'online'} 
-                        onChange={() => { setPaymentMethod('online'); setRazorpayError(''); }} 
-                        disabled={isPlacing}
-                      />
-                      <div className="payment-option-content">
+                      <div className="payment-option-content" style={{ paddingLeft: 0 }}>
                         <div className="payment-option-title-row">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <CreditCard size={16} style={{ color: '#8b0000' }} />
-                            <strong>Pay Online via Razorpay</strong>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <CreditCard size={18} style={{ color: '#8b0000' }} />
+                            <strong style={{ fontSize: '14.5px', color: '#111827' }}>Pay Online via Razorpay</strong>
                           </div>
-                          <span className="payment-recommended-pill">⚡ Recommended</span>
+                          <span className="payment-recommended-pill" style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' }}>
+                            🔒 100% Secure
+                          </span>
                         </div>
-                        <p className="payment-option-desc">
-                          UPI (Google Pay, PhonePe, Paytm), Credit/Debit Cards, NetBanking, Wallets
+                        <p className="payment-option-desc" style={{ marginTop: '5px', color: '#4b5563' }}>
+                          Instant checkout supporting UPI (Google Pay, PhonePe, Paytm), Credit & Debit Cards, NetBanking, and Wallets
                         </p>
                       </div>
                     </div>
-                    <div className="payment-option-badges">
+                    <div className="payment-option-badges" style={{ marginTop: '10px' }}>
                       <span className="razorpay-badge-pill">
-                        <Lock size={11} /> 100% RBI Compliant & Secure
+                        <Lock size={11} /> RBI Authorized Gateway &bull; 256-bit SSL Secured
                       </span>
-                    </div>
-                  </div>
-
-                  {/* Cash on Delivery */}
-                  <div 
-                    className={`payment-option-card ${paymentMethod === 'cod' ? 'selected' : ''}`}
-                    onClick={() => { setPaymentMethod('cod'); setRazorpayError(''); }}
-                  >
-                    <div className="payment-option-header">
-                      <input 
-                        type="radio" 
-                        name="paymentMethod" 
-                        checked={paymentMethod === 'cod'} 
-                        onChange={() => { setPaymentMethod('cod'); setRazorpayError(''); }} 
-                        disabled={isPlacing}
-                      />
-                      <div className="payment-option-content">
-                        <div className="payment-option-title-row">
-                          <strong>Cash on Delivery (COD)</strong>
-                        </div>
-                        <p className="payment-option-desc">
-                          Pay cash or UPI to the courier agent upon doorstep delivery
-                        </p>
-                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Notice if Razorpay Key is in demo mode */}
-              {paymentMethod === 'online' && !hasRazorpayKey && (
+              {!hasRazorpayKey && (
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '10px 12px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '6px', fontSize: '11.5px', color: '#0369a1', lineHeight: '1.4' }}>
                   <Info size={15} style={{ flexShrink: 0, marginTop: '1px' }} />
                   <span>
@@ -384,27 +324,18 @@ export default function CheckoutModal({
 
               <button 
                 type="submit" 
-                className={`pay-now-btn-trigger ${paymentMethod === 'cod' ? 'btn-cod' : ''}`} 
+                className="pay-now-btn-trigger" 
                 disabled={isPlacing}
               >
                 {isPlacing ? (
                   <div className="loading-spinner-row">
                     <RefreshCw size={16} className="spinner" />
-                    <span>{paymentMethod === 'online' ? 'Opening Razorpay Gateway...' : 'Placing Order...'}</span>
+                    <span>Opening Razorpay Gateway...</span>
                   </div>
                 ) : (
                   <>
-                    {paymentMethod === 'online' ? (
-                      <>
-                        <Lock size={16} />
-                        <span>Pay ₹{computedFinalTotal.toLocaleString('en-IN')} via Razorpay</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShieldCheck size={18} />
-                        <span>Confirm Cash on Delivery Order</span>
-                      </>
-                    )}
+                    <Lock size={16} />
+                    <span>Pay ₹{computedFinalTotal.toLocaleString('en-IN')} via Razorpay</span>
                   </>
                 )}
               </button>

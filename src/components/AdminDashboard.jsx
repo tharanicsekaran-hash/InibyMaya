@@ -258,6 +258,7 @@ export default function AdminDashboard({
   onDeleteProduct,
   onUpdateProduct,
   onUpdateOrderStatus,
+  onDeleteOrder,
   promosList = [],
   setPromosList,
   reelsList = [],

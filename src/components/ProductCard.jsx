@@ -11,8 +11,11 @@ export default function ProductCard({
   if (!product) return null;
   const { title, price, images = [], category, rating, reviewsCount, bestSeller, customizable, variants = { sizes: [], colors: [] } } = product;
 
+  const [activeColorImg, setActiveColorImg] = React.useState(null);
+  const cardColors = Array.isArray(variants?.colors) ? variants.colors : [];
+
   const defaultFallback = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800';
-  const primaryImgSrc = (images && images[0] && images[0].trim() !== '') ? images[0] : defaultFallback;
+  const primaryImgSrc = activeColorImg || ((images && images[0] && images[0].trim() !== '') ? images[0] : defaultFallback);
   const secondaryImgSrc = (images && images[1] && images[1].trim() !== '') ? images[1] : null;
 
   const sizeQuantities = variants?.sizeQuantities || product.sizeQuantities || {};
@@ -149,6 +152,41 @@ export default function ProductCard({
             </div>
           );
         })()}
+
+        {/* Color Variation Dots */}
+        {cardColors.length > 1 && (
+          <div className="product-card-colors" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: '5px', marginBottom: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {cardColors.slice(0, 6).map((color, cIdx) => {
+              const cImg = color.image || product.variants?.colorImages?.[color.name] || product.colorImages?.[color.name];
+              const isSelected = activeColorImg === cImg;
+              return (
+                <span 
+                  key={`${color.name}-${cIdx}`}
+                  title={`${color.name}${cImg ? ' (Click to preview)' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (cImg) {
+                      setActiveColorImg(isSelected ? null : cImg);
+                    }
+                  }}
+                  style={{
+                    width: isSelected ? '13px' : '10px',
+                    height: isSelected ? '13px' : '10px',
+                    borderRadius: '50%',
+                    backgroundColor: color.hex,
+                    border: isSelected ? '1.5px solid var(--color-text-primary, #111)' : '1px solid rgba(0,0,0,0.2)',
+                    cursor: cImg ? 'pointer' : 'default',
+                    display: 'inline-block',
+                    transition: 'all 0.15s ease'
+                  }}
+                />
+              );
+            })}
+            {cardColors.length > 6 && (
+              <span style={{ fontSize: '10px', color: 'var(--color-text-secondary)' }}>+{cardColors.length - 6}</span>
+            )}
+          </div>
+        )}
 
         {/* Clickable Size Swatches directly under price */}
         {(() => {

@@ -216,22 +216,55 @@ const mapClientReelToDb = (clientReel) => {
 };
 
 const mapDbPromoToClient = (dbPromo) => {
+  let description = dbPromo.description || '';
+  let applicableType = 'all';
+  let applicableCategories = [];
+  let applicableProducts = [];
+
+  if (description.includes('__TARGET__')) {
+    const parts = description.split('__TARGET__');
+    description = parts[0];
+    try {
+      const meta = JSON.parse(parts[1]);
+      applicableType = meta.applicableType || 'all';
+      applicableCategories = meta.applicableCategories || [];
+      applicableProducts = meta.applicableProducts || [];
+    } catch (e) {}
+  } else if (dbPromo.applicable_type) {
+    applicableType = dbPromo.applicable_type;
+    applicableCategories = dbPromo.applicable_categories || [];
+    applicableProducts = dbPromo.applicable_products || [];
+  }
+
   return {
     code: dbPromo.code,
     type: dbPromo.type,
     value: Number(dbPromo.value),
     minPurchase: Number(dbPromo.min_purchase || 0),
-    description: dbPromo.description || ''
+    description: description,
+    applicableType,
+    applicableCategories,
+    applicableProducts
   };
 };
 
 const mapClientPromoToDb = (clientPromo) => {
+  let rawDesc = clientPromo.description || '';
+  if (clientPromo.applicableType && clientPromo.applicableType !== 'all') {
+    const meta = {
+      applicableType: clientPromo.applicableType,
+      applicableCategories: clientPromo.applicableCategories || [],
+      applicableProducts: clientPromo.applicableProducts || []
+    };
+    rawDesc = `${rawDesc}__TARGET__${JSON.stringify(meta)}`;
+  }
+
   return {
     code: clientPromo.code,
     type: clientPromo.type,
     value: clientPromo.value,
     min_purchase: clientPromo.minPurchase || 0,
-    description: clientPromo.description || ''
+    description: rawDesc
   };
 };
 
@@ -282,15 +315,33 @@ const mapClientOrderToDb = (clientOrder) => {
   };
 };
 
-const RESTORED_MISSING_ORDERS = [];
+// Helper to read initial routing state from URL query parameters (e.g. ?product=123, ?page=shop, etc.)
+const getInitialUrlState = () => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const prodId = params.get('product');
+    const pageParam = params.get('page');
+    const tabParam = params.get('tab') || 'about-us';
+    const validPages = ['home', 'shop', 'favorites', 'admin', 'info'];
+    return {
+      productId: prodId,
+      page: validPages.includes(pageParam) ? pageParam : 'home',
+      tab: tabParam
+    };
+  } catch (e) {
+    return { productId: null, page: 'home', tab: 'about-us' };
+  }
+};
+const initialUrlState = getInitialUrlState();
 
 export default function App() {
-  // Navigation & Page routing
-  const [activePage, setActivePage] = useState('home'); 
+  // Navigation & Page routing (persisted across refresh via URL)
+  const [activePage, setActivePage] = useState(initialUrlState.page); 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('');
   const [preselectedSize, setPreselectedSize] = useState(null);
-  const [infoPageTab, setInfoPageTab] = useState('about-us');
+  const [infoPageTab, setInfoPageTab] = useState(initialUrlState.tab);
+  const [urlProductId, setUrlProductId] = useState(initialUrlState.productId);
   const [boutiqueSettings, setBoutiqueSettings] = useState(() => {
     const cached = localStorage.getItem('im_settings');
     const defaults = {
@@ -743,6 +794,77 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [activePage, infoPageTab, selectedProduct, successOrder]);
+
+  // Restore selected product from URL query param if present upon catalog load
+  useEffect(() => {
+    if (urlProductId && productsList.length > 0 && !selectedProduct) {
+      const found = productsList.find(p => String(p.id) === String(urlProductId));
+      if (found) {
+        setSelectedProduct(found);
+      }
+    }
+  }, [urlProductId, productsList, selectedProduct]);
+
+  // Synchronize route & product state to URL parameters
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (selectedProduct) {
+        params.set('product', selectedProduct.id);
+        params.delete('page');
+        params.delete('tab');
+      } else {
+        params.delete('product');
+        if (activePage === 'home') {
+          params.delete('page');
+          params.delete('tab');
+        } else {
+          params.set('page', activePage);
+          if (activePage === 'info') {
+            params.set('tab', infoPageTab);
+          } else {
+            params.delete('tab');
+          }
+        }
+      }
+      const newQuery = params.toString() ? `?${params.toString()}` : window.location.pathname;
+      const currentQuery = window.location.search || window.location.pathname;
+      if (newQuery !== currentQuery) {
+        window.history.pushState(
+          { activePage, infoPageTab, productId: selectedProduct?.id || null },
+          '',
+          newQuery
+        );
+      }
+    } catch (e) {}
+  }, [selectedProduct, activePage, infoPageTab]);
+
+  // Browser back/forward button popstate handler
+  useEffect(() => {
+    const handlePopState = () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const prodId = params.get('product');
+        const pageParam = params.get('page');
+        const tabParam = params.get('tab') || 'about-us';
+        if (prodId) {
+          const found = productsList.find(p => String(p.id) === String(prodId));
+          if (found) {
+            setSelectedProduct(found);
+          } else {
+            setUrlProductId(prodId);
+          }
+        } else {
+          setSelectedProduct(null);
+          setActivePage(pageParam || 'home');
+          if (tabParam) setInfoPageTab(tabParam);
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [productsList]);
 
   // LocalStorage backups (for hybrid fallback operation)
   const safeSetItem = (key, value) => {

@@ -75,6 +75,7 @@ export default function ProductDetailModal({
   const isProductSoldOut = Boolean(product.isOutOfStock || isAllSizesOutOfStock);
 
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [activeColorImage, setActiveColorImage] = useState(null);
   const [selectedColor, setSelectedColor] = useState(availableColors[0]);
   const [selectedSize, setSelectedSize] = useState(() => {
     if (preselectedSize && availableSizes.includes(preselectedSize) && !isSizeOutOfStock(preselectedSize)) {
@@ -91,6 +92,25 @@ export default function ProductDetailModal({
     (availableSizes.some(s => /^\d+[-–]\d+[MY]|^\d+[MY]|\b(month|year|newborn|infant|toddler)\b/i.test(String(s))))
   );
   const [sizeChartTab, setSizeChartTab] = useState(isKidsProduct ? 'kids' : 'adult');
+
+  // Handle color change and auto-swap to linked color image
+  const handleColorClick = (color) => {
+    setSelectedColor(color);
+    const colorImg = color.image || 
+      product.variants?.colorImages?.[color.name] || 
+      product.colorImages?.[color.name] || 
+      (product.variants?.colors?.find(c => c.name === color.name)?.image);
+
+    if (colorImg) {
+      const idx = images.findIndex(img => img === colorImg);
+      if (idx !== -1) {
+        setActiveImageIdx(idx);
+        setActiveColorImage(null);
+      } else {
+        setActiveColorImage(colorImg);
+      }
+    }
+  };
 
   // Style customization state (from OutfitCustomizer)
   const [styleCustomization, setStyleCustomization] = useState({
@@ -120,14 +140,42 @@ export default function ProductDetailModal({
     customercare: false
   });
 
-  // Related products logic (same category first, excluding current product)
-  const sameCategoryProducts = (allProducts || []).filter(
-    p => p && p.id !== product.id && p.category === category
-  );
-  const otherCategoryProducts = (allProducts || []).filter(
-    p => p && p.id !== product.id && p.category !== category
-  );
-  const relatedProducts = [...sameCategoryProducts, ...otherCategoryProducts].slice(0, 8);
+  // Similar products algorithm: strictly matching same category, excluding current product
+  const relatedProducts = useMemo(() => {
+    if (!allProducts || allProducts.length === 0 || !category) return [];
+    const currentCat = category.trim().toLowerCase();
+
+    // 1. Strictly filter products belonging to the same category
+    let matches = allProducts.filter(p => {
+      if (!p || p.id === product.id) return false;
+      const pCat = (p.category || '').trim().toLowerCase();
+      return pCat === currentCat;
+    });
+
+    // 2. Score and rank by similarity (fabric, occasion, tags)
+    matches.sort((a, b) => {
+      let scoreA = 0;
+      let scoreB = 0;
+      if (a.highlights?.fabric && product.highlights?.fabric && a.highlights.fabric.toLowerCase() === product.highlights.fabric.toLowerCase()) scoreA += 3;
+      if (b.highlights?.fabric && product.highlights?.fabric && b.highlights.fabric.toLowerCase() === product.highlights.fabric.toLowerCase()) scoreB += 3;
+      if (a.occasion && product.occasion && a.occasion === product.occasion) scoreA += 2;
+      if (b.occasion && product.occasion && b.occasion === product.occasion) scoreB += 2;
+      return scoreB - scoreA;
+    });
+
+    // 3. Fallback: if category has fewer than 3 outfits, check for complementary matching items
+    if (matches.length < 3) {
+      const keywords = currentCat.split(/\s+/).filter(w => w.length > 2);
+      const partialMatches = allProducts.filter(p => {
+        if (!p || p.id === product.id || matches.some(m => m.id === p.id)) return false;
+        const pCat = (p.category || '').trim().toLowerCase();
+        return keywords.some(k => pCat.includes(k));
+      });
+      matches = [...matches, ...partialMatches];
+    }
+
+    return matches.slice(0, 8);
+  }, [allProducts, product, category]);
 
   const toggleAccordion = (tab) => {
     setActiveAccordions(prev => ({
@@ -179,7 +227,7 @@ export default function ProductDetailModal({
           <div className="gallery-column">
             <div className="primary-preview-wrapper">
               <img 
-                src={images[activeImageIdx]} 
+                src={activeColorImage || images[activeImageIdx] || images[0]} 
                 alt={title} 
                 className="primary-preview" 
               />
@@ -187,13 +235,19 @@ export default function ProductDetailModal({
                 <>
                   <button 
                     className="gallery-nav-btn prev-btn" 
-                    onClick={() => setActiveImageIdx(prev => prev === 0 ? images.length - 1 : prev - 1)}
+                    onClick={() => {
+                      setActiveImageIdx(prev => prev === 0 ? images.length - 1 : prev - 1);
+                      setActiveColorImage(null);
+                    }}
                   >
                     <ChevronLeft size={20} />
                   </button>
                   <button 
                     className="gallery-nav-btn next-btn" 
-                    onClick={() => setActiveImageIdx(prev => prev === images.length - 1 ? 0 : prev + 1)}
+                    onClick={() => {
+                      setActiveImageIdx(prev => prev === images.length - 1 ? 0 : prev + 1);
+                      setActiveColorImage(null);
+                    }}
                   >
                     <ChevronRight size={20} />
                   </button>
@@ -206,8 +260,11 @@ export default function ProductDetailModal({
               {images.map((img, idx) => (
                 <button 
                   key={idx} 
-                  className={`thumbnail-btn ${idx === activeImageIdx ? 'active' : ''}`}
-                  onClick={() => setActiveImageIdx(idx)}
+                  className={`thumbnail-btn ${(!activeColorImage && idx === activeImageIdx) || (images[idx] === activeColorImage) ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveImageIdx(idx);
+                    setActiveColorImage(null);
+                  }}
                 >
                   <img src={img} alt={`${title} thumbnail ${idx + 1}`} />
                 </button>
@@ -225,7 +282,7 @@ export default function ProductDetailModal({
                 </div>
                 <div className="related-products-scroll-row">
                   {relatedProducts.map(relProd => (
-                    <div key={relProd.id} className="related-card-wrapper">
+                    <div key={relProd.id} className="related-card-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
                       <ProductCard 
                         product={relProd}
                         isFavorite={favorites.includes(relProd.id)}
@@ -236,6 +293,9 @@ export default function ProductDetailModal({
                         }}
                         onQuickViewClick={onQuickViewClick}
                       />
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-accent)', background: 'var(--color-bg-secondary)', padding: '2px 8px', borderRadius: '4px', alignSelf: 'flex-start', marginTop: '4px' }}>
+                        {relProd.category}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -296,7 +356,7 @@ export default function ProductDetailModal({
                   <button
                     key={`${color.name}-${color.hex}-${idx}`}
                     className={`color-chip-btn ${(selectedColor?.name || '') === color.name ? 'active' : ''}`}
-                    onClick={() => setSelectedColor(color)}
+                    onClick={() => handleColorClick(color)}
                     style={{ backgroundColor: color.hex }}
                     title={color.name}
                   >
@@ -622,7 +682,7 @@ export default function ProductDetailModal({
                 </div>
                 <div className="related-products-scroll-row">
                   {relatedProducts.map(relProd => (
-                    <div key={relProd.id} className="related-card-wrapper">
+                    <div key={relProd.id} className="related-card-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
                       <ProductCard 
                         product={relProd}
                         isFavorite={favorites.includes(relProd.id)}
@@ -633,6 +693,9 @@ export default function ProductDetailModal({
                         }}
                         onQuickViewClick={onQuickViewClick}
                       />
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-accent)', background: 'var(--color-bg-secondary)', padding: '2px 8px', borderRadius: '4px', alignSelf: 'flex-start', marginTop: '4px' }}>
+                        {relProd.category}
+                      </span>
                     </div>
                   ))}
                 </div>

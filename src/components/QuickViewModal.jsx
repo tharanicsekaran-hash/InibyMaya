@@ -45,12 +45,27 @@ export default function QuickViewModal({
     .filter(item => item.product?.id === product.id)
     .reduce((sum, item) => sum + (item.quantity || 1), 0);
 
-  const selectedColor = (variants?.colors && variants.colors[0]) ? variants.colors[0].name : 'Default';
+  const colorsList = Array.isArray(variants?.colors) ? variants.colors : [];
+  const [selectedColor, setSelectedColor] = useState(colorsList[0] || { name: 'Default', hex: '#84a98c' });
+  const [activeImgOverride, setActiveImgOverride] = useState(null);
+
+  const displayImgSrc = activeImgOverride || primaryImgSrc;
+
+  const handleColorClick = (c) => {
+    setSelectedColor(c);
+    const colorImg = c.image || 
+      product.variants?.colorImages?.[c.name] || 
+      product.colorImages?.[c.name] || 
+      (product.variants?.colors?.find(col => col.name === c.name)?.image);
+    if (colorImg) {
+      setActiveImgOverride(colorImg);
+    }
+  };
 
   const buildCartItem = () => {
     return {
       product,
-      color: selectedColor,
+      color: selectedColor?.name || 'Default',
       size: selectedSize,
       quantity,
       price: product.price,
@@ -95,7 +110,7 @@ export default function QuickViewModal({
 
         {/* Top Product Summary Row */}
         <div className="quickview-product-header" onClick={() => { onOpenFullDetail(product); onClose(); }} title="Click to view full product page">
-          <img src={primaryImgSrc} alt={title} className="quickview-thumb-img" />
+          <img src={displayImgSrc} alt={title} className="quickview-thumb-img" />
           <div className="quickview-meta-info">
             <h3 className="quickview-title">{title}</h3>
             {(() => {
@@ -127,6 +142,38 @@ export default function QuickViewModal({
 
         {/* Error notification if size missing */}
         {errorMsg && <p className="quickview-error-banner">{errorMsg}</p>}
+
+        {/* Color Selection Row */}
+        {colorsList.length > 0 && (
+          <div className="quickview-section" style={{ marginBottom: '14px' }}>
+            <div className="quickview-section-label" style={{ marginBottom: '8px', fontSize: '12px' }}>
+              Color: <strong>{selectedColor?.name || 'Default'}</strong>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {colorsList.map((c, idx) => (
+                <button
+                  key={`${c.name}-${idx}`}
+                  type="button"
+                  onClick={() => handleColorClick(c)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 10px',
+                    borderRadius: '20px',
+                    border: (selectedColor?.name || '') === c.name ? '1.5px solid var(--color-text-primary)' : '1px solid var(--color-border)',
+                    background: (selectedColor?.name || '') === c.name ? 'var(--color-bg-secondary)' : 'var(--color-bg-primary)',
+                    cursor: 'pointer',
+                    fontSize: '11.5px'
+                  }}
+                >
+                  <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: c.hex, border: '1px solid rgba(0,0,0,0.15)' }} />
+                  <span>{c.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Size Selection Row */}
         <div className="quickview-section">

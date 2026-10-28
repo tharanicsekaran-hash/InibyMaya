@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, X, Phone, Truck, Film, Upload, Settings, Layout, ChevronUp, ChevronDown, Plus, Mail, FileText, Download, Sparkles, Palette, Check } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Package, BarChart3, ShoppingBag, PlusCircle, Trash2, CheckCircle2, User, Ruler, Tag, Edit3, XCircle, X, Phone, Truck, Film, Upload, Settings, Layout, ChevronUp, ChevronDown, Plus, Mail, FileText, Download, Sparkles, Palette, Check, Search } from 'lucide-react';
 import { uploadFileToGithub } from '../utils/githubUploader';
 import { sendOrderConfirmationEmail } from '../utils/resendEmail';
 import { DEFAULT_FOOTER_PAGES } from '../utils/footerPagesData';
@@ -1024,6 +1024,42 @@ export default function AdminDashboard({
   const [promoMinPurchase, setPromoMinPurchase] = useState('0');
   const [promoDesc, setPromoDesc] = useState('');
   const [promoSuccessMsg, setPromoSuccessMsg] = useState('');
+  // Selective Coupon Applicability states
+  const [promoApplicableType, setPromoApplicableType] = useState('all'); // 'all', 'category', 'product'
+  const [promoApplicableCategories, setPromoApplicableCategories] = useState([]);
+  const [promoApplicableProducts, setPromoApplicableProducts] = useState([]);
+  const [couponProductSearch, setCouponProductSearch] = useState('');
+
+  // Color Variations Image Map (colorName -> imageUrl)
+  const [colorImages, setColorImages] = useState({});
+
+  // Boutique Catalog Control Search & Filter states
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [catalogCategoryFilter, setCatalogCategoryFilter] = useState('all');
+
+  // Memoized unique categories from products
+  const uniqueCategories = useMemo(() => {
+    const cats = new Set();
+    (products || []).forEach(p => {
+      if (p.category && p.category.trim()) {
+        cats.add(p.category.trim());
+      }
+    });
+    return Array.from(cats);
+  }, [products]);
+
+  // Memoized filtered catalog for Boutique Catalog Control
+  const filteredCatalogProducts = useMemo(() => {
+    return (products || []).filter(prod => {
+      const q = catalogSearch.trim().toLowerCase();
+      const matchesSearch = !q || 
+        (prod.title && prod.title.toLowerCase().includes(q)) ||
+        (prod.category && prod.category.toLowerCase().includes(q)) ||
+        (prod.id && String(prod.id).toLowerCase().includes(q));
+      const matchesCat = catalogCategoryFilter === 'all' || prod.category === catalogCategoryFilter;
+      return matchesSearch && matchesCat;
+    });
+  }, [products, catalogSearch, catalogCategoryFilter]);
 
   // Reels manager states
   const [reelTitle, setReelTitle] = useState('');
@@ -1416,6 +1452,18 @@ export default function AdminDashboard({
       }
     };
 
+    const colorsWithImages = cleanProductColors.map(c => ({
+      ...c,
+      image: colorImages[c.name] || c.image || ''
+    }));
+
+    // Ensure any assigned color images are also in finalImages gallery
+    Object.values(colorImages).forEach(img => {
+      if (img && typeof img === 'string' && img.trim() && !finalImages.includes(img.trim())) {
+        finalImages.push(img.trim());
+      }
+    });
+
     if (editingProduct) {
       const updatedProduct = {
         ...editingProduct,
@@ -1426,12 +1474,14 @@ export default function AdminDashboard({
         description,
         images: finalImages,
         variants: {
-          colors: cleanProductColors,
+          colors: colorsWithImages,
+          colorImages: colorImages,
           sizes: safeProductSizes,
           sizeQuantities: finalSizeQuantities,
           showOutOfStock: showOutOfStock,
           isOutOfStock: effectiveOutOfStock
         },
+        colorImages: colorImages,
         sizeQuantities: finalSizeQuantities,
         showOutOfStock: showOutOfStock,
         isOutOfStock: effectiveOutOfStock,
@@ -1464,12 +1514,14 @@ export default function AdminDashboard({
         details: ['Handcrafted quality fabric', 'Modern regular fitting style', 'Breathable weave structure'],
         images: finalImages,
         variants: {
-          colors: cleanProductColors,
+          colors: colorsWithImages,
+          colorImages: colorImages,
           sizes: safeProductSizes,
           sizeQuantities: finalSizeQuantities,
           showOutOfStock: showOutOfStock,
           isOutOfStock: effectiveOutOfStock
         },
+        colorImages: colorImages,
         sizeQuantities: finalSizeQuantities,
         showOutOfStock: showOutOfStock,
         isOutOfStock: effectiveOutOfStock,
@@ -1501,6 +1553,7 @@ export default function AdminDashboard({
     setShowOutOfStock(false);
     setIsOutOfStock(false);
     setSizeQuantities({});
+    setColorImages({});
     setRating(5.0);
     setReviewsCount(1);
     setOccasion('Daily Elegance');
@@ -1550,6 +1603,15 @@ export default function AdminDashboard({
     if (editColors.length > 0) {
       updateStoredColors([...storedColors, ...editColors]);
     }
+
+    const initialColorImages = { ...(prod.variants?.colorImages || prod.colorImages || {}) };
+    editColors.forEach(c => {
+      if (c.image && !initialColorImages[c.name]) {
+        initialColorImages[c.name] = c.image;
+      }
+    });
+    setColorImages(initialColorImages);
+
     const existingSizes = toSafeSizesArray(prod.variants?.sizes);
     const finalSizes = existingSizes.length > 0 ? existingSizes : ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
     setProductSizes(finalSizes);
@@ -1604,6 +1666,7 @@ export default function AdminDashboard({
     setShowOutOfStock(false);
     setIsOutOfStock(false);
     setSizeQuantities({});
+    setColorImages({});
     setRating(5.0);
     setReviewsCount(1);
     setOccasion('Daily Elegance');
@@ -1630,18 +1693,41 @@ export default function AdminDashboard({
     e.preventDefault();
     if (!promoCode || !promoValue) return;
 
+    if (promoApplicableType === 'category' && promoApplicableCategories.length === 0) {
+      alert('Please select at least one category for this coupon.');
+      return;
+    }
+    if (promoApplicableType === 'product' && promoApplicableProducts.length === 0) {
+      alert('Please select at least one product for this coupon.');
+      return;
+    }
+
+    const targetMeta = {
+      applicableType: promoApplicableType,
+      applicableCategories: promoApplicableType === 'category' ? promoApplicableCategories : [],
+      applicableProducts: promoApplicableType === 'product' ? promoApplicableProducts : []
+    };
+    const userDesc = promoDesc || `${promoType === 'percent' ? `${promoValue}%` : `₹${promoValue}`} off`;
+    const fullDesc = `${userDesc}__TARGET__${JSON.stringify(targetMeta)}`;
+
     const newPromo = {
       code: promoCode.trim().toUpperCase(),
       type: promoType,
       value: parseFloat(promoValue),
       minPurchase: parseFloat(promoMinPurchase || 0),
-      description: promoDesc || `${promoType === 'percent' ? `${promoValue}%` : `₹${promoValue}`} off`
+      description: fullDesc,
+      applicableType: promoApplicableType,
+      applicableCategories: promoApplicableType === 'category' ? promoApplicableCategories : [],
+      applicableProducts: promoApplicableType === 'product' ? promoApplicableProducts : []
     };
 
     setPromoCode('');
     setPromoValue('');
     setPromoMinPurchase('0');
     setPromoDesc('');
+    setPromoApplicableType('all');
+    setPromoApplicableCategories([]);
+    setPromoApplicableProducts([]);
     
     if (onAddPromo) {
       onAddPromo(newPromo);
@@ -2601,25 +2687,109 @@ alter table public.settings disable row level security;`}</pre>
                         <span>No colors selected yet. Click any color from the <strong>Stored Boutique Colors Library</strong> below, or add a custom color.</span>
                       </div>
                     ) : (
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', padding: '10px', background: 'var(--color-bg-primary)', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
-                        {productColors.map(color => (
-                          <div 
-                            key={`${color.name}-${color.hex}`} 
-                            style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', padding: '5px 12px', borderRadius: '20px', fontSize: '12px', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}
-                          >
-                            <span style={{ width: '13px', height: '13px', borderRadius: '50%', backgroundColor: color.hex, border: '1px solid rgba(0,0,0,0.15)', flexShrink: 0 }}></span>
-                            <span style={{ fontWeight: 500 }}>{color.name}</span>
-                            <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>({color.hex})</span>
-                            <button 
-                              type="button" 
-                              onClick={() => handleRemoveColor(color.name)}
-                              title={`Remove ${color.name} from this product`}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', padding: '0 2px', display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '14px', marginLeft: '4px' }}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px', background: 'var(--color-bg-primary)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                            Selected Colors & Linked Photos
+                          </span>
+                          <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                            Link an outfit photo to each color (swaps when customer clicks color)
+                          </span>
+                        </div>
+
+                        {productColors.map(color => {
+                          const assignedImg = colorImages[color.name] || color.image || '';
+                          const availablePhotos = [
+                            ...primaryImages.filter(img => img && img.trim() && !img.startsWith('data:')),
+                            ...(hoverImage && hoverImage.trim() && !hoverImage.startsWith('data:') ? [hoverImage.trim()] : [])
+                          ];
+
+                          return (
+                            <div 
+                              key={`${color.name}-${color.hex}`}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                flexWrap: 'wrap',
+                                gap: '8px',
+                                padding: '8px 12px',
+                                background: 'var(--color-bg-secondary)',
+                                borderRadius: '6px',
+                                border: assignedImg ? '1px solid #86efac' : '1px solid var(--color-border)'
+                              }}
                             >
-                              ✕
-                            </button>
-                          </div>
-                        ))}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: color.hex, border: '1.5px solid rgba(0,0,0,0.2)', flexShrink: 0 }}></span>
+                                <div>
+                                  <strong style={{ fontSize: '12.5px', color: 'var(--color-text-primary)' }}>{color.name}</strong>
+                                  <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginLeft: '6px' }}>({color.hex})</span>
+                                </div>
+                                <button 
+                                  type="button" 
+                                  onClick={() => handleRemoveColor(color.name)}
+                                  title={`Remove ${color.name} from this product`}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', padding: '0 4px', fontSize: '13px' }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                {assignedImg ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <img 
+                                      src={assignedImg} 
+                                      alt={color.name} 
+                                      style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '4px', border: '1.5px solid #16a34a' }} 
+                                      onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=100'; }}
+                                    />
+                                    <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 600 }}>Linked Photo</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setColorImages(prev => {
+                                        const next = { ...prev };
+                                        delete next[color.name];
+                                        return next;
+                                      })}
+                                      style={{ fontSize: '11px', color: '#b91c1c', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                    <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>Pick Photo:</span>
+                                    {availablePhotos.length > 0 && (
+                                      <div style={{ display: 'flex', gap: '4px' }}>
+                                        {availablePhotos.map((pImg, pIdx) => (
+                                          <img 
+                                            key={pIdx}
+                                            src={pImg}
+                                            alt="Photo option"
+                                            title="Click to link this photo to this color"
+                                            onClick={() => setColorImages(prev => ({ ...prev, [color.name]: pImg }))}
+                                            style={{ width: '28px', height: '28px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--color-border)', cursor: 'pointer' }}
+                                          />
+                                        ))}
+                                      </div>
+                                    )}
+                                    <input 
+                                      type="text"
+                                      placeholder="Or paste photo URL..."
+                                      value={colorImages[color.name] || ''}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setColorImages(prev => ({ ...prev, [color.name]: val }));
+                                      }}
+                                      style={{ width: '150px', padding: '4px 8px', fontSize: '11px', borderRadius: '4px', border: '1px solid var(--color-border)', background: 'var(--color-bg-primary)' }}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -3087,10 +3257,84 @@ alter table public.settings disable row level security;`}</pre>
 
           {/* Listing Inventory */}
           <div className="admin-catalog-listing">
-            <h4>Boutique Catalog Control</h4>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+              <h4 style={{ margin: 0 }}>Boutique Catalog Control</h4>
+              <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+                Showing {filteredCatalogProducts.length} of {products.length} outfits
+              </span>
+            </div>
+
+            {/* Search and Category Filter Bar */}
+            <div style={{
+              display: 'flex',
+              gap: '10px',
+              marginBottom: '16px',
+              flexWrap: 'wrap',
+              background: 'var(--color-bg-primary)',
+              padding: '10px 12px',
+              borderRadius: '8px',
+              border: '1px solid var(--color-border)'
+            }}>
+              <div style={{ flex: '1 1 200px', display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-bg-secondary)', padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <Search size={15} style={{ color: 'var(--color-text-secondary)', flexShrink: 0 }} />
+                <input 
+                  type="text"
+                  value={catalogSearch}
+                  onChange={(e) => setCatalogSearch(e.target.value)}
+                  placeholder="Search catalog by product name or category..."
+                  style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '12.5px', color: 'var(--color-text-primary)' }}
+                />
+                {catalogSearch && (
+                  <button 
+                    type="button" 
+                    onClick={() => setCatalogSearch('')}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', padding: 0 }}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              <select 
+                value={catalogCategoryFilter}
+                onChange={(e) => setCatalogCategoryFilter(e.target.value)}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '12.5px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-bg-secondary)',
+                  color: 'var(--color-text-primary)',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="all">All Categories ({products.length})</option>
+                {uniqueCategories.map(cat => {
+                  const count = products.filter(p => p.category === cat).length;
+                  return (
+                    <option key={cat} value={cat}>
+                      {cat} ({count})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
             <div className="admin-inventory-list">
-              {products.map((prod) => (
-                <div key={prod.id} className="inventory-card">
+              {filteredCatalogProducts.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--color-text-secondary)', fontSize: '13px', background: 'var(--color-bg-primary)', borderRadius: '8px', border: '1px dashed var(--color-border)' }}>
+                  <p style={{ margin: '0 0 8px 0' }}>No outfits found matching "<strong>{catalogSearch}</strong>"{catalogCategoryFilter !== 'all' ? ` in ${catalogCategoryFilter}` : ''}.</p>
+                  <button 
+                    type="button" 
+                    onClick={() => { setCatalogSearch(''); setCatalogCategoryFilter('all'); }}
+                    style={{ padding: '5px 14px', fontSize: '12px', fontWeight: 600, borderRadius: '4px', border: '1px solid var(--color-border)', background: 'var(--color-bg-secondary)', cursor: 'pointer' }}
+                  >
+                    Clear Filter
+                  </button>
+                </div>
+              ) : (
+                filteredCatalogProducts.map((prod) => (
+                  <div key={prod.id} className="inventory-card">
                   <img src={prod.images[0]} alt={prod.title} />
                   <div className="inventory-details">
                     <h5>{prod.title}</h5>
@@ -3214,7 +3458,7 @@ alter table public.settings disable row level security;`}</pre>
                     </button>
                   </div>
                 </div>
-              ))}
+              )))}
             </div>
           </div>
         </div>
@@ -3276,6 +3520,151 @@ alter table public.settings disable row level security;`}</pre>
                 />
               </div>
 
+              {/* Selective Coupon Targeting */}
+              <div className="form-group" style={{ background: 'var(--color-bg-secondary)', padding: '12px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', marginBottom: '16px' }}>
+                <label style={{ fontWeight: 600, fontSize: '13px', marginBottom: '8px', display: 'block', color: 'var(--color-text-primary)' }}>
+                  🎯 Coupon Scope / Applicability *
+                </label>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                  {[
+                    { id: 'all', label: 'Store-Wide (All Products)' },
+                    { id: 'category', label: 'Selective Categories' },
+                    { id: 'product', label: 'Selective Outfits' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setPromoApplicableType(tab.id)}
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        borderRadius: '6px',
+                        border: promoApplicableType === tab.id ? '1.5px solid var(--color-text-primary)' : '1px solid var(--color-border)',
+                        background: promoApplicableType === tab.id ? 'var(--color-text-primary)' : 'var(--color-bg-primary)',
+                        color: promoApplicableType === tab.id ? '#fff' : 'var(--color-text-primary)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* If Selective Categories */}
+                {promoApplicableType === 'category' && (
+                  <div style={{ marginTop: '8px' }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--color-text-secondary)', display: 'block', marginBottom: '6px' }}>
+                      Select which categories this coupon applies to ({promoApplicableCategories.length} selected):
+                    </span>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {uniqueCategories.map(cat => {
+                        const isChecked = promoApplicableCategories.includes(cat);
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => {
+                              if (isChecked) {
+                                setPromoApplicableCategories(prev => prev.filter(c => c !== cat));
+                              } else {
+                                setPromoApplicableCategories(prev => [...prev, cat]);
+                              }
+                            }}
+                            style={{
+                              padding: '5px 10px',
+                              borderRadius: '16px',
+                              fontSize: '11.5px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              border: isChecked ? '1px solid #16a34a' : '1px solid var(--color-border)',
+                              background: isChecked ? '#dcfce7' : 'var(--color-bg-primary)',
+                              color: isChecked ? '#15803d' : 'var(--color-text-secondary)'
+                            }}
+                          >
+                            {isChecked ? '✓ ' : '+ '} {cat}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* If Selective Products */}
+                {promoApplicableType === 'product' && (
+                  <div style={{ marginTop: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '11.5px', color: 'var(--color-text-secondary)' }}>
+                        Select outfits eligible for this coupon ({promoApplicableProducts.length} selected):
+                      </span>
+                      {promoApplicableProducts.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setPromoApplicableProducts([])}
+                          style={{ fontSize: '11px', color: '#b91c1c', background: 'none', border: 'none', cursor: 'pointer' }}
+                        >
+                          Clear Selection
+                        </button>
+                      )}
+                    </div>
+
+                    <input 
+                      type="text"
+                      placeholder="Filter outfits by name or category..."
+                      value={couponProductSearch}
+                      onChange={(e) => setCouponProductSearch(e.target.value)}
+                      style={{ width: '100%', padding: '6px 10px', fontSize: '12px', borderRadius: '4px', border: '1px solid var(--color-border)', marginBottom: '8px', background: 'var(--color-bg-primary)' }}
+                    />
+
+                    <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '6px', background: 'var(--color-bg-primary)' }}>
+                      {(products || []).filter(p => !couponProductSearch || p.title.toLowerCase().includes(couponProductSearch.toLowerCase()) || p.category.toLowerCase().includes(couponProductSearch.toLowerCase())).map(p => {
+                        const isChecked = promoApplicableProducts.includes(p.id);
+                        return (
+                          <div 
+                            key={p.id}
+                            onClick={() => {
+                              if (isChecked) {
+                                setPromoApplicableProducts(prev => prev.filter(id => id !== p.id));
+                              } else {
+                                setPromoApplicableProducts(prev => [...prev, p.id]);
+                              }
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '6px 8px',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              background: isChecked ? '#f0fdf4' : 'transparent',
+                              border: isChecked ? '1px solid #86efac' : '1px solid transparent'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input 
+                                type="checkbox" 
+                                checked={isChecked} 
+                                onChange={() => {}} 
+                                style={{ cursor: 'pointer' }} 
+                              />
+                              <img 
+                                src={p.images?.[0]} 
+                                alt={p.title} 
+                                style={{ width: '28px', height: '28px', objectFit: 'cover', borderRadius: '4px' }} 
+                              />
+                              <div>
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-primary)', display: 'block' }}>{p.title}</span>
+                                <span style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)' }}>{p.category} | ₹{Number(p.price).toLocaleString('en-IN')}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button type="submit" className="add-btn-submit">
                 <Tag size={14} />
                 <span>Create Offer Coupon</span>
@@ -3286,27 +3675,45 @@ alter table public.settings disable row level security;`}</pre>
           <div className="admin-catalog-listing">
             <h4>Active Promotion Codes</h4>
             <div className="admin-inventory-list">
-              {promosList.map((promo) => (
-                <div key={promo.code} className="inventory-card promo-card-item">
-                  <div className="promo-tag-icon-box">
-                    <Tag size={20} />
+              {promosList.map((promo) => {
+                const cleanDescription = (promo.description || '').split('__TARGET__')[0];
+                return (
+                  <div key={promo.code} className="inventory-card promo-card-item">
+                    <div className="promo-tag-icon-box">
+                      <Tag size={20} />
+                    </div>
+                    <div className="inventory-details text-left">
+                      <h5 className="promo-tag-code">{promo.code}</h5>
+                      <p>{cleanDescription}</p>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+                        <span className="customize-tag" style={{ margin: 0 }}>
+                          {promo.minPurchase > 0 ? `Min: ₹${promo.minPurchase}` : 'No Min'}
+                        </span>
+                        {promo.applicableType === 'category' && promo.applicableCategories?.length > 0 ? (
+                          <span style={{ fontSize: '11px', color: '#15803d', background: '#dcfce7', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>
+                            🏷️ {promo.applicableCategories.join(', ')}
+                          </span>
+                        ) : promo.applicableType === 'product' && promo.applicableProducts?.length > 0 ? (
+                          <span style={{ fontSize: '11px', color: '#0369a1', background: '#e0f2fe', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>
+                            👗 {promo.applicableProducts.length} Selected Outfits
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '11px', color: '#475569', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>
+                            🌐 Store-Wide
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <button 
+                      className="delete-item-btn" 
+                      onClick={() => handleDeletePromo(promo.code)}
+                      title="Remove Promo Code"
+                    >
+                      <Trash2 size={15} />
+                    </button>
                   </div>
-                  <div className="inventory-details text-left">
-                    <h5 className="promo-tag-code">{promo.code}</h5>
-                    <p>{promo.description}</p>
-                    <span className="customize-tag">
-                      {promo.minPurchase > 0 ? `Min Purchase: ₹${promo.minPurchase}` : 'No minimum purchase'}
-                    </span>
-                  </div>
-                  <button 
-                    className="delete-item-btn" 
-                    onClick={() => handleDeletePromo(promo.code)}
-                    title="Remove Promo Code"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

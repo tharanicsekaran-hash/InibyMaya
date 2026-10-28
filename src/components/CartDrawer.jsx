@@ -22,26 +22,82 @@ export default function CartDrawer({
   // Subtotal before discounts
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
+const evaluateCartPromo = (promo, items, cartSubtotal) => {
+  if (!promo) return { valid: false, error: 'Invalid promotion code' };
+
+  let eligibleItems = items;
+  if (promo.applicableType === 'category' && Array.isArray(promo.applicableCategories) && promo.applicableCategories.length > 0) {
+    const targetCats = promo.applicableCategories.map(c => c.trim().toLowerCase());
+    eligibleItems = items.filter(item => {
+      const itemCat = (item.category || item.product?.category || '').trim().toLowerCase();
+      return targetCats.includes(itemCat);
+    });
+    if (eligibleItems.length === 0) {
+      return {
+        valid: false,
+        error: `Coupon "${promo.code}" is valid only on: ${promo.applicableCategories.join(', ')}`
+      };
+    }
+  } else if (promo.applicableType === 'product' && Array.isArray(promo.applicableProducts) && promo.applicableProducts.length > 0) {
+    const targetIds = promo.applicableProducts.map(String);
+    eligibleItems = items.filter(item => {
+      const pId = String(item.productId || item.id || item.product?.id || '');
+      return targetIds.includes(pId);
+    });
+    if (eligibleItems.length === 0) {
+      return {
+        valid: false,
+        error: `Coupon "${promo.code}" is valid only on selected outfits`
+      };
+    }
+  }
+
+  // Calculate eligible subtotal
+  const eligibleSubtotal = eligibleItems.reduce((acc, item) => {
+    const p = Number(item.price || item.unitPrice || 0);
+    const q = Number(item.quantity || 1);
+    const fee = item.wantsCustomStitching ? Number(item.styleCustomization?.tailoringCost || 0) : 0;
+    return acc + ((p + fee) * q);
+  }, 0);
+
+  if (promo.minPurchase > 0 && cartSubtotal < promo.minPurchase) {
+    return {
+      valid: false,
+      error: `${promo.code} requires minimum purchase of ₹${promo.minPurchase.toLocaleString('en-IN')}`
+    };
+  }
+
+  let discount = 0;
+  if (promo.type === 'percent') {
+    discount = Math.round(eligibleSubtotal * (Number(promo.value) / 100));
+  } else {
+    discount = Math.min(eligibleSubtotal, Number(promo.value));
+  }
+
+  const cleanDescription = (promo.description || '').split('__TARGET__')[0];
+
+  return {
+    valid: true,
+    discount,
+    description: cleanDescription || `₹${discount} off!`
+  };
+};
+
   // Auto-apply landing promo code
   useEffect(() => {
     if (autoAppliedCode && subtotal > 0) {
       setPromoCode(autoAppliedCode);
       const matchedPromo = promosList.find(p => p.code === autoAppliedCode.trim().toUpperCase());
       if (matchedPromo) {
-        if (subtotal >= matchedPromo.minPurchase) {
-          let discount = 0;
-          if (matchedPromo.type === 'percent') {
-            discount = Math.round(subtotal * (matchedPromo.value / 100));
-          } else {
-            discount = matchedPromo.value;
-          }
-          setAppliedDiscount(discount);
-          setPromoSuccessMsg(`Promo applied: ${matchedPromo.description || `₹${discount} off!`}`);
+        const result = evaluateCartPromo(matchedPromo, cartItems, subtotal);
+        if (result.valid) {
+          setAppliedDiscount(result.discount);
+          setPromoSuccessMsg(`Promo applied: ${result.description}`);
           setPromoErrorMsg('');
         }
       }
     }
-  }, [autoAppliedCode, subtotal, promosList]);
+  }, [autoAppliedCode, subtotal, promosList, cartItems]);
 
   const applyPromo = (codeToApply) => {
     setPromoErrorMsg('');
@@ -53,19 +109,14 @@ export default function CartDrawer({
     const matchedPromo = promosList.find(p => p.code === code);
 
     if (matchedPromo) {
-      if (subtotal >= matchedPromo.minPurchase) {
-        let discount = 0;
-        if (matchedPromo.type === 'percent') {
-          discount = Math.round(subtotal * (matchedPromo.value / 100));
-        } else {
-          discount = matchedPromo.value;
-        }
-        setAppliedDiscount(discount);
+      const result = evaluateCartPromo(matchedPromo, cartItems, subtotal);
+      if (result.valid) {
+        setAppliedDiscount(result.discount);
         setPromoCode(code);
-        setPromoSuccessMsg(`Promo applied: ${matchedPromo.description || `₹${discount} off!`}`);
+        setPromoSuccessMsg(`Promo applied: ${result.description}`);
         setShowPromoInput(false);
       } else {
-        setPromoErrorMsg(`${code} requires minimum purchase of ₹${matchedPromo.minPurchase.toLocaleString('en-IN')}`);
+        setPromoErrorMsg(result.error);
       }
     } else {
       setPromoErrorMsg('Invalid promotion code');

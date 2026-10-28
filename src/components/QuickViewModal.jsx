@@ -26,9 +26,16 @@ export default function QuickViewModal({
         ? variants.sizes.split(',').map(s => s.trim()).filter(Boolean)
         : ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL']);
 
+  const sizeQuantities = variants?.sizeQuantities || product.sizeQuantities || {};
+  const isSizeOutOfStock = (s) => sizeQuantities[s] !== undefined && Number(sizeQuantities[s]) <= 0;
+  const getSizeQuantity = (s) => sizeQuantities[s] !== undefined ? Number(sizeQuantities[s]) : 10;
+  const isAllSizesOutOfStock = sizesList.length > 0 && sizesList.every(isSizeOutOfStock);
+  const isProductSoldOut = Boolean(product.isOutOfStock || isAllSizesOutOfStock);
+
   const [selectedSize, setSelectedSize] = useState(() => {
-    if (preselectedSize && sizesList.includes(preselectedSize)) return preselectedSize;
-    return sizesList[0] || 'M';
+    if (preselectedSize && sizesList.includes(preselectedSize) && !isSizeOutOfStock(preselectedSize)) return preselectedSize;
+    const inStock = sizesList.find(s => !isSizeOutOfStock(s));
+    return inStock || sizesList[0] || 'M';
   });
   const [quantity, setQuantity] = useState(1);
   const [errorMsg, setErrorMsg] = useState('');
@@ -52,6 +59,10 @@ export default function QuickViewModal({
   };
 
   const handleAddCartClick = () => {
+    if (isProductSoldOut || (selectedSize && isSizeOutOfStock(selectedSize))) {
+      setErrorMsg(`Size ${selectedSize || 'selected'} is currently Out of Stock.`);
+      return;
+    }
     if (!selectedSize) {
       setErrorMsg('Please select a size');
       return;
@@ -61,6 +72,10 @@ export default function QuickViewModal({
   };
 
   const handleBuyNowClick = () => {
+    if (isProductSoldOut || (selectedSize && isSizeOutOfStock(selectedSize))) {
+      setErrorMsg(`Size ${selectedSize || 'selected'} is currently Out of Stock.`);
+      return;
+    }
     if (!selectedSize) {
       setErrorMsg('Please select a size');
       return;
@@ -119,20 +134,67 @@ export default function QuickViewModal({
             Size: <strong>{selectedSize}</strong>
           </div>
           <div className="quickview-size-buttons-grid">
-            {sizesList.map(sz => (
-              <button
-                key={sz}
-                type="button"
-                className={`quickview-size-pill ${selectedSize === sz ? 'active' : ''}`}
-                onClick={() => {
-                  setSelectedSize(sz);
-                  setErrorMsg('');
-                }}
-              >
-                {sz}
-              </button>
-            ))}
+            {sizesList.map(sz => {
+              const isOos = isSizeOutOfStock(sz);
+              const qty = getSizeQuantity(sz);
+              const isLtd = !isOos && qty < 4;
+
+              return (
+                <button
+                  key={sz}
+                  type="button"
+                  disabled={isOos}
+                  className={`quickview-size-pill ${selectedSize === sz ? 'active' : ''} ${isOos ? 'out-of-stock' : ''} ${isLtd ? 'limited-stock' : ''}`}
+                  onClick={() => {
+                    if (isOos) return;
+                    setSelectedSize(sz);
+                    setErrorMsg('');
+                  }}
+                  title={isOos ? `${sz} - Out of Stock` : isLtd ? `${sz} - Only ${qty} left (Hurry up!)` : sz}
+                >
+                  <span className="quickview-size-text">{sz}</span>
+                  {isOos && <span className="quickview-size-subtag oos">Out of Stock</span>}
+                  {isLtd && <span className="quickview-size-subtag limited">Only {qty} left</span>}
+                </button>
+              );
+            })}
           </div>
+
+          {/* Urgency Alert for Size */}
+          {selectedSize && !isSizeOutOfStock(selectedSize) && getSizeQuantity(selectedSize) < 4 && (
+            <div className="quickview-hurry-banner animate-fadeIn" style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: '#fff7ed',
+              border: '1px solid #fdba74',
+              color: '#c2410c',
+              padding: '6px 10px',
+              borderRadius: '6px',
+              fontSize: '11.5px',
+              fontWeight: '600',
+              marginTop: '8px'
+            }}>
+              <span>🔥 Hurry up! Limited stock — only {getSizeQuantity(selectedSize)} left in size {selectedSize}!</span>
+            </div>
+          )}
+          {selectedSize && isSizeOutOfStock(selectedSize) && (
+            <div className="quickview-oos-banner animate-fadeIn" style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: '#fef2f2',
+              border: '1px solid #fecaca',
+              color: '#b91c1c',
+              padding: '6px 10px',
+              borderRadius: '6px',
+              fontSize: '11.5px',
+              fontWeight: '600',
+              marginTop: '8px'
+            }}>
+              <span>⚠️ Size {selectedSize} is currently Out of Stock.</span>
+            </div>
+          )}
         </div>
 
         {/* Quantity Row */}
@@ -141,16 +203,44 @@ export default function QuickViewModal({
             Quantity {inCartCount > 0 ? `(${inCartCount} in cart)` : ''}
           </div>
           <div className="quickview-qty-stepper">
-            <button type="button" onClick={() => setQuantity(q => Math.max(1, q - 1))}>-</button>
+            <button 
+              type="button" 
+              disabled={isProductSoldOut || isSizeOutOfStock(selectedSize)}
+              onClick={() => setQuantity(q => Math.max(1, q - 1))}
+            >-</button>
             <span className="qty-value">{quantity}</span>
-            <button type="button" onClick={() => setQuantity(q => q + 1)}>+</button>
+            <button 
+              type="button" 
+              disabled={isProductSoldOut || isSizeOutOfStock(selectedSize)}
+              onClick={() => {
+                const maxStock = getSizeQuantity(selectedSize);
+                if (quantity >= maxStock) {
+                  setErrorMsg(`Only ${maxStock} items available in stock for size ${selectedSize}.`);
+                  return;
+                }
+                setErrorMsg('');
+                setQuantity(q => q + 1);
+              }}
+            >+</button>
           </div>
         </div>
 
         {/* Actions Row: Add to cart + Favorite + Full Detail */}
         <div className="quickview-main-actions-row">
-          <button type="button" className="quickview-add-cart-btn" onClick={handleAddCartClick}>
-            Add to cart - Rs. {(price * quantity).toLocaleString('en-IN')}.00
+          <button 
+            type="button" 
+            className="quickview-add-cart-btn" 
+            onClick={handleAddCartClick}
+            disabled={isProductSoldOut || isSizeOutOfStock(selectedSize)}
+            style={(isProductSoldOut || isSizeOutOfStock(selectedSize)) ? {
+              backgroundColor: '#9ca3af',
+              cursor: 'not-allowed',
+              opacity: 0.75
+            } : {}}
+          >
+            {(isProductSoldOut || isSizeOutOfStock(selectedSize)) 
+              ? 'Out of Stock' 
+              : `Add to cart - Rs. ${(price * quantity).toLocaleString('en-IN')}.00`}
           </button>
           
           {onToggleFavorite && (
@@ -175,8 +265,18 @@ export default function QuickViewModal({
         </div>
 
         {/* Red BUY IT NOW Button */}
-        <button type="button" className="quickview-buy-now-btn" onClick={handleBuyNowClick}>
-          BUY IT NOW
+        <button 
+          type="button" 
+          className="quickview-buy-now-btn" 
+          onClick={handleBuyNowClick}
+          disabled={isProductSoldOut || isSizeOutOfStock(selectedSize)}
+          style={(isProductSoldOut || isSizeOutOfStock(selectedSize)) ? {
+            backgroundColor: '#d1d5db',
+            cursor: 'not-allowed',
+            opacity: 0.6
+          } : {}}
+        >
+          {(isProductSoldOut || isSizeOutOfStock(selectedSize)) ? 'OUT OF STOCK' : 'BUY IT NOW'}
         </button>
       </div>
     </div>

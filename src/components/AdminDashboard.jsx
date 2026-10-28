@@ -985,6 +985,10 @@ export default function AdminDashboard({
   const [colorErrorMsg, setColorErrorMsg] = useState('');
   const [sizeType, setSizeType] = useState('adult'); // 'adult' or 'kids'
   const [productSizes, setProductSizes] = useState(['XS', 'S', 'M', 'L', 'XL', 'XXL']);
+  const [sizeQuantities, setSizeQuantities] = useState({});
+  const [bulkSizeQty, setBulkSizeQty] = useState('10');
+  const [showOutOfStock, setShowOutOfStock] = useState(false);
+  const [isOutOfStock, setIsOutOfStock] = useState(false);
   const [newCustomSize, setNewCustomSize] = useState('');
 
   // Key Highlights fields
@@ -1376,6 +1380,41 @@ export default function AdminDashboard({
     const parsedOrigPrice = originalPrice ? parseFloat(originalPrice) : null;
     const validOrigPrice = (parsedOrigPrice && parsedOrigPrice > parsedPrice) ? parsedOrigPrice : null;
 
+    const safeProductSizes = toSafeSizesArray(productSizes);
+    const finalSizeQuantities = {};
+    safeProductSizes.forEach(s => {
+      finalSizeQuantities[s] = (sizeQuantities[s] !== undefined && sizeQuantities[s] !== '') ? Number(sizeQuantities[s]) : 10;
+    });
+    const isAllSizesZero = safeProductSizes.length > 0 && safeProductSizes.every(s => finalSizeQuantities[s] <= 0);
+    const effectiveOutOfStock = isOutOfStock || isAllSizesZero;
+
+    const highlightsPayload = {
+      enabled: showKeyHighlightsConfig,
+      fit: hFit,
+      fabric: hFabric,
+      neck: hNeck,
+      frontNeck: hFrontNeck,
+      backNeck: hBackNeck,
+      sleeve: hSleeve,
+      length: hLength,
+      topHeight: hTopHeight,
+      bottomHeight: hBottomHeight,
+      technique: hTechnique,
+      originalPrice: validOrigPrice,
+      headings: {
+        fit: headingFit,
+        fabric: headingFabric,
+        neck: headingNeck,
+        frontNeck: headingFrontNeck,
+        backNeck: headingBackNeck,
+        sleeve: headingSleeve,
+        length: headingLength,
+        topHeight: headingTopHeight,
+        bottomHeight: headingBottomHeight,
+        technique: headingTechnique
+      }
+    };
+
     if (editingProduct) {
       const updatedProduct = {
         ...editingProduct,
@@ -1387,27 +1426,22 @@ export default function AdminDashboard({
         images: finalImages,
         variants: {
           colors: cleanProductColors,
-          sizes: productSizes
+          sizes: safeProductSizes,
+          sizeQuantities: finalSizeQuantities,
+          showOutOfStock: showOutOfStock,
+          isOutOfStock: effectiveOutOfStock
         },
+        sizeQuantities: finalSizeQuantities,
+        showOutOfStock: showOutOfStock,
+        isOutOfStock: effectiveOutOfStock,
         customizable,
         bestSeller,
         newArrival,
         rating: parseFloat(rating || 5.0),
         reviewsCount: parseInt(reviewsCount || 1),
         occasion,
-        highlights: {
-          fit: hFit,
-          fabric: hFabric,
-          neck: hNeck,
-          frontNeck: hFrontNeck,
-          backNeck: hBackNeck,
-          sleeve: hSleeve,
-          length: hLength,
-          topHeight: hTopHeight,
-          bottomHeight: hBottomHeight,
-          technique: hTechnique,
-          originalPrice: validOrigPrice
-        }
+        showKeyHighlights: showKeyHighlightsConfig,
+        highlights: highlightsPayload
       };
       const res = await onUpdateProduct(updatedProduct);
       if (res && res.success === false) {
@@ -1430,25 +1464,20 @@ export default function AdminDashboard({
         images: finalImages,
         variants: {
           colors: cleanProductColors,
-          sizes: productSizes
+          sizes: safeProductSizes,
+          sizeQuantities: finalSizeQuantities,
+          showOutOfStock: showOutOfStock,
+          isOutOfStock: effectiveOutOfStock
         },
+        sizeQuantities: finalSizeQuantities,
+        showOutOfStock: showOutOfStock,
+        isOutOfStock: effectiveOutOfStock,
         customizable,
         bestSeller,
         newArrival,
         occasion,
-        highlights: {
-          fit: hFit,
-          fabric: hFabric,
-          neck: hNeck,
-          frontNeck: hFrontNeck,
-          backNeck: hBackNeck,
-          sleeve: hSleeve,
-          length: hLength,
-          topHeight: hTopHeight,
-          bottomHeight: hBottomHeight,
-          technique: hTechnique,
-          originalPrice: validOrigPrice
-        }
+        showKeyHighlights: showKeyHighlightsConfig,
+        highlights: highlightsPayload
       };
       const res = await onAddProduct(newProduct);
       if (res && res.success === false) {
@@ -1468,6 +1497,9 @@ export default function AdminDashboard({
     setCustomizable(true);
     setBestSeller(false);
     setNewArrival(false);
+    setShowOutOfStock(false);
+    setIsOutOfStock(false);
+    setSizeQuantities({});
     setRating(5.0);
     setReviewsCount(1);
     setOccasion('Daily Elegance');
@@ -1484,6 +1516,7 @@ export default function AdminDashboard({
     setHTopHeight('');
     setHBottomHeight('');
     setHTechnique('Handcrafted Chikankari');
+    setShowKeyHighlightsConfig(true);
 
     setTimeout(() => setSuccessMsg(''), 3000);
   };
@@ -1506,6 +1539,8 @@ export default function AdminDashboard({
     setCustomizable(Boolean(prod.customizable));
     setBestSeller(Boolean(prod.bestSeller));
     setNewArrival(Boolean(prod.newArrival));
+    setShowOutOfStock(prod.showOutOfStock !== undefined ? Boolean(prod.showOutOfStock) : Boolean(prod.variants?.showOutOfStock));
+    setIsOutOfStock(Boolean(prod.isOutOfStock || prod.variants?.isOutOfStock));
     setRating(prod.rating || 5.0);
     setReviewsCount(prod.reviewsCount || 1);
     
@@ -1517,11 +1552,31 @@ export default function AdminDashboard({
     const existingSizes = toSafeSizesArray(prod.variants?.sizes);
     const finalSizes = existingSizes.length > 0 ? existingSizes : ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
     setProductSizes(finalSizes);
+
+    const rawSizeQuantities = prod.variants?.sizeQuantities || prod.sizeQuantities || {};
+    setSizeQuantities(rawSizeQuantities);
+
     const isKidsProd = (prod.category || '').toLowerCase().includes('kid') || 
                        (prod.category || '').toLowerCase().includes('child') || 
                        (prod.category || '').toLowerCase().includes('baby') || 
                        finalSizes.some(isKidsSizeString);
     setSizeType(isKidsProd ? 'kids' : 'adult');
+
+    const highlightsEnabled = prod.showKeyHighlights !== false && prod.highlights?.enabled !== false;
+    setShowKeyHighlightsConfig(highlightsEnabled);
+    if (prod.highlights?.headings) {
+      setHeadingFit(prod.highlights.headings.fit || 'Garment Fit');
+      setHeadingFabric(prod.highlights.headings.fabric || 'Fabric');
+      setHeadingNeck(prod.highlights.headings.neck || 'Neckline Style');
+      setHeadingFrontNeck(prod.highlights.headings.frontNeck || 'Front Neck');
+      setHeadingBackNeck(prod.highlights.headings.backNeck || 'Back Neck');
+      setHeadingSleeve(prod.highlights.headings.sleeve || 'Sleeve Styling');
+      setHeadingLength(prod.highlights.headings.length || 'Sleeve Length');
+      setHeadingTopHeight(prod.highlights.headings.topHeight || 'Top Height');
+      setHeadingBottomHeight(prod.highlights.headings.bottomHeight || 'Bottom Height');
+      setHeadingTechnique(prod.highlights.headings.technique || 'Craft Technique');
+    }
+
     setHFit(prod.highlights?.fit || '');
     setHFabric(prod.highlights?.fabric || '');
     setHNeck(prod.highlights?.neck || '');
@@ -1545,6 +1600,9 @@ export default function AdminDashboard({
     setCustomizable(true);
     setBestSeller(false);
     setNewArrival(false);
+    setShowOutOfStock(false);
+    setIsOutOfStock(false);
+    setSizeQuantities({});
     setRating(5.0);
     setReviewsCount(1);
     setOccasion('Daily Elegance');
@@ -1563,6 +1621,7 @@ export default function AdminDashboard({
     setHTopHeight('');
     setHBottomHeight('');
     setHTechnique('Handcrafted Chikankari');
+    setShowKeyHighlightsConfig(true);
   };
 
   // Promo operations
@@ -2399,6 +2458,124 @@ alter table public.settings disable row level security;`}</pre>
                       <span>Add {sizeType === 'kids' ? 'Age Group' : 'Size'}</span>
                     </button>
                   </div>
+
+                  {/* Stock Quantity with respect to Sizes */}
+                  {toSafeSizesArray(productSizes).length > 0 && (
+                    <div className="admin-size-quantities-card" style={{
+                      marginTop: '16px',
+                      background: 'var(--color-bg-secondary)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: '8px',
+                      padding: '14px 16px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', margin: 0, color: 'var(--color-text-primary)' }}>
+                            📊 Stock Quantity per Size *
+                          </label>
+                          <span style={{ fontSize: '11.5px', color: 'var(--color-text-secondary)' }}>
+                            Specify quantity per size (0 = Out of Stock, &lt; 4 = Limited Stock hurry up alert)
+                          </span>
+                        </div>
+                        {/* Bulk Apply */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '11.5px', color: 'var(--color-text-secondary)' }}>Set all to:</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={bulkSizeQty}
+                            onChange={(e) => setBulkSizeQty(e.target.value)}
+                            style={{ width: '60px', padding: '4px 6px', fontSize: '12px', borderRadius: '4px', border: '1px solid var(--color-border)', textAlign: 'center' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const val = Math.max(0, parseInt(bulkSizeQty, 10) || 0);
+                              const updated = {};
+                              toSafeSizesArray(productSizes).forEach(s => {
+                                updated[s] = val;
+                              });
+                              setSizeQuantities(prev => ({ ...prev, ...updated }));
+                            }}
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: '11.5px',
+                              fontWeight: 600,
+                              background: 'var(--color-text-primary)',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Apply All
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Quantities per Size Grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px' }}>
+                        {toSafeSizesArray(productSizes).map(sz => {
+                          const qtyVal = sizeQuantities[sz] !== undefined ? sizeQuantities[sz] : 10;
+                          const num = Number(qtyVal) || 0;
+                          const isZero = num === 0;
+                          const isLimited = num > 0 && num < 4;
+
+                          return (
+                            <div 
+                              key={sz}
+                              style={{
+                                border: isZero ? '1.5px solid #f87171' : isLimited ? '1.5px solid #fb923c' : '1px solid var(--color-border)',
+                                background: isZero ? '#fef2f2' : isLimited ? '#fff7ed' : 'var(--color-bg-primary)',
+                                borderRadius: '6px',
+                                padding: '8px 10px'
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                <strong style={{ fontSize: '13px', color: 'var(--color-text-primary)' }}>{sz}</strong>
+                                {isZero ? (
+                                  <span style={{ fontSize: '9px', fontWeight: 700, color: '#dc2626', background: '#fee2e2', padding: '1px 5px', borderRadius: '3px' }}>
+                                    OUT OF STOCK
+                                  </span>
+                                ) : isLimited ? (
+                                  <span style={{ fontSize: '9px', fontWeight: 700, color: '#ea580c', background: '#ffedd5', padding: '1px 5px', borderRadius: '3px' }}>
+                                    LIMITED ({num})
+                                  </span>
+                                ) : (
+                                  <span style={{ fontSize: '9px', fontWeight: 600, color: '#16a34a', background: '#dcfce7', padding: '1px 5px', borderRadius: '3px' }}>
+                                    IN STOCK
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>Qty:</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={qtyVal}
+                                  onChange={(e) => {
+                                    const val = e.target.value === '' ? '' : Math.max(0, parseInt(e.target.value, 10) || 0);
+                                    setSizeQuantities(prev => ({
+                                      ...prev,
+                                      [sz]: val
+                                    }));
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '4px 6px',
+                                    fontSize: '12px',
+                                    borderRadius: '4px',
+                                    border: '1px solid var(--color-border)',
+                                    fontWeight: '600'
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Color configurer */}
@@ -2571,91 +2748,101 @@ alter table public.settings disable row level security;`}</pre>
 
               {/* Product Highlights Inputs */}
               <div className="highlights-form-section" style={{ border: '1px dashed var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
-                <div className="form-group" style={{ marginBottom: '8px' }}>
-  <input type="checkbox" id="showKeyHighlightsConfig" checked={showKeyHighlightsConfig} onChange={e=>setShowKeyHighlightsConfig(e.target.checked)} />
-  <label htmlFor="showKeyHighlightsConfig" style={{ marginLeft: '4px' }}>Enable Key Highlights Configurations</label>
-</div>
-{showKeyHighlightsConfig && (
-  <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: 'var(--color-accent)' }}>Key Highlights Configuration</h5>
-)}
+                <div className="form-group" style={{ marginBottom: showKeyHighlightsConfig ? '12px' : '0' }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '6px', fontWeight: 600 }}>
+                    <input 
+                      type="checkbox" 
+                      id="showKeyHighlightsConfig" 
+                      checked={showKeyHighlightsConfig} 
+                      onChange={e => setShowKeyHighlightsConfig(e.target.checked)} 
+                      style={{ width: 'auto', margin: 0 }}
+                    />
+                    <span>Enable Key Highlights Configurations</span>
+                  </label>
+                </div>
+                {showKeyHighlightsConfig && (
+                  <>
+                    <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: 'var(--color-accent)' }}>Key Highlights Configuration</h5>
 
-                {/* Each highlight field: editable heading input on top, value input below */}
-                {(() => {
-                  const hStyle = {
-                    display: 'block',
-                    width: '100%',
-                    fontSize: '10px',
-                    fontWeight: 700,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    color: 'var(--color-text-secondary)',
-                    background: 'transparent',
-                    border: 'none',
-                    borderBottom: '1px dashed var(--color-border)',
-                    outline: 'none',
-                    marginBottom: '4px',
-                    padding: '2px 0',
-                    cursor: 'text',
-                  };
-                  return (
-                    <>
-                      <div className="form-row-double">
-                        <div className="form-group">
-                          <input style={hStyle} value={headingFit} onChange={e => setHeadingFit(e.target.value)} placeholder="Heading…" title="Edit heading" />
-                          <input type="text" value={hFit} onChange={(e) => setHFit(e.target.value)} placeholder="e.g. Straight Regular Fit" />
-                        </div>
-                        <div className="form-group">
-                          <input style={hStyle} value={headingFabric} onChange={e => setHeadingFabric(e.target.value)} placeholder="Heading…" title="Edit heading" />
-                          <input type="text" value={hFabric} onChange={(e) => setHFabric(e.target.value)} placeholder="e.g. 100% Breathable Cotton" />
-                        </div>
-                      </div>
+                    {/* Each highlight field: editable heading input on top, value input below */}
+                    {(() => {
+                      const hStyle = {
+                        display: 'block',
+                        width: '100%',
+                        fontSize: '10px',
+                        fontWeight: 700,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        color: 'var(--color-text-secondary)',
+                        background: 'transparent',
+                        border: 'none',
+                        borderBottom: '1px dashed var(--color-border)',
+                        outline: 'none',
+                        marginBottom: '4px',
+                        padding: '2px 0',
+                        cursor: 'text',
+                      };
+                      return (
+                        <>
+                          <div className="form-row-double">
+                            <div className="form-group">
+                              <input style={hStyle} value={headingFit} onChange={e => setHeadingFit(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                              <input type="text" value={hFit} onChange={(e) => setHFit(e.target.value)} placeholder="e.g. Straight Regular Fit" />
+                            </div>
+                            <div className="form-group">
+                              <input style={hStyle} value={headingFabric} onChange={e => setHeadingFabric(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                              <input type="text" value={hFabric} onChange={(e) => setHFabric(e.target.value)} placeholder="e.g. 100% Breathable Cotton" />
+                            </div>
+                          </div>
 
-                      <div className="form-row-double">
-                        <div className="form-group">
-                          <input style={hStyle} value={headingNeck} onChange={e => setHeadingNeck(e.target.value)} placeholder="Heading…" title="Edit heading" />
-                          <input type="text" value={hNeck} onChange={(e) => setHNeck(e.target.value)} placeholder="e.g. Mandarin Neck" />
-                        </div>
-                        <div className="form-group">
-                          <input style={hStyle} value={headingSleeve} onChange={e => setHeadingSleeve(e.target.value)} placeholder="Heading…" title="Edit heading" />
-                          <input type="text" value={hSleeve} onChange={(e) => setHSleeve(e.target.value)} placeholder="e.g. 3/4 Sleeves" />
-                        </div>
-                      </div>
+                          <div className="form-row-double">
+                            <div className="form-group">
+                              <input style={hStyle} value={headingNeck} onChange={e => setHeadingNeck(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                              <input type="text" value={hNeck} onChange={(e) => setHNeck(e.target.value)} placeholder="e.g. Mandarin Neck" />
+                            </div>
+                            <div className="form-group">
+                              <input style={hStyle} value={headingSleeve} onChange={e => setHeadingSleeve(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                              <input type="text" value={hSleeve} onChange={(e) => setHSleeve(e.target.value)} placeholder="e.g. 3/4 Sleeves" />
+                            </div>
+                          </div>
 
-                      <div className="form-row-double">
-                        <div className="form-group">
-                          <input style={hStyle} value={headingFrontNeck} onChange={e => setHeadingFrontNeck(e.target.value)} placeholder="Heading…" title="Edit heading" />
-                          <input type="text" value={hFrontNeck} onChange={(e) => setHFrontNeck(e.target.value)} placeholder='e.g. 6.5 Inches or Round 7"' />
-                        </div>
-                        <div className="form-group">
-                          <input style={hStyle} value={headingBackNeck} onChange={e => setHeadingBackNeck(e.target.value)} placeholder="Heading…" title="Edit heading" />
-                          <input type="text" value={hBackNeck} onChange={(e) => setHBackNeck(e.target.value)} placeholder='e.g. 8 Inches or Deep U 8"' />
-                        </div>
-                      </div>
+                          <div className="form-row-double">
+                            <div className="form-group">
+                              <input style={hStyle} value={headingFrontNeck} onChange={e => setHeadingFrontNeck(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                              <input type="text" value={hFrontNeck} onChange={(e) => setHFrontNeck(e.target.value)} placeholder='e.g. 6.5 Inches or Round 7"' />
+                            </div>
+                            <div className="form-group">
+                              <input style={hStyle} value={headingBackNeck} onChange={e => setHeadingBackNeck(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                              <input type="text" value={hBackNeck} onChange={(e) => setHBackNeck(e.target.value)} placeholder='e.g. 8 Inches or Deep U 8"' />
+                            </div>
+                          </div>
 
-                      <div className="form-row-double">
-                        <div className="form-group">
-                          <input style={hStyle} value={headingLength} onChange={e => setHeadingLength(e.target.value)} placeholder="Heading…" title="Edit heading" />
-                          <input type="text" value={hLength} onChange={(e) => setHLength(e.target.value)} placeholder="e.g. 16 Inches" />
-                        </div>
-                        <div className="form-group">
-                          <input style={hStyle} value={headingTechnique} onChange={e => setHeadingTechnique(e.target.value)} placeholder="Heading…" title="Edit heading" />
-                          <input type="text" value={hTechnique} onChange={(e) => setHTechnique(e.target.value)} placeholder="e.g. Handcrafted Chikankari" />
-                        </div>
-                      </div>
+                          <div className="form-row-double">
+                            <div className="form-group">
+                              <input style={hStyle} value={headingLength} onChange={e => setHeadingLength(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                              <input type="text" value={hLength} onChange={(e) => setHLength(e.target.value)} placeholder="e.g. 16 Inches" />
+                            </div>
+                            <div className="form-group">
+                              <input style={hStyle} value={headingTechnique} onChange={e => setHeadingTechnique(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                              <input type="text" value={hTechnique} onChange={(e) => setHTechnique(e.target.value)} placeholder="e.g. Handcrafted Chikankari" />
+                            </div>
+                          </div>
 
-                      <div className="form-row-double">
-                        <div className="form-group">
-                          <input style={hStyle} value={headingTopHeight} onChange={e => setHeadingTopHeight(e.target.value)} placeholder="Heading…" title="Edit heading" />
-                          <input type="text" value={hTopHeight} onChange={(e) => setHTopHeight(e.target.value)} placeholder="e.g. 44 Inches" />
-                        </div>
-                        <div className="form-group">
-                          <input style={hStyle} value={headingBottomHeight} onChange={e => setHeadingBottomHeight(e.target.value)} placeholder="Heading…" title="Edit heading" />
-                          <input type="text" value={hBottomHeight} onChange={(e) => setHBottomHeight(e.target.value)} placeholder="e.g. 38 Inches" />
-                        </div>
-                      </div>
-                    </>
-                  );
-                })()}
+                          <div className="form-row-double">
+                            <div className="form-group">
+                              <input style={hStyle} value={headingTopHeight} onChange={e => setHeadingTopHeight(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                              <input type="text" value={hTopHeight} onChange={(e) => setHTopHeight(e.target.value)} placeholder="e.g. 44 Inches" />
+                            </div>
+                            <div className="form-group">
+                              <input style={hStyle} value={headingBottomHeight} onChange={e => setHeadingBottomHeight(e.target.value)} placeholder="Heading…" title="Edit heading" />
+                              <input type="text" value={hBottomHeight} onChange={(e) => setHBottomHeight(e.target.value)} placeholder="e.g. 38 Inches" />
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </>
+                )}
               </div>
               
               {/* Primary Slideshow Images Upload & URLs */}
@@ -2833,6 +3020,30 @@ alter table public.settings disable row level security;`}</pre>
                   <label htmlFor="new-arrival-check" style={{ fontWeight: '600', cursor: 'pointer' }}>New Arrival 🔥</label>
                 </div>
 
+                <div className="form-group-checkbox" style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
+                  <input 
+                    type="checkbox" 
+                    id="product-show-oos" 
+                    checked={showOutOfStock} 
+                    onChange={(e) => setShowOutOfStock(e.target.checked)} 
+                  />
+                  <label htmlFor="product-show-oos" style={{ fontWeight: '600', cursor: 'pointer', fontSize: '12px' }}>
+                    Show "Out of Stock" to customer (If unchecked when sold out, product is removed from customer view)
+                  </label>
+                </div>
+
+                <div className="form-group-checkbox" style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
+                  <input 
+                    type="checkbox" 
+                    id="product-is-oos" 
+                    checked={isOutOfStock} 
+                    onChange={(e) => setIsOutOfStock(e.target.checked)} 
+                  />
+                  <label htmlFor="product-is-oos" style={{ fontWeight: '600', cursor: 'pointer', fontSize: '12px', color: isOutOfStock ? '#dc2626' : 'inherit' }}>
+                    Mark entire product as Out of Stock
+                  </label>
+                </div>
+
                 <div className="form-group" style={{ margin: 0 }}>
                   <label style={{ fontWeight: '600', marginBottom: '4px', fontSize: '12px' }}>Product Rating (1.0 to 5.0)</label>
                   <input 
@@ -2904,6 +3115,82 @@ alter table public.settings disable row level security;`}</pre>
                       );
                     })()}
                     <span className="customize-tag">{prod.customizable ? 'Tailoring Available' : 'Standard Sizing'}</span>
+
+                    {/* Stock Status & Out of Stock Checkbox */}
+                    {(() => {
+                      const pSizes = Array.isArray(prod.variants?.sizes) ? prod.variants.sizes : [];
+                      const pQuantities = prod.variants?.sizeQuantities || prod.sizeQuantities || {};
+                      const hasSizes = pSizes.length > 0;
+                      const isAllZero = hasSizes && pSizes.every(s => (pQuantities[s] !== undefined && Number(pQuantities[s]) <= 0));
+                      const isSoldOut = Boolean(prod.isOutOfStock || prod.variants?.isOutOfStock || isAllZero);
+                      const isShowOos = Boolean(prod.showOutOfStock !== undefined ? prod.showOutOfStock : prod.variants?.showOutOfStock);
+                      const totalUnits = pSizes.reduce((sum, s) => sum + (pQuantities[s] !== undefined ? Number(pQuantities[s]) : 10), 0);
+
+                      return (
+                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed var(--color-border)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                            {isSoldOut ? (
+                              isShowOos ? (
+                                <span style={{ fontSize: '11px', fontWeight: 600, color: '#c2410c', background: '#ffedd5', padding: '2px 8px', borderRadius: '4px' }}>
+                                  ⚠️ Out of Stock (Shows to Customer)
+                                </span>
+                              ) : (
+                                <span style={{ fontSize: '11px', fontWeight: 600, color: '#b91c1c', background: '#fee2e2', padding: '2px 8px', borderRadius: '4px' }}>
+                                  🚫 Out of Stock (Hidden from Customer View)
+                                </span>
+                              )
+                            ) : (
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '2px 8px', borderRadius: '4px' }}>
+                                ✅ In Stock ({totalUnits} units)
+                              </span>
+                            )}
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', cursor: 'pointer', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                              <input 
+                                type="checkbox"
+                                checked={isShowOos}
+                                onChange={(e) => {
+                                  const updated = {
+                                    ...prod,
+                                    showOutOfStock: e.target.checked,
+                                    variants: {
+                                      ...(prod.variants || {}),
+                                      showOutOfStock: e.target.checked
+                                    }
+                                  };
+                                  onUpdateProduct(updated);
+                                }}
+                                style={{ width: 'auto', margin: 0, cursor: 'pointer' }}
+                              />
+                              <span>Show Out of Stock to customer</span>
+                            </label>
+
+                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', cursor: 'pointer', color: isSoldOut ? '#dc2626' : 'var(--color-text-secondary)' }}>
+                              <input 
+                                type="checkbox"
+                                checked={isSoldOut}
+                                onChange={(e) => {
+                                  const nextOos = e.target.checked;
+                                  const updated = {
+                                    ...prod,
+                                    isOutOfStock: nextOos,
+                                    variants: {
+                                      ...(prod.variants || {}),
+                                      isOutOfStock: nextOos
+                                    }
+                                  };
+                                  onUpdateProduct(updated);
+                                }}
+                                style={{ width: 'auto', margin: 0, cursor: 'pointer' }}
+                              />
+                              <span>Mark Out of Stock</span>
+                            </label>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="inventory-card-actions">
                     <button 

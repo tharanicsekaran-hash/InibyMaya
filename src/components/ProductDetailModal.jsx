@@ -68,11 +68,20 @@ export default function ProductDetailModal({
     return ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
   }, [variants?.sizes]);
 
+  const sizeQuantities = variants?.sizeQuantities || product.sizeQuantities || {};
+  const isSizeOutOfStock = (s) => sizeQuantities[s] !== undefined && Number(sizeQuantities[s]) <= 0;
+  const getSizeQuantity = (s) => sizeQuantities[s] !== undefined ? Number(sizeQuantities[s]) : 10;
+  const isAllSizesOutOfStock = availableSizes.length > 0 && availableSizes.every(isSizeOutOfStock);
+  const isProductSoldOut = Boolean(product.isOutOfStock || isAllSizesOutOfStock);
+
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [selectedColor, setSelectedColor] = useState(availableColors[0]);
   const [selectedSize, setSelectedSize] = useState(() => {
-    if (preselectedSize && availableSizes.includes(preselectedSize)) return preselectedSize;
-    return availableSizes[0] || '';
+    if (preselectedSize && availableSizes.includes(preselectedSize) && !isSizeOutOfStock(preselectedSize)) {
+      return preselectedSize;
+    }
+    const inStock = availableSizes.find(s => !isSizeOutOfStock(s));
+    return inStock || availableSizes[0] || '';
   });
   const [quantity, setQuantity] = useState(1);
   const [wantsCustomStitching, setWantsCustomStitching] = useState(false);
@@ -134,6 +143,10 @@ export default function ProductDetailModal({
   const totalPrice = unitPrice * quantity;
 
   const handleAddToCart = () => {
+    if (isProductSoldOut || (selectedSize && isSizeOutOfStock(selectedSize))) {
+      setErrorMsg(`Size ${selectedSize || 'selected'} is currently Out of Stock.`);
+      return;
+    }
     if (!selectedSize) {
       setErrorMsg(wantsCustomStitching ? 'Please select a base size for your custom stitching.' : 'Please select a size.');
       return;
@@ -343,51 +356,130 @@ export default function ProductDetailModal({
                 </button>
               </div>
               <div className="size-chips">
-                {availableSizes.map((size) => (
-                  <button
-                    key={size}
-                    className={`size-chip-btn ${selectedSize === size ? 'active' : ''}`}
-                    onClick={() => {
-                      setSelectedSize(size);
-                      setErrorMsg('');
-                    }}
-                  >
-                    {size}
-                  </button>
-                ))}
+                {availableSizes.map((size) => {
+                  const isOos = isSizeOutOfStock(size);
+                  const qty = getSizeQuantity(size);
+                  const isLtd = !isOos && qty < 4;
+
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      disabled={isOos}
+                      className={`size-chip-btn ${selectedSize === size ? 'active' : ''} ${isOos ? 'out-of-stock' : ''} ${isLtd ? 'limited-stock' : ''}`}
+                      onClick={() => {
+                        if (isOos) return;
+                        setSelectedSize(size);
+                        setErrorMsg('');
+                      }}
+                      title={isOos ? `${size} - Out of Stock` : isLtd ? `${size} - Limited Stock (${qty} left)` : size}
+                    >
+                      <span className="size-name">{size}</span>
+                      {isOos && <span className="size-subtag oos">Out of Stock</span>}
+                      {isLtd && <span className="size-subtag limited">Only {qty} left</span>}
+                    </button>
+                  );
+                })}
               </div>
+
+              {/* Urgency & Out-of-stock banner */}
+              {selectedSize && !isSizeOutOfStock(selectedSize) && getSizeQuantity(selectedSize) < 4 && (
+                <div className="size-limited-hurry-banner animate-fadeIn" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: '#fff7ed',
+                  border: '1px solid #fdba74',
+                  color: '#c2410c',
+                  padding: '7px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  marginTop: '10px'
+                }}>
+                  <span>🔥 Hurry up! Limited stock — only {getSizeQuantity(selectedSize)} left in size {selectedSize}!</span>
+                </div>
+              )}
+              {selectedSize && isSizeOutOfStock(selectedSize) && (
+                <div className="size-oos-banner animate-fadeIn" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  color: '#b91c1c',
+                  padding: '7px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  marginTop: '10px'
+                }}>
+                  <span>⚠️ Size {selectedSize} is currently Out of Stock.</span>
+                </div>
+              )}
             </div>
 
             {/* Quantity */}
             <div className="qty-section">
               <span className="option-label">Quantity</span>
               <div className="quantity-selector">
-                <button onClick={() => setQuantity(prev => Math.max(1, prev - 1))}>-</button>
+                <button 
+                  type="button"
+                  disabled={isProductSoldOut || isSizeOutOfStock(selectedSize)}
+                  onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                >-</button>
                 <span>{quantity}</span>
-                <button onClick={() => setQuantity(prev => prev + 1)}>+</button>
+                <button 
+                  type="button"
+                  disabled={isProductSoldOut || isSizeOutOfStock(selectedSize)}
+                  onClick={() => {
+                    const maxStock = getSizeQuantity(selectedSize);
+                    if (quantity >= maxStock) {
+                      setErrorMsg(`Only ${maxStock} items available in stock for size ${selectedSize}.`);
+                      return;
+                    }
+                    setErrorMsg('');
+                    setQuantity(prev => prev + 1);
+                  }}
+                >+</button>
               </div>
             </div>
 
             {errorMsg && <p className="error-message">{errorMsg}</p>}
 
             {/* Actions */}
-            <button className="add-to-cart-large-btn" onClick={handleAddToCart}>
-              Add to Cart — ₹{totalPrice.toLocaleString('en-IN')}
+            <button 
+              className={`add-to-cart-large-btn ${(isProductSoldOut || isSizeOutOfStock(selectedSize)) ? 'disabled-sold-out' : ''}`} 
+              onClick={handleAddToCart}
+              disabled={isProductSoldOut || isSizeOutOfStock(selectedSize)}
+              style={(isProductSoldOut || isSizeOutOfStock(selectedSize)) ? {
+                backgroundColor: '#9ca3af',
+                cursor: 'not-allowed',
+                opacity: 0.75
+              } : {}}
+            >
+              {(isProductSoldOut || isSizeOutOfStock(selectedSize)) 
+                ? 'Out of Stock' 
+                : `Add to Cart — ₹${totalPrice.toLocaleString('en-IN')}`}
             </button>
 
             {/* Key Highlights Grid */}
             {(() => {
+              const highlightsEnabled = product.showKeyHighlights !== false && highlights?.enabled !== false;
+              if (!highlightsEnabled) return null;
+
+              const headings = highlights?.headings || {};
               const configuredHighlights = [
-                { key: 'fit', label: 'Garment Fit', val: highlights?.fit },
-                { key: 'fabric', label: 'Fabric', val: highlights?.fabric },
-                { key: 'neck', label: 'Neckline Style', val: highlights?.neck },
-                { key: 'frontNeck', label: 'Front Neck', val: highlights?.frontNeck || highlights?.front_neck },
-                { key: 'backNeck', label: 'Back Neck', val: highlights?.backNeck || highlights?.back_neck },
-                { key: 'sleeve', label: 'Sleeve Styling', val: highlights?.sleeve },
-                { key: 'length', label: 'Sleeve Length', val: highlights?.length },
-                { key: 'topHeight', label: 'Top Height', val: highlights?.topHeight || highlights?.top_height },
-                { key: 'bottomHeight', label: 'Bottom Height', val: highlights?.bottomHeight || highlights?.bottom_height },
-                { key: 'technique', label: 'Craft Technique', val: highlights?.technique }
+                { key: 'fit', label: headings.fit || 'Garment Fit', val: highlights?.fit },
+                { key: 'fabric', label: headings.fabric || 'Fabric', val: highlights?.fabric },
+                { key: 'neck', label: headings.neck || 'Neckline Style', val: highlights?.neck },
+                { key: 'frontNeck', label: headings.frontNeck || 'Front Neck', val: highlights?.frontNeck || highlights?.front_neck },
+                { key: 'backNeck', label: headings.backNeck || 'Back Neck', val: highlights?.backNeck || highlights?.back_neck },
+                { key: 'sleeve', label: headings.sleeve || 'Sleeve Styling', val: highlights?.sleeve },
+                { key: 'length', label: headings.length || 'Sleeve Length', val: highlights?.length },
+                { key: 'topHeight', label: headings.topHeight || 'Top Height', val: highlights?.topHeight || highlights?.top_height },
+                { key: 'bottomHeight', label: headings.bottomHeight || 'Bottom Height', val: highlights?.bottomHeight || highlights?.bottom_height },
+                { key: 'technique', label: headings.technique || 'Craft Technique', val: highlights?.technique }
               ].filter(item => Boolean(item.val && String(item.val).trim()));
 
               if (configuredHighlights.length === 0) return null;

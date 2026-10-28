@@ -15,6 +15,16 @@ export default function ProductCard({
   const primaryImgSrc = (images && images[0] && images[0].trim() !== '') ? images[0] : defaultFallback;
   const secondaryImgSrc = (images && images[1] && images[1].trim() !== '') ? images[1] : null;
 
+  const sizeQuantities = variants?.sizeQuantities || product.sizeQuantities || {};
+  const cardSizes = Array.isArray(variants?.sizes)
+    ? variants.sizes
+    : (typeof variants?.sizes === 'string' ? variants.sizes.split(',').map(s => s.trim()).filter(Boolean) : []);
+
+  const isSizeOutOfStock = (s) => sizeQuantities[s] !== undefined && Number(sizeQuantities[s]) <= 0;
+  const isSizeLimited = (s) => sizeQuantities[s] !== undefined && Number(sizeQuantities[s]) > 0 && Number(sizeQuantities[s]) < 4;
+  const isAllSizesOutOfStock = cardSizes.length > 0 && cardSizes.every(isSizeOutOfStock);
+  const isProductSoldOut = Boolean(product.isOutOfStock || isAllSizesOutOfStock);
+
   const handleQuickShop = (e, size = null) => {
     e.stopPropagation();
     if (onQuickViewClick) {
@@ -25,14 +35,19 @@ export default function ProductCard({
   };
 
   return (
-    <div className="product-card" onClick={() => onProductClick(product, null)}>
+    <div className={`product-card ${isProductSoldOut ? 'is-sold-out' : ''}`} onClick={() => onProductClick(product, null)}>
       <div className="product-card-image-wrapper" style={{ borderRadius: '12px' }}>
         {/* Badges */}
-        {customizable && (
-          <div className="product-badges">
+        <div className="product-badges">
+          {isProductSoldOut && (
+            <span className="badge badge-sold-out" style={{ backgroundColor: '#111827', color: '#ffffff', fontWeight: '700' }}>
+              Out of Stock
+            </span>
+          )}
+          {customizable && !isProductSoldOut && (
             <span className="badge badge-customizable">Custom Tailorable</span>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Action Stack (Heart + Eye) - Always Visible */}
         <div className="product-action-stack">
@@ -137,23 +152,43 @@ export default function ProductCard({
 
         {/* Clickable Size Swatches directly under price */}
         {(() => {
-          const cardSizes = Array.isArray(variants?.sizes)
-            ? variants.sizes
-            : (typeof variants?.sizes === 'string' ? variants.sizes.split(',').map(s => s.trim()).filter(Boolean) : []);
-          
           if (cardSizes.length === 0) return null;
 
           return (
             <div className="product-card-sizes" onClick={(e) => e.stopPropagation()}>
-              {cardSizes.map(size => (
-                <span 
-                  key={size} 
-                  className="product-card-size-box"
-                  onClick={(e) => handleQuickShop(e, size)}
-                >
-                  {size}
-                </span>
-              ))}
+              {cardSizes.map(size => {
+                const isOos = isSizeOutOfStock(size);
+                const isLtd = isSizeLimited(size);
+                const qty = sizeQuantities[size];
+
+                return (
+                  <span 
+                    key={size} 
+                    className={`product-card-size-box ${isOos ? 'out-of-stock' : ''} ${isLtd ? 'limited-stock' : ''}`}
+                    style={isOos ? {
+                      textDecoration: 'line-through',
+                      opacity: 0.45,
+                      backgroundColor: '#f3f4f6',
+                      color: '#9ca3af',
+                      borderColor: '#e5e7eb',
+                      cursor: 'not-allowed'
+                    } : isLtd ? {
+                      borderColor: '#f97316',
+                      color: '#c2410c'
+                    } : {}}
+                    title={isOos ? `${size} (Out of Stock)` : isLtd ? `${size} (Hurry up! Only ${qty} left)` : size}
+                    onClick={(e) => {
+                      if (isOos) {
+                        e.stopPropagation();
+                        return;
+                      }
+                      handleQuickShop(e, size);
+                    }}
+                  >
+                    {size}
+                  </span>
+                );
+              })}
             </div>
           );
         })()}

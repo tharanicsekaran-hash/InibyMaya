@@ -1182,6 +1182,115 @@ html, body, #root {
   color: var(--color-white);
 }
 
+/* Size Inventory & Out-of-Stock Styles */
+.size-chip-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  min-height: 44px;
+  position: relative;
+}
+
+.size-chip-btn.out-of-stock {
+  text-decoration: line-through;
+  opacity: 0.55;
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
+  border-color: #e5e7eb !important;
+  cursor: not-allowed !important;
+}
+
+.size-chip-btn.out-of-stock:hover {
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
+  border-color: #e5e7eb !important;
+}
+
+.size-chip-btn.limited-stock {
+  border-color: #fb923c;
+  background-color: #fffaf0;
+}
+
+.size-subtag {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-top: 2px;
+  text-decoration: none !important;
+  display: inline-block;
+}
+
+.size-subtag.oos {
+  color: #dc2626;
+}
+
+.size-subtag.limited {
+  color: #c2410c;
+}
+
+/* QuickView Size Pill Stock Styles */
+.quickview-size-pill {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.quickview-size-pill.out-of-stock {
+  text-decoration: line-through;
+  opacity: 0.55;
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
+  border-color: #e5e7eb !important;
+  cursor: not-allowed !important;
+}
+
+.quickview-size-pill.out-of-stock:hover {
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
+  border-color: #e5e7eb !important;
+}
+
+.quickview-size-pill.limited-stock {
+  border-color: #fb923c;
+  background-color: #fffaf0;
+}
+
+.quickview-size-subtag {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-top: 1px;
+  text-decoration: none !important;
+  display: inline-block;
+}
+
+.quickview-size-subtag.oos {
+  color: #dc2626;
+}
+
+.quickview-size-subtag.limited {
+  color: #c2410c;
+}
+
+.badge-sold-out {
+  background-color: #111827 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.product-card.is-sold-out .primary-image {
+  opacity: 0.88;
+  filter: grayscale(15%);
+}
+
 /* ========================================
    OUTFIT CUSTOMIZER STUDIO
    ======================================== */

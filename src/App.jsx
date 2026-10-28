@@ -71,10 +71,21 @@ const mapDbProductToClient = (dbProd) => {
     parsedVariants = {};
   }
 
+  const rawSizeQuantities = (parsedVariants.sizeQuantities && typeof parsedVariants.sizeQuantities === 'object')
+    ? parsedVariants.sizeQuantities
+    : (dbProd.sizeQuantities && typeof dbProd.sizeQuantities === 'object' ? dbProd.sizeQuantities : {});
+
   const safeVariants = {
     colors: Array.isArray(parsedVariants.colors) ? parsedVariants.colors : [],
-    sizes: normalizeProductSizes(parsedVariants.sizes)
+    sizes: normalizeProductSizes(parsedVariants.sizes),
+    sizeQuantities: rawSizeQuantities,
+    showOutOfStock: parsedVariants.showOutOfStock !== undefined ? Boolean(parsedVariants.showOutOfStock) : (dbProd.show_out_of_stock !== undefined ? Boolean(dbProd.show_out_of_stock) : false),
+    isOutOfStock: parsedVariants.isOutOfStock !== undefined ? Boolean(parsedVariants.isOutOfStock) : (dbProd.is_out_of_stock !== undefined ? Boolean(dbProd.is_out_of_stock) : false)
   };
+
+  const showKeyHighlights = dbProd.show_key_highlights !== undefined
+    ? Boolean(dbProd.show_key_highlights)
+    : (dbProd.highlights?.enabled !== undefined ? Boolean(dbProd.highlights.enabled) : (dbProd.showKeyHighlights !== undefined ? Boolean(dbProd.showKeyHighlights) : true));
 
   return {
     id: dbProd.id,
@@ -88,21 +99,71 @@ const mapDbProductToClient = (dbProd) => {
     details: dbProd.details || [],
     images: dbProd.images,
     variants: safeVariants,
+    sizeQuantities: rawSizeQuantities,
+    showOutOfStock: safeVariants.showOutOfStock,
+    isOutOfStock: safeVariants.isOutOfStock,
+    showKeyHighlights,
     customizable: dbProd.customizable,
     bestSeller: Boolean(dbProd.best_seller),
     newArrival: isNewArrival,
     occasion: dbProd.occasion || 'Daily Elegance',
     highlights: {
       ...(dbProd.highlights || {}),
+      enabled: showKeyHighlights,
       originalPrice: validOrigPrice
     }
   };
+};
+
+export const isProductOutOfStock = (prod) => {
+  if (!prod) return false;
+  if (prod.isOutOfStock) return true;
+  const sizes = Array.isArray(prod.variants?.sizes) ? prod.variants.sizes : [];
+  const sizeQuantities = prod.variants?.sizeQuantities || prod.sizeQuantities;
+  if (sizeQuantities && typeof sizeQuantities === 'object' && sizes.length > 0) {
+    const hasAnyInStock = sizes.some(s => {
+      const q = sizeQuantities[s];
+      return q === undefined || Number(q) > 0;
+    });
+    return !hasAnyInStock;
+  }
+  return false;
+};
+
+export const isProductVisibleToCustomer = (prod) => {
+  if (!prod) return false;
+  const outOfStock = isProductOutOfStock(prod);
+  if (!outOfStock) return true;
+  // If product is out of stock:
+  // "there should be check box for each product for Out of Stock, if it is checked out of stock shows to customer if not product got removed to user view"
+  return Boolean(prod.showOutOfStock);
 };
 
 const mapClientProductToDb = (clientProd) => {
   const numPrice = Number(clientProd.price || 0);
   const rawOrigPrice = clientProd.originalPrice || clientProd.highlights?.originalPrice;
   const validOrigPrice = (rawOrigPrice && Number(rawOrigPrice) > numPrice) ? Number(rawOrigPrice) : null;
+
+  const sizeQuantities = clientProd.sizeQuantities || clientProd.variants?.sizeQuantities || {};
+  const showOutOfStock = Boolean(clientProd.showOutOfStock !== undefined ? clientProd.showOutOfStock : clientProd.variants?.showOutOfStock);
+  const isOutOfStock = Boolean(clientProd.isOutOfStock !== undefined ? clientProd.isOutOfStock : clientProd.variants?.isOutOfStock);
+  const showKeyHighlights = clientProd.showKeyHighlights !== undefined 
+    ? Boolean(clientProd.showKeyHighlights) 
+    : (clientProd.highlights?.enabled !== undefined ? Boolean(clientProd.highlights.enabled) : true);
+
+  const safeVariants = {
+    ...(clientProd.variants || {}),
+    sizeQuantities,
+    showOutOfStock,
+    isOutOfStock
+  };
+
+  const safeHighlights = {
+    ...(clientProd.highlights || {}),
+    enabled: showKeyHighlights,
+    originalPrice: validOrigPrice,
+    newArrival: Boolean(clientProd.newArrival)
+  };
 
   return {
     id: clientProd.id,
@@ -115,16 +176,12 @@ const mapClientProductToDb = (clientProd) => {
     description: clientProd.description,
     details: clientProd.details || [],
     images: clientProd.images,
-    variants: clientProd.variants,
+    variants: safeVariants,
     customizable: clientProd.customizable,
     best_seller: Boolean(clientProd.bestSeller),
     new_arrival: Boolean(clientProd.newArrival),
     occasion: clientProd.occasion || 'Daily Elegance',
-    highlights: {
-      ...(clientProd.highlights || {}),
-      originalPrice: validOrigPrice,
-      newArrival: Boolean(clientProd.newArrival)
-    }
+    highlights: safeHighlights
   };
 };
 
@@ -304,6 +361,11 @@ export default function App() {
 
   // Catalog State (100% Direct Database Synchronized)
   const [productsList, setProductsList] = useState([]);
+
+  // Filtered catalog visible to customers based on Out of Stock checkbox rule
+  const customerProducts = useMemo(() => {
+    return productsList.filter(isProductVisibleToCustomer);
+  }, [productsList]);
 
   // Cart & Orders State
   const [cartItems, setCartItems] = useState(() => {
@@ -1325,7 +1387,7 @@ export default function App() {
           setSelectedProduct(null);
         }}
         boutiqueSettings={boutiqueSettings}
-        products={productsList}
+        products={customerProducts}
         onProductClick={(prod) => {
           setSelectedProduct(prod);
           setSuccessOrder(null);
@@ -1447,7 +1509,7 @@ export default function App() {
             onClose={() => setSelectedProduct(null)}
             onAddToCart={handleAddToCart}
             preselectedSize={preselectedSize}
-            allProducts={productsList}
+            allProducts={customerProducts}
             onProductClick={(prod, size) => {
               if (size) setPreselectedSize(size);
               setSelectedProduct(prod);
@@ -1479,7 +1541,7 @@ export default function App() {
               categories={(() => {
                 try { return JSON.parse(boutiqueSettings.categories || '[]'); } catch { return []; }
               })()}
-              products={productsList}
+              products={customerProducts}
               onCategoryClick={(filter) => {
                 setSearchQuery('');
                 if (filter === 'custom') {
@@ -1505,7 +1567,7 @@ export default function App() {
                 <p>Fresh drops & handwoven additions curated every week for the modern wardrobe.</p>
               </div>
               <div className="product-grid">
-                {productsList.filter(p => Boolean(p.newArrival)).slice(0, 4).map(product => (
+                {customerProducts.filter(p => Boolean(p.newArrival)).slice(0, 4).map(product => (
                   <ProductCard 
                     key={product.id}
                     product={product}
@@ -1578,11 +1640,11 @@ export default function App() {
                 <h2>Our Bestsellers</h2>
                 <p>Explore traditional silhouettes loved by our patrons across the country.</p>
               </div>
-              {productsList.length > 0 ? (
+              {customerProducts.length > 0 ? (
                 <div className="product-grid">
-                  {(productsList.filter(p => Boolean(p.bestSeller)).length > 0 
-                    ? productsList.filter(p => Boolean(p.bestSeller)) 
-                    : productsList
+                  {(customerProducts.filter(p => Boolean(p.bestSeller)).length > 0 
+                    ? customerProducts.filter(p => Boolean(p.bestSeller)) 
+                    : customerProducts
                   ).slice(0, 4).map(product => (
                     <ProductCard 
                       key={product.id}
@@ -1634,7 +1696,7 @@ export default function App() {
                         reel={reel}
                         onShopOutfit={() => {
                           if (reel.productId) {
-                            const matched = productsList.find(p => p.id === reel.productId);
+                            const matched = customerProducts.find(p => p.id === reel.productId) || productsList.find(p => p.id === reel.productId);
                             if (matched) setSelectedProduct(matched);
                           }
                         }}
@@ -1704,7 +1766,7 @@ export default function App() {
         ) : activePage === 'shop' ? (
           // Catalog Page
           <ProductGrid 
-            products={productsList} 
+            products={customerProducts} 
             onProductClick={(prod) => {
               setSelectedProduct(prod);
               window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1732,7 +1794,7 @@ export default function App() {
             </div>
             {favorites.length > 0 ? (
               <div className="catalog-products-grid animate-slideUp">
-                {productsList
+                {customerProducts
                   .filter(p => favorites.includes(p.id))
                   .map(product => (
                     <ProductCard 

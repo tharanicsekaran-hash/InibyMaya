@@ -200,7 +200,6 @@ export default function QuickViewModal({
                   title={isOos ? `${sz} - Out of Stock` : isLtd ? `${sz} - Only ${qty} left (Hurry up!)` : sz}
                 >
                   <span className="quickview-size-text">{sz}</span>
-                  {isOos && <span className="quickview-size-subtag oos">Out of Stock</span>}
                   {isLtd && <span className="quickview-size-subtag limited">Only {qty} left</span>}
                 </button>
               );

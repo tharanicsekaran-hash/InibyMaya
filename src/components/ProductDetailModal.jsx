@@ -435,7 +435,6 @@ export default function ProductDetailModal({
                       title={isOos ? `${size} - Out of Stock` : isLtd ? `${size} - Limited Stock (${qty} left)` : size}
                     >
                       <span className="size-name">{size}</span>
-                      {isOos && <span className="size-subtag oos">Out of Stock</span>}
                       {isLtd && <span className="size-subtag limited">Only {qty} left</span>}
                     </button>
                   );

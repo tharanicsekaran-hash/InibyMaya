@@ -1195,11 +1195,17 @@ html, body, #root {
 
 .size-chip-btn.out-of-stock {
   text-decoration: line-through;
-  opacity: 0.55;
+  text-decoration-thickness: 1.5px;
+  opacity: 0.5;
   background-color: #f3f4f6 !important;
   color: #9ca3af !important;
   border-color: #e5e7eb !important;
   cursor: not-allowed !important;
+}
+
+.size-chip-btn.out-of-stock .size-name {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
 }
 
 .size-chip-btn.out-of-stock:hover {
@@ -1242,11 +1248,17 @@ html, body, #root {
 
 .quickview-size-pill.out-of-stock {
   text-decoration: line-through;
-  opacity: 0.55;
+  text-decoration-thickness: 1.5px;
+  opacity: 0.5;
   background-color: #f3f4f6 !important;
   color: #9ca3af !important;
   border-color: #e5e7eb !important;
   cursor: not-allowed !important;
+}
+
+.quickview-size-pill.out-of-stock .quickview-size-text {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
 }
 
 .quickview-size-pill.out-of-stock:hover {

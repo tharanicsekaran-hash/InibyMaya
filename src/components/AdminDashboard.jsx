@@ -903,6 +903,37 @@ export default function AdminDashboard({
     }
   };
 
+  const handleColorImageUpload = async (colorName, e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setUploadingColor(colorName);
+    try {
+      let imageUrl;
+      if (import.meta.env.VITE_GITHUB_TOKEN) {
+        imageUrl = await uploadFileToGithub(file, 'media/products');
+      } else {
+        imageUrl = await compressImage(file);
+      }
+      setColorImages(prev => ({
+        ...prev,
+        [colorName]: imageUrl
+      }));
+      setPrimaryImages(prev => {
+        if (!prev.includes(imageUrl)) {
+          const filtered = prev.filter(x => x && x.trim() !== '');
+          return [...filtered, imageUrl];
+        }
+        return prev;
+      });
+    } catch (err) {
+      console.error('❌ [Color Photo Upload Error]:', err.message || err);
+      alert(`❌ Upload Failed: ${err.message || 'Error uploading file'}`);
+    } finally {
+      setUploadingColor(null);
+      if (e.target) e.target.value = '';
+    }
+  };
+
   const handleAddPrimaryRow = () => {
     setPrimaryImages(prev => [...prev, '']);
   };
@@ -1032,6 +1063,7 @@ export default function AdminDashboard({
 
   // Color Variations Image Map (colorName -> imageUrl)
   const [colorImages, setColorImages] = useState({});
+  const [uploadingColor, setUploadingColor] = useState(null);
 
   // Boutique Catalog Control Search & Filter states
   const [catalogSearch, setCatalogSearch] = useState('');
@@ -2700,8 +2732,8 @@ alter table public.settings disable row level security;`}</pre>
                         {productColors.map(color => {
                           const assignedImg = colorImages[color.name] || color.image || '';
                           const availablePhotos = [
-                            ...primaryImages.filter(img => img && img.trim() && !img.startsWith('data:')),
-                            ...(hoverImage && hoverImage.trim() && !hoverImage.startsWith('data:') ? [hoverImage.trim()] : [])
+                            ...primaryImages.filter(img => img && typeof img === 'string' && img.trim().length > 5 && !img.startsWith('data:')),
+                            ...(hoverImage && typeof hoverImage === 'string' && hoverImage.trim().length > 5 && !hoverImage.startsWith('data:') ? [hoverImage.trim()] : [])
                           ];
 
                           return (
@@ -2737,7 +2769,7 @@ alter table public.settings disable row level security;`}</pre>
 
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                                 {assignedImg ? (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                                     <img 
                                       src={assignedImg} 
                                       alt={color.name} 
@@ -2745,6 +2777,34 @@ alter table public.settings disable row level security;`}</pre>
                                       onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=100'; }}
                                     />
                                     <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 600 }}>Linked Photo</span>
+                                    
+                                    <label 
+                                      className="custom-file-upload" 
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        padding: '4px 8px',
+                                        fontSize: '11px',
+                                        fontWeight: 500,
+                                        cursor: uploadingColor === color.name ? 'wait' : 'pointer',
+                                        border: '1px solid var(--color-border)',
+                                        borderRadius: '4px',
+                                        backgroundColor: 'var(--color-bg-primary)',
+                                        color: 'var(--color-text-primary)'
+                                      }}
+                                      title="Upload a new photo for this color"
+                                    >
+                                      <Upload size={12} />
+                                      <span>{uploadingColor === color.name ? 'Uploading...' : 'Change Photo'}</span>
+                                      <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        disabled={uploadingColor === color.name}
+                                        onChange={(e) => handleColorImageUpload(color.name, e)} 
+                                      />
+                                    </label>
+
                                     <button
                                       type="button"
                                       onClick={() => setColorImages(prev => {
@@ -2759,9 +2819,36 @@ alter table public.settings disable row level security;`}</pre>
                                   </div>
                                 ) : (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                                    <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>Pick Photo:</span>
+                                    <label 
+                                      className="custom-file-upload" 
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '5px',
+                                        padding: '5px 10px',
+                                        fontSize: '11px',
+                                        fontWeight: 600,
+                                        cursor: uploadingColor === color.name ? 'wait' : 'pointer',
+                                        border: '1px solid var(--color-border)',
+                                        borderRadius: '4px',
+                                        backgroundColor: 'var(--color-bg-primary)',
+                                        color: 'var(--color-text-primary)'
+                                      }}
+                                      title="Upload photo from your computer for this color"
+                                    >
+                                      <Upload size={12} />
+                                      <span>{uploadingColor === color.name ? 'Uploading...' : 'Upload Photo'}</span>
+                                      <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        disabled={uploadingColor === color.name}
+                                        onChange={(e) => handleColorImageUpload(color.name, e)} 
+                                      />
+                                    </label>
+
                                     {availablePhotos.length > 0 && (
-                                      <div style={{ display: 'flex', gap: '4px' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>Pick:</span>
                                         {availablePhotos.map((pImg, pIdx) => (
                                           <img 
                                             key={pIdx}
@@ -2769,11 +2856,13 @@ alter table public.settings disable row level security;`}</pre>
                                             alt="Photo option"
                                             title="Click to link this photo to this color"
                                             onClick={() => setColorImages(prev => ({ ...prev, [color.name]: pImg }))}
+                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
                                             style={{ width: '28px', height: '28px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--color-border)', cursor: 'pointer' }}
                                           />
                                         ))}
                                       </div>
                                     )}
+
                                     <input 
                                       type="text"
                                       placeholder="Or paste photo URL..."
@@ -2782,7 +2871,7 @@ alter table public.settings disable row level security;`}</pre>
                                         const val = e.target.value;
                                         setColorImages(prev => ({ ...prev, [color.name]: val }));
                                       }}
-                                      style={{ width: '150px', padding: '4px 8px', fontSize: '11px', borderRadius: '4px', border: '1px solid var(--color-border)', background: 'var(--color-bg-primary)' }}
+                                      style={{ width: '135px', padding: '4px 8px', fontSize: '11px', borderRadius: '4px', border: '1px solid var(--color-border)', background: 'var(--color-bg-primary)' }}
                                     />
                                   </div>
                                 )}

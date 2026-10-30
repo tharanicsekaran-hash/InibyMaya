@@ -318,21 +318,25 @@ const mapClientOrderToDb = (clientOrder) => {
   };
 };
 
-// Helper to read initial routing state from URL query parameters (e.g. ?product=123, ?page=shop, etc.)
+// Helper to read initial routing state from URL query parameters (e.g. ?product=123, ?page=shop, ?category=Kids, ?q=search, etc.)
 const getInitialUrlState = () => {
   try {
     const params = new URLSearchParams(window.location.search);
     const prodId = params.get('product');
     const pageParam = params.get('page');
     const tabParam = params.get('tab') || 'about-us';
+    const categoryParam = params.get('category') || '';
+    const searchParam = params.get('q') || '';
     const validPages = ['home', 'shop', 'favorites', 'admin', 'info'];
     return {
       productId: prodId,
       page: validPages.includes(pageParam) ? pageParam : 'home',
-      tab: tabParam
+      tab: tabParam,
+      category: categoryParam,
+      search: searchParam
     };
   } catch (e) {
-    return { productId: null, page: 'home', tab: 'about-us' };
+    return { productId: null, page: 'home', tab: 'about-us', category: '', search: '' };
   }
 };
 const initialUrlState = getInitialUrlState();
@@ -340,8 +344,8 @@ const initialUrlState = getInitialUrlState();
 export default function App() {
   // Navigation & Page routing (persisted across refresh via URL)
   const [activePage, setActivePage] = useState(initialUrlState.page); 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialUrlState.search);
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState(initialUrlState.category);
   const [preselectedSize, setPreselectedSize] = useState(null);
   const [infoPageTab, setInfoPageTab] = useState(initialUrlState.tab);
   const [urlProductId, setUrlProductId] = useState(initialUrlState.productId);
@@ -821,7 +825,7 @@ export default function App() {
     }
   }, [urlProductId, productsList, selectedProduct]);
 
-  // Synchronize route & product state to URL parameters
+  // Synchronize route & product state to URL parameters (persists page, category, search, product across refresh)
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -829,17 +833,34 @@ export default function App() {
         params.set('product', selectedProduct.id);
         params.delete('page');
         params.delete('tab');
+        params.delete('category');
+        params.delete('q');
       } else {
         params.delete('product');
         if (activePage === 'home') {
           params.delete('page');
           params.delete('tab');
+          params.delete('category');
+          params.delete('q');
         } else {
           params.set('page', activePage);
           if (activePage === 'info') {
             params.set('tab', infoPageTab);
+            params.delete('category');
+            params.delete('q');
           } else {
             params.delete('tab');
+            // Persist category filter and search query for shop/favorites pages
+            if (selectedCategoryFilter) {
+              params.set('category', selectedCategoryFilter);
+            } else {
+              params.delete('category');
+            }
+            if (searchQuery) {
+              params.set('q', searchQuery);
+            } else {
+              params.delete('q');
+            }
           }
         }
       }
@@ -847,13 +868,13 @@ export default function App() {
       const currentQuery = window.location.search || window.location.pathname;
       if (newQuery !== currentQuery) {
         window.history.pushState(
-          { activePage, infoPageTab, productId: selectedProduct?.id || null },
+          { activePage, infoPageTab, productId: selectedProduct?.id || null, category: selectedCategoryFilter, search: searchQuery },
           '',
           newQuery
         );
       }
     } catch (e) {}
-  }, [selectedProduct, activePage, infoPageTab]);
+  }, [selectedProduct, activePage, infoPageTab, selectedCategoryFilter, searchQuery]);
 
   // Browser back/forward button popstate handler
   useEffect(() => {
@@ -863,6 +884,8 @@ export default function App() {
         const prodId = params.get('product');
         const pageParam = params.get('page');
         const tabParam = params.get('tab') || 'about-us';
+        const categoryParam = params.get('category') || '';
+        const searchParam = params.get('q') || '';
         if (prodId) {
           const found = productsList.find(p => String(p.id) === String(prodId));
           if (found) {
@@ -874,6 +897,8 @@ export default function App() {
           setSelectedProduct(null);
           setActivePage(pageParam || 'home');
           if (tabParam) setInfoPageTab(tabParam);
+          setSelectedCategoryFilter(categoryParam);
+          setSearchQuery(searchParam);
         }
       } catch (e) {}
     };

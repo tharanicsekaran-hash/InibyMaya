@@ -80,7 +80,8 @@ const mapDbProductToClient = (dbProd) => {
     sizes: normalizeProductSizes(parsedVariants.sizes),
     sizeQuantities: rawSizeQuantities,
     showOutOfStock: parsedVariants.showOutOfStock !== undefined ? Boolean(parsedVariants.showOutOfStock) : (dbProd.show_out_of_stock !== undefined ? Boolean(dbProd.show_out_of_stock) : false),
-    isOutOfStock: parsedVariants.isOutOfStock !== undefined ? Boolean(parsedVariants.isOutOfStock) : (dbProd.is_out_of_stock !== undefined ? Boolean(dbProd.is_out_of_stock) : false)
+    isOutOfStock: parsedVariants.isOutOfStock !== undefined ? Boolean(parsedVariants.isOutOfStock) : (dbProd.is_out_of_stock !== undefined ? Boolean(dbProd.is_out_of_stock) : false),
+    sizeGuideImage: parsedVariants.sizeGuideImage || parsedVariants.size_guide_image || dbProd.sizeGuideImage || dbProd.size_guide_image || ''
   };
 
   const showKeyHighlights = dbProd.show_key_highlights !== undefined
@@ -99,6 +100,7 @@ const mapDbProductToClient = (dbProd) => {
     details: dbProd.details || [],
     images: dbProd.images,
     variants: safeVariants,
+    sizeGuideImage: safeVariants.sizeGuideImage,
     sizeQuantities: rawSizeQuantities,
     showOutOfStock: safeVariants.showOutOfStock,
     isOutOfStock: safeVariants.isOutOfStock,
@@ -155,7 +157,8 @@ const mapClientProductToDb = (clientProd) => {
     ...(clientProd.variants || {}),
     sizeQuantities,
     showOutOfStock,
-    isOutOfStock
+    isOutOfStock,
+    sizeGuideImage: clientProd.sizeGuideImage || clientProd.variants?.sizeGuideImage || ''
   };
 
   const safeHighlights = {

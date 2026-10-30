@@ -2746,6 +2746,85 @@ alter table public.settings disable row level security;`}</pre>
                       </div>
                     </div>
                   )}
+
+                  {/* Product-Specific Size Chart Image Upload */}
+                  <div className="admin-size-chart-upload-card" style={{
+                    marginTop: '16px',
+                    padding: '14px 16px',
+                    borderRadius: '8px',
+                    border: '1.5px dashed var(--color-border)',
+                    background: 'var(--color-bg-secondary)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '7px', fontWeight: 600, fontSize: '13px', margin: 0, color: 'var(--color-text-primary)' }}>
+                        <Ruler size={16} style={{ color: 'var(--color-accent)' }} />
+                        <span>Product Size Chart Image (Pop-up)</span>
+                      </label>
+                      <span style={{ fontSize: '11px', color: 'var(--color-accent)', fontWeight: 600, background: 'rgba(139, 0, 0, 0.08)', padding: '2px 8px', borderRadius: '4px' }}>
+                        Measurement Chart for this Product
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '11.5px', color: 'var(--color-text-secondary)', margin: '0 0 10px 0', lineHeight: '1.4' }}>
+                      Each product has different measurements. Upload the specific size chart image for this product below. When customers click <strong>"Size Guide"</strong> on this product's page, this photo will pop up.
+                    </p>
+
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <label 
+                        className="custom-file-upload" 
+                        style={{ 
+                          display: 'inline-flex', 
+                          cursor: 'pointer', 
+                          gap: '8px', 
+                          padding: '9px 15px', 
+                          border: '1px solid var(--color-border)', 
+                          borderRadius: '6px', 
+                          backgroundColor: 'var(--color-bg-primary)', 
+                          fontSize: '12px', 
+                          fontWeight: '600',
+                          color: 'var(--color-text-primary)' 
+                        }}
+                      >
+                        <Upload size={14} />
+                        <span>Upload Size Chart Photo</span>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleSizeGuideUpload} 
+                        />
+                      </label>
+                      <input 
+                        type="text" 
+                        placeholder="Or paste size chart photo URL..." 
+                        value={sizeGuideImage} 
+                        onChange={(e) => setSizeGuideImage(e.target.value)}
+                        style={{ flex: 1, minWidth: '200px', margin: 0, padding: '9px 12px', fontSize: '12px', borderRadius: '6px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-primary)' }}
+                      />
+                    </div>
+
+                    {sizeGuideImage && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px', padding: '8px 12px', background: 'var(--color-bg-primary)', borderRadius: '6px', border: '1px solid #86efac' }}>
+                        <img 
+                          src={sizeGuideImage} 
+                          alt="Size Chart Preview" 
+                          style={{ width: '56px', height: '56px', objectFit: 'contain', borderRadius: '4px', border: '1px solid var(--color-border)', backgroundColor: '#ffffff' }}
+                          onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=150'; }}
+                        />
+                        <div style={{ flex: 1 }}>
+                          <span style={{ fontSize: '11.5px', color: '#16a34a', fontWeight: '700', display: 'block' }}>Size Chart Photo Attached ✓</span>
+                          <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', display: 'block', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {sizeGuideImage}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSizeGuideImage('')}
+                          style={{ fontSize: '11.5px', color: '#b91c1c', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontWeight: 600 }}
+                        >
+                          Remove Photo
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Color configurer */}
@@ -3295,55 +3374,6 @@ alter table public.settings disable row level security;`}</pre>
                       onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=150'; }}
                     />
                     <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: '600' }}>Hover Preview Loaded ✓</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Designated Size Guide Image Upload Field */}
-              <div className="form-group" style={{ gridColumn: 'span 2', padding: '16px', border: '1px solid var(--color-border)', borderRadius: '6px', backgroundColor: 'var(--color-bg-secondary)' }}>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
-                  <span style={{ fontWeight: '700', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Ruler size={15} style={{ color: 'var(--color-accent)' }} />
-                    <span>Garment Size Guide Image</span>
-                  </span>
-                  <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: '400' }}>
-                    Upload or paste the measurement chart image for this product. When customer clicks "Size Guide", this image will pop up.
-                  </span>
-                </label>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <label className="custom-file-upload" style={{ display: 'inline-flex', cursor: 'pointer', gap: '8px', padding: '10px 16px', border: '1px solid var(--color-border)', borderRadius: '6px', backgroundColor: 'var(--color-bg-primary)', fontSize: '12px', fontWeight: '500' }}>
-                    <Upload size={14} />
-                    <span>Upload Size Guide Photo</span>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handleSizeGuideUpload} 
-                    />
-                  </label>
-                  <input 
-                    type="text" 
-                    placeholder="Or paste size guide image URL here..." 
-                    value={sizeGuideImage} 
-                    onChange={(e) => setSizeGuideImage(e.target.value)}
-                    style={{ flex: 1, minWidth: '200px', margin: 0, padding: '10px 12px', fontSize: '12px', borderRadius: '6px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-primary)' }}
-                  />
-                </div>
-                {sizeGuideImage && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px' }}>
-                    <img 
-                      src={sizeGuideImage} 
-                      alt="Size Guide Preview" 
-                      style={{ width: '56px', height: '56px', objectFit: 'contain', borderRadius: '4px', border: '1px solid var(--color-border)', backgroundColor: '#ffffff' }}
-                      onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=150'; }}
-                    />
-                    <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: '600' }}>Size Guide Loaded ✓</span>
-                    <button
-                      type="button"
-                      onClick={() => setSizeGuideImage('')}
-                      style={{ fontSize: '11px', color: '#b91c1c', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
-                    >
-                      Remove
-                    </button>
                   </div>
                 )}
               </div>

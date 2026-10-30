@@ -87,11 +87,13 @@ export default function ProductDetailModal({
   const [quantity, setQuantity] = useState(1);
   const [wantsCustomStitching, setWantsCustomStitching] = useState(false);
   const [showSizeChart, setShowSizeChart] = useState(false);
-  const isKidsProduct = Boolean(
-    (category && /kid|child|baby|infant|toddler/i.test(category)) ||
-    (availableSizes.some(s => /^\d+[-–]\d+[MY]|^\d+[MY]|\b(month|year|newborn|infant|toddler)\b/i.test(String(s))))
-  );
-  const [sizeChartTab, setSizeChartTab] = useState(isKidsProduct ? 'kids' : 'adult');
+  const sizeGuideImg = product.sizeGuideImage || 
+                       product.size_guide_image || 
+                       product.variants?.sizeGuideImage || 
+                       product.variants?.size_guide_image || 
+                       boutiqueSettings?.sizeGuideImage || 
+                       boutiqueSettings?.size_guide_image || 
+                       '';
 
   // Handle color change and auto-swap to linked color image
   const handleColorClick = (color) => {
@@ -406,10 +408,7 @@ export default function ProductDetailModal({
                 <span className="option-label">{wantsCustomStitching ? 'Base Size' : 'Size'}: <strong>{selectedSize || 'Select'}</strong></span>
                 <button 
                   className="size-chart-link-btn" 
-                  onClick={() => {
-                    setSizeChartTab(isKidsProduct ? 'kids' : 'adult');
-                    setShowSizeChart(true);
-                  }}
+                  onClick={() => setShowSizeChart(true)}
                 >
                   <Ruler size={14} />
                   <span>Size Guide</span>
@@ -703,167 +702,70 @@ export default function ProductDetailModal({
           </div>
         </div>
 
-      {/* Embedded Size Chart Guide Modal */}
+      {/* Embedded Size Guide Image Modal */}
       {showSizeChart && (
         <div className="size-chart-modal-overlay" onClick={() => setShowSizeChart(false)}>
-          <div className="size-chart-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '560px' }}>
-            <div className="size-chart-header">
+          <div 
+            className="size-chart-modal" 
+            onClick={e => e.stopPropagation()} 
+            style={{ 
+              maxWidth: '680px', 
+              width: '94%', 
+              borderRadius: '12px', 
+              overflow: 'hidden',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.25)',
+              border: '1px solid var(--color-border)',
+              backgroundColor: 'var(--color-bg-primary)'
+            }}
+          >
+            <div className="size-chart-header" style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'var(--color-bg-secondary)' }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600 }}>Standard Sizing Guide</h3>
-                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--color-text-secondary)' }}>
-                  Accurate body measurements in inches and cm
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Ruler size={18} style={{ color: 'var(--color-accent)' }} />
+                  <span>Size Guide</span>
+                </h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                  {title ? `${title} — Standard Sizing Guide` : 'Accurate garment measurement reference'}
                 </p>
               </div>
-              <button className="close-btn" onClick={() => setShowSizeChart(false)} aria-label="Close size guide">
+              <button 
+                className="close-btn" 
+                onClick={() => setShowSizeChart(false)} 
+                aria-label="Close size guide"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '50%', color: 'var(--color-text-primary)' }}
+              >
                 <X size={20} />
               </button>
             </div>
 
-            {/* Sizing Category Tabs */}
-            <div style={{ display: 'flex', gap: '4px', padding: '10px 16px 0', borderBottom: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-secondary)' }}>
-              <button 
-                type="button"
-                onClick={() => setSizeChartTab('adult')}
-                style={{
-                  padding: '8px 16px',
-                  fontSize: '12px',
-                  fontWeight: sizeChartTab === 'adult' ? 600 : 500,
-                  border: 'none',
-                  background: 'none',
-                  borderBottom: sizeChartTab === 'adult' ? '2.5px solid var(--color-text-primary)' : '2.5px solid transparent',
-                  color: sizeChartTab === 'adult' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                👩 Adult Standard (Inches)
-              </button>
-              <button 
-                type="button"
-                onClick={() => setSizeChartTab('kids')}
-                style={{
-                  padding: '8px 16px',
-                  fontSize: '12px',
-                  fontWeight: sizeChartTab === 'kids' ? 600 : 500,
-                  border: 'none',
-                  background: 'none',
-                  borderBottom: sizeChartTab === 'kids' ? '2.5px solid #8b0000' : '2.5px solid transparent',
-                  color: sizeChartTab === 'kids' ? '#8b0000' : 'var(--color-text-secondary)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                👶 Kids by Age Group
-              </button>
-            </div>
-
-            <div className="size-chart-body" style={{ padding: '16px 20px 20px' }}>
-              {sizeChartTab === 'adult' ? (
-                <div style={{ overflowX: 'auto' }}>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Size</th>
-                        <th>Bust</th>
-                        <th>Waist</th>
-                        <th>Hips</th>
-                        <th>Length</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td><strong>XS</strong></td>
-                        <td>32"</td>
-                        <td>26"</td>
-                        <td>36"</td>
-                        <td>42"</td>
-                      </tr>
-                      <tr>
-                        <td><strong>S</strong></td>
-                        <td>34"</td>
-                        <td>28"</td>
-                        <td>38"</td>
-                        <td>42"</td>
-                      </tr>
-                      <tr>
-                        <td><strong>M</strong></td>
-                        <td>36"</td>
-                        <td>30"</td>
-                        <td>40"</td>
-                        <td>43"</td>
-                      </tr>
-                      <tr>
-                        <td><strong>L</strong></td>
-                        <td>38"</td>
-                        <td>32"</td>
-                        <td>42"</td>
-                        <td>43"</td>
-                      </tr>
-                      <tr>
-                        <td><strong>XL</strong></td>
-                        <td>40"</td>
-                        <td>34"</td>
-                        <td>44"</td>
-                        <td>44"</td>
-                      </tr>
-                      <tr>
-                        <td><strong>XXL</strong></td>
-                        <td>42"</td>
-                        <td>36"</td>
-                        <td>46"</td>
-                        <td>44"</td>
-                      </tr>
-                      <tr>
-                        <td><strong>3XL</strong></td>
-                        <td>44"</td>
-                        <td>38"</td>
-                        <td>48"</td>
-                        <td>44"</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Free Size</strong></td>
-                        <td>34" - 42"</td>
-                        <td>Flexible</td>
-                        <td>40" - 46"</td>
-                        <td>43"</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  <p className="size-chart-footer-note">
-                    Note: If your measurements fall between sizes, we recommend selecting the larger size or opting for our custom tailoring option for a personalized fit.
+            <div className="size-chart-body" style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--color-bg-primary)', maxHeight: '78vh', overflowY: 'auto' }}>
+              {sizeGuideImg ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', width: '100%' }}>
+                  <img 
+                    src={sizeGuideImg} 
+                    alt="Size Guide" 
+                    style={{ 
+                      maxWidth: '100%', 
+                      maxHeight: '65vh', 
+                      objectFit: 'contain', 
+                      borderRadius: '8px', 
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                      backgroundColor: '#ffffff'
+                    }} 
+                    onError={(e) => {
+                      e.target.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=1200';
+                    }}
+                  />
+                  <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: 0, textAlign: 'center', lineHeight: '1.4' }}>
+                    💡 <em>Measurements shown in chart. For bespoke alterations, choose our custom stitching service.</em>
                   </p>
                 </div>
               ) : (
-                <div>
-                  <div style={{ maxHeight: '280px', overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: '6px', marginBottom: '14px' }}>
-                    <table style={{ margin: 0 }}>
-                      <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>
-                        <tr>
-                          <th>Age Group</th>
-                          <th>Chest (in)</th>
-                          <th>Waist (in)</th>
-                          <th>Approx. Height</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr><td><strong>0-6M</strong></td><td>17" - 18"</td><td>18"</td><td>60 - 68 cm</td></tr>
-                        <tr><td><strong>6-12M</strong></td><td>18" - 19"</td><td>19"</td><td>68 - 76 cm</td></tr>
-                        <tr><td><strong>1-2Y</strong></td><td>20" - 21"</td><td>20"</td><td>80 - 88 cm</td></tr>
-                        <tr><td><strong>2-3Y</strong></td><td>21" - 22"</td><td>20.5"</td><td>90 - 98 cm</td></tr>
-                        <tr><td><strong>3-4Y</strong></td><td>22" - 23"</td><td>21"</td><td>98 - 104 cm</td></tr>
-                        <tr><td><strong>4-5Y</strong></td><td>23" - 24"</td><td>21.5"</td><td>104 - 110 cm</td></tr>
-                        <tr><td><strong>5-6Y</strong></td><td>24" - 25"</td><td>22"</td><td>110 - 116 cm</td></tr>
-                        <tr><td><strong>6-7Y</strong></td><td>25" - 26"</td><td>22.5"</td><td>116 - 122 cm</td></tr>
-                        <tr><td><strong>7-8Y</strong></td><td>26" - 27"</td><td>23"</td><td>122 - 128 cm</td></tr>
-                        <tr><td><strong>8-9Y</strong></td><td>27" - 28"</td><td>24"</td><td>128 - 134 cm</td></tr>
-                        <tr><td><strong>9-10Y</strong></td><td>28" - 29"</td><td>24.5"</td><td>134 - 140 cm</td></tr>
-                        <tr><td><strong>10-12Y</strong></td><td>29" - 31"</td><td>25.5"</td><td>140 - 152 cm</td></tr>
-                        <tr><td><strong>12-14Y</strong></td><td>31" - 33"</td><td>26.5"</td><td>152 - 162 cm</td></tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <p className="size-chart-footer-note">
-                    👶 <strong>Tip for Parents:</strong> Kids grow fast! If your child is between age brackets or taller than average, we recommend choosing one size up for the most comfortable fit.
+                <div style={{ padding: '50px 20px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                  <Ruler size={42} style={{ color: 'var(--color-accent)', marginBottom: '12px', opacity: 0.8 }} />
+                  <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: 600, color: 'var(--color-text-primary)' }}>No Size Guide Configured</h4>
+                  <p style={{ margin: 0, fontSize: '12.5px', maxWidth: '360px', lineHeight: '1.5' }}>
+                    The size guide image for this garment will be uploaded soon. You can also contact our boutique atelier directly for sizing assistance.
                   </p>
                 </div>
               )}

@@ -5399,6 +5399,109 @@ html, body, #root {
   right: 15px;
 }
 
+/* Homepage Product Carousel & Nav Arrows */
+.homepage-products-carousel-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.homepage-products-slider {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  padding: 12px 6px 24px 6px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  outline: none;
+}
+
+.homepage-products-slider::-webkit-scrollbar {
+  height: 6px;
+}
+
+.homepage-products-slider::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.homepage-products-slider::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.homepage-product-slide {
+  flex: 0 0 calc(25% - 18px);
+  min-width: 280px;
+  max-width: 380px;
+  scroll-snap-align: start;
+}
+
+@media (max-width: 1200px) {
+  .homepage-product-slide {
+    flex: 0 0 calc(33.333% - 16px);
+    min-width: 260px;
+  }
+}
+
+@media (max-width: 860px) {
+  .homepage-product-slide {
+    flex: 0 0 calc(50% - 12px);
+    min-width: 220px;
+  }
+}
+
+@media (max-width: 520px) {
+  .homepage-product-slide {
+    flex: 0 0 85%;
+    min-width: 200px;
+  }
+}
+
+.product-nav-btn {
+  position: absolute;
+  top: 45%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.product-nav-btn:hover {
+  background: var(--color-text-primary);
+  color: #ffffff;
+  border-color: var(--color-text-primary);
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.product-nav-btn.prev {
+  left: -22px;
+}
+
+.product-nav-btn.next {
+  right: -22px;
+}
+
+@media (max-width: 900px) {
+  .product-nav-btn.prev {
+    left: 4px;
+  }
+  .product-nav-btn.next {
+    right: 4px;
+  }
+}
+
 /* 11. Testimonials Section */
 .testimonials-section {
   padding-top: 50px;

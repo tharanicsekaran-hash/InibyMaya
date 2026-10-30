@@ -332,6 +332,7 @@ export default function AdminDashboard({
   const [newsletterDiscount, setNewsletterDiscount] = useState(10);
   const [newsletterPromoCode, setNewsletterPromoCode] = useState('WELCOME10');
   const [newsletterEnabled, setNewsletterEnabled] = useState(true);
+  const [settingsSizeGuideImage, setSettingsSizeGuideImage] = useState(() => boutiqueSettings?.sizeGuideImage || '');
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [settingsSuccessMsg, setSettingsSuccessMsg] = useState('');
 
@@ -554,6 +555,9 @@ export default function AdminDashboard({
         const occs = JSON.parse(boutiqueSettings.occasions || '[]');
         if (occs.length > 0) setStorefrontOccasions(occs);
       } catch {}
+      if (boutiqueSettings.sizeGuideImage !== undefined) {
+        setSettingsSizeGuideImage(boutiqueSettings.sizeGuideImage || '');
+      }
       setSettingsLoaded(true);
     }
   }, [boutiqueSettings]);
@@ -743,6 +747,7 @@ export default function AdminDashboard({
         freeShippingThreshold: Math.max(0, Number(settingsFreeShippingThreshold) || 0),
         adultSizes: JSON.stringify(settingsAdultSizes.split(',').map(s => s.trim()).filter(Boolean)),
         kidsSizes: JSON.stringify(settingsKidsSizes.split(',').map(s => s.trim()).filter(Boolean)),
+        sizeGuideImage: settingsSizeGuideImage,
         newsletterTitle,
         newsletterSubtitle,
         newsletterDiscount: Number(newsletterDiscount),
@@ -812,6 +817,7 @@ export default function AdminDashboard({
   const [description, setDescription] = useState('');
   const [primaryImages, setPrimaryImages] = useState(['']);
   const [hoverImage, setHoverImage] = useState('');
+  const [sizeGuideImage, setSizeGuideImage] = useState('');
   const [customizable, setCustomizable] = useState(true);
   const [bestSeller, setBestSeller] = useState(false);
   const [newArrival, setNewArrival] = useState(false);
@@ -900,6 +906,44 @@ export default function AdminDashboard({
     } catch (err) {
       console.error('❌ [GitHub Upload Error]:', err.message || err);
       alert(`❌ Upload Failed: ${err.message || 'Error uploading file to GitHub'}`);
+    }
+  };
+
+  const handleSizeGuideUpload = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    try {
+      let imageUrl;
+      if (import.meta.env.VITE_GITHUB_TOKEN) {
+        imageUrl = await uploadFileToGithub(file, 'media/products');
+      } else {
+        imageUrl = await compressImage(file);
+      }
+      setSizeGuideImage(imageUrl);
+    } catch (err) {
+      console.error('❌ [Size Guide Upload Error]:', err.message || err);
+      alert(`❌ Upload Failed: ${err.message || 'Error uploading file'}`);
+    } finally {
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleSettingsSizeGuideUpload = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    try {
+      let imageUrl;
+      if (import.meta.env.VITE_GITHUB_TOKEN) {
+        imageUrl = await uploadFileToGithub(file, 'media/storefront');
+      } else {
+        imageUrl = await compressImage(file);
+      }
+      setSettingsSizeGuideImage(imageUrl);
+    } catch (err) {
+      console.error('❌ [Settings Size Guide Upload Error]:', err.message || err);
+      alert(`❌ Upload Failed: ${err.message || 'Error uploading file'}`);
+    } finally {
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -1511,8 +1555,10 @@ export default function AdminDashboard({
           sizes: safeProductSizes,
           sizeQuantities: finalSizeQuantities,
           showOutOfStock: showOutOfStock,
-          isOutOfStock: effectiveOutOfStock
+          isOutOfStock: effectiveOutOfStock,
+          sizeGuideImage: sizeGuideImage || ''
         },
+        sizeGuideImage: sizeGuideImage || '',
         colorImages: colorImages,
         sizeQuantities: finalSizeQuantities,
         showOutOfStock: showOutOfStock,
@@ -1551,8 +1597,10 @@ export default function AdminDashboard({
           sizes: safeProductSizes,
           sizeQuantities: finalSizeQuantities,
           showOutOfStock: showOutOfStock,
-          isOutOfStock: effectiveOutOfStock
+          isOutOfStock: effectiveOutOfStock,
+          sizeGuideImage: sizeGuideImage || ''
         },
+        sizeGuideImage: sizeGuideImage || '',
         colorImages: colorImages,
         sizeQuantities: finalSizeQuantities,
         showOutOfStock: showOutOfStock,
@@ -1579,6 +1627,7 @@ export default function AdminDashboard({
     setDescription('');
     setPrimaryImages(['']);
     setHoverImage('');
+    setSizeGuideImage('');
     setCustomizable(true);
     setBestSeller(false);
     setNewArrival(false);
@@ -1621,6 +1670,7 @@ export default function AdminDashboard({
     const primaryImgs = prod.images.filter((_, idx) => idx !== 1);
     setPrimaryImages(primaryImgs.length > 0 ? primaryImgs : ['']);
     setHoverImage(hoverImg);
+    setSizeGuideImage(prod.sizeGuideImage || prod.variants?.sizeGuideImage || prod.size_guide_image || '');
     
     setCustomizable(Boolean(prod.customizable));
     setBestSeller(Boolean(prod.bestSeller));
@@ -1692,6 +1742,7 @@ export default function AdminDashboard({
     setDescription('');
     setPrimaryImages(['']);
     setHoverImage('');
+    setSizeGuideImage('');
     setCustomizable(true);
     setBestSeller(false);
     setNewArrival(false);
@@ -3248,6 +3299,55 @@ alter table public.settings disable row level security;`}</pre>
                 )}
               </div>
 
+              {/* Designated Size Guide Image Upload Field */}
+              <div className="form-group" style={{ gridColumn: 'span 2', padding: '16px', border: '1px solid var(--color-border)', borderRadius: '6px', backgroundColor: 'var(--color-bg-secondary)' }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
+                  <span style={{ fontWeight: '700', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Ruler size={15} style={{ color: 'var(--color-accent)' }} />
+                    <span>Garment Size Guide Image</span>
+                  </span>
+                  <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: '400' }}>
+                    Upload or paste the measurement chart image for this product. When customer clicks "Size Guide", this image will pop up.
+                  </span>
+                </label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <label className="custom-file-upload" style={{ display: 'inline-flex', cursor: 'pointer', gap: '8px', padding: '10px 16px', border: '1px solid var(--color-border)', borderRadius: '6px', backgroundColor: 'var(--color-bg-primary)', fontSize: '12px', fontWeight: '500' }}>
+                    <Upload size={14} />
+                    <span>Upload Size Guide Photo</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleSizeGuideUpload} 
+                    />
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="Or paste size guide image URL here..." 
+                    value={sizeGuideImage} 
+                    onChange={(e) => setSizeGuideImage(e.target.value)}
+                    style={{ flex: 1, minWidth: '200px', margin: 0, padding: '10px 12px', fontSize: '12px', borderRadius: '6px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-primary)' }}
+                  />
+                </div>
+                {sizeGuideImage && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px' }}>
+                    <img 
+                      src={sizeGuideImage} 
+                      alt="Size Guide Preview" 
+                      style={{ width: '56px', height: '56px', objectFit: 'contain', borderRadius: '4px', border: '1px solid var(--color-border)', backgroundColor: '#ffffff' }}
+                      onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=150'; }}
+                    />
+                    <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: '600' }}>Size Guide Loaded ✓</span>
+                    <button
+                      type="button"
+                      onClick={() => setSizeGuideImage('')}
+                      style={{ fontSize: '11px', color: '#b91c1c', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* Feasibility for Best Selling toggle, customizable toggle, ratings, and reviews count */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', gridColumn: 'span 2', marginTop: '10px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
                 <div className="form-group-checkbox" style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
@@ -4569,6 +4669,49 @@ alter table public.settings disable row level security;`}</pre>
                   />
                   <small style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px', display: 'block' }}>
                     Default age-based sizes available for Children & Kids Wear collections (e.g. 0-6M, 1-2Y, 3-4Y).
+                  </small>
+                </div>
+
+                <div className="form-group" style={{ marginTop: '14px', marginBottom: 0 }}>
+                  <label style={{ fontWeight: '600' }}>Default Boutique Size Guide Image</label>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginTop: '6px' }}>
+                    <label className="custom-file-upload" style={{ display: 'inline-flex', cursor: 'pointer', gap: '8px', padding: '10px 16px', border: '1px solid var(--color-border)', borderRadius: '6px', backgroundColor: 'var(--color-bg-primary)', fontSize: '12px', fontWeight: '500' }}>
+                      <Upload size={14} />
+                      <span>Upload Default Size Guide</span>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleSettingsSizeGuideUpload} 
+                      />
+                    </label>
+                    <input 
+                      type="text" 
+                      placeholder="Or paste default size guide image URL here..." 
+                      value={settingsSizeGuideImage} 
+                      onChange={(e) => setSettingsSizeGuideImage(e.target.value)}
+                      style={{ flex: 1, minWidth: '200px', margin: 0, padding: '10px 12px', fontSize: '12px', borderRadius: '6px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-primary)' }}
+                    />
+                  </div>
+                  {settingsSizeGuideImage && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px' }}>
+                      <img 
+                        src={settingsSizeGuideImage} 
+                        alt="Default Size Guide Preview" 
+                        style={{ width: '56px', height: '56px', objectFit: 'contain', borderRadius: '4px', border: '1px solid var(--color-border)', backgroundColor: '#ffffff' }}
+                        onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=150'; }}
+                      />
+                      <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: '600' }}>Default Guide Configured ✓</span>
+                      <button
+                        type="button"
+                        onClick={() => setSettingsSizeGuideImage('')}
+                        style={{ fontSize: '11px', color: '#b91c1c', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                  <small style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '6px', display: 'block' }}>
+                    Applies automatically as the fallback size chart across all boutique garments that don't have a custom size guide image.
                   </small>
                 </div>
               </div>

@@ -410,6 +410,19 @@ export default function App() {
     }
   };
 
+  const handleScrollProducts = (carouselId, direction) => {
+    const container = document.getElementById(carouselId);
+    if (container) {
+      const card = container.querySelector('.homepage-product-slide');
+      const scrollAmount = card ? (card.offsetWidth + 24) * 2 : 400;
+      if (direction === 'left') {
+        container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+      } else {
+        container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      }
+    }
+  };
+
   // Catalog State (100% Direct Database Synchronized)
   const [productsList, setProductsList] = useState([]);
 
@@ -1688,25 +1701,57 @@ export default function App() {
                 <h2>New Arrivals</h2>
                 <p>Fresh drops & handwoven additions curated every week for the modern wardrobe.</p>
               </div>
-              <div className="product-grid">
-                {customerProducts.filter(p => Boolean(p.newArrival)).slice(0, 4).map(product => (
-                  <ProductCard 
-                    key={product.id}
-                    product={product}
-                    isFavorite={favorites.includes(product.id)}
-                    onToggleFavorite={handleToggleFavorite}
-                    onProductClick={(prod, size) => {
-                      if (size) setPreselectedSize(size);
-                      setSelectedProduct(prod);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    onQuickViewClick={(prod, size) => {
-                      if (size) setPreselectedSize(size);
-                      setQuickViewProduct(prod);
-                    }}
-                  />
-                ))}
-              </div>
+              {(() => {
+                const newArrivalList = customerProducts.filter(p => Boolean(p.newArrival));
+                const displayList = newArrivalList.length > 0 ? newArrivalList : customerProducts;
+                if (!displayList || displayList.length === 0) return null;
+                return (
+                  <div className="homepage-products-carousel-wrapper">
+                    <button 
+                      className="product-nav-btn prev" 
+                      onClick={() => handleScrollProducts('new-arrivals-carousel', 'left')} 
+                      aria-label="Previous New Arrival Products"
+                    >
+                      <ChevronLeft size={22} />
+                    </button>
+                    <button 
+                      className="product-nav-btn next" 
+                      onClick={() => handleScrollProducts('new-arrivals-carousel', 'right')} 
+                      aria-label="Next New Arrival Products"
+                    >
+                      <ChevronRight size={22} />
+                    </button>
+                    <div 
+                      id="new-arrivals-carousel" 
+                      className="homepage-products-slider"
+                      tabIndex="0"
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowLeft') handleScrollProducts('new-arrivals-carousel', 'left');
+                        if (e.key === 'ArrowRight') handleScrollProducts('new-arrivals-carousel', 'right');
+                      }}
+                    >
+                      {displayList.map(product => (
+                        <div key={product.id} className="homepage-product-slide">
+                          <ProductCard 
+                            product={product}
+                            isFavorite={favorites.includes(product.id)}
+                            onToggleFavorite={handleToggleFavorite}
+                            onProductClick={(prod, size) => {
+                              if (size) setPreselectedSize(size);
+                              setSelectedProduct(prod);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            onQuickViewClick={(prod, size) => {
+                              if (size) setPreselectedSize(size);
+                              setQuickViewProduct(prod);
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="view-all-row">
                 <button className="btn-primary" onClick={() => { setSearchQuery(''); setSelectedCategoryFilter('New Arrivals'); setActivePage('shop'); }}>
                   Explore All New Arrivals
@@ -1763,28 +1808,56 @@ export default function App() {
                 <p>Explore traditional silhouettes loved by our patrons across the country.</p>
               </div>
               {customerProducts.length > 0 ? (
-                <div className="product-grid">
-                  {(customerProducts.filter(p => Boolean(p.bestSeller)).length > 0 
-                    ? customerProducts.filter(p => Boolean(p.bestSeller)) 
-                    : customerProducts
-                  ).slice(0, 4).map(product => (
-                    <ProductCard 
-                      key={product.id}
-                      product={product}
-                      isFavorite={favorites.includes(product.id)}
-                      onToggleFavorite={handleToggleFavorite}
-                      onProductClick={(prod, size) => {
-                        if (size) setPreselectedSize(size);
-                        setSelectedProduct(prod);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      onQuickViewClick={(prod, size) => {
-                        if (size) setPreselectedSize(size);
-                        setQuickViewProduct(prod);
-                      }}
-                    />
-                  ))}
-                </div>
+                (() => {
+                  const bestsellersList = customerProducts.filter(p => Boolean(p.bestSeller));
+                  const displayList = bestsellersList.length > 0 ? bestsellersList : customerProducts;
+                  return (
+                    <div className="homepage-products-carousel-wrapper">
+                      <button 
+                        className="product-nav-btn prev" 
+                        onClick={() => handleScrollProducts('bestsellers-carousel', 'left')} 
+                        aria-label="Previous Bestseller Products"
+                      >
+                        <ChevronLeft size={22} />
+                      </button>
+                      <button 
+                        className="product-nav-btn next" 
+                        onClick={() => handleScrollProducts('bestsellers-carousel', 'right')} 
+                        aria-label="Next Bestseller Products"
+                      >
+                        <ChevronRight size={22} />
+                      </button>
+                      <div 
+                        id="bestsellers-carousel" 
+                        className="homepage-products-slider"
+                        tabIndex="0"
+                        onKeyDown={(e) => {
+                          if (e.key === 'ArrowLeft') handleScrollProducts('bestsellers-carousel', 'left');
+                          if (e.key === 'ArrowRight') handleScrollProducts('bestsellers-carousel', 'right');
+                        }}
+                      >
+                        {displayList.map(product => (
+                          <div key={product.id} className="homepage-product-slide">
+                            <ProductCard 
+                              product={product}
+                              isFavorite={favorites.includes(product.id)}
+                              onToggleFavorite={handleToggleFavorite}
+                              onProductClick={(prod, size) => {
+                                if (size) setPreselectedSize(size);
+                                setSelectedProduct(prod);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              onQuickViewClick={(prod, size) => {
+                                if (size) setPreselectedSize(size);
+                                setQuickViewProduct(prod);
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()
               ) : (
                 <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
                   <p>No active boutique creations yet. Publish products from the Admin Console to feature them here.</p>
